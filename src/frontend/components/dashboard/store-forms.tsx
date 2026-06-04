@@ -202,7 +202,7 @@ export function StoreOnboardingForm() {
 
             {/* Banner */}
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-foreground/80 uppercase">Shop Banner</span>
+              <span className="text-xs font-semibold text-foreground/80 uppercase">Shop Banner (Optional)</span>
               <div className="flex items-center gap-4">
                 <div className="h-16 w-32 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center relative shrink-0">
                   {formData.banner ? (
@@ -402,7 +402,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-foreground/80 uppercase">Banner Preview</span>
+              <span className="text-xs font-semibold text-foreground/80 uppercase">Banner Preview (Optional)</span>
               <div className="flex items-center gap-4">
                 <div className="h-16 w-28 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center shrink-0">
                   {formData.banner ? (

@@ -13,8 +13,8 @@ export const ShopSchema = z.object({
   whatsapp: z.string()
     .min(8, 'WhatsApp number must be at least 8 digits')
     .regex(/^\+?[1-9]\d{1,14}$/, 'WhatsApp number must be a valid international phone number without spaces or symbols'),
-  instagram: z.string().max(30).regex(/^[a-zA-Z0-9_.]+$/, 'Instagram handle must contain only letters, numbers, periods, and underscores').optional().nullable(),
-  telegram: z.string().max(32).regex(/^[a-zA-Z0-9_]+$/, 'Telegram username must contain only letters, numbers, and underscores').optional().nullable(),
+  instagram: z.string().max(30).regex(/^[a-zA-Z0-9_.]+$/, 'Instagram handle must contain only letters, numbers, periods, and underscores').or(z.string().length(0)).optional().nullable(),
+  telegram: z.string().max(32).regex(/^[a-zA-Z0-9_]+$/, 'Telegram username must contain only letters, numbers, and underscores').or(z.string().length(0)).optional().nullable(),
 });
 
 export const ProductImageSchema = z.object({

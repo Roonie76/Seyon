@@ -10,11 +10,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { role } = session.user;
-    if (role !== Role.SELLER && role !== Role.ADMIN) {
-      return NextResponse.json({ error: 'Forbidden: Sellers and Admins only' }, { status: 403 });
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const bucket = formData.get('bucket') as 'logos' | 'banners' | 'products' | null;
