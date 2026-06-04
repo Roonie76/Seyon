@@ -153,7 +153,7 @@ export function generateProductJSONLD(product: ProductSEOInput, shop: ShopSEOInp
     offers: {
       '@type': 'Offer',
       url: productUrl,
-      priceCurrency: 'USD',
+      priceCurrency: 'INR',
       price: product.price.toString(),
       availability: 'https://schema.org/InStock',
       seller: {

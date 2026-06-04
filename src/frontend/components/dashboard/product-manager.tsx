@@ -248,7 +248,7 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
                     </div>
                   </TableCell>
                   <TableCell className="capitalize">{prod.category}</TableCell>
-                  <TableCell className="font-semibold text-foreground">${prod.price.toFixed(2)}</TableCell>
+                  <TableCell className="font-semibold text-foreground">₹{prod.price.toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={prod.status === 'ACTIVE' ? 'success' : prod.status === 'DRAFT' ? 'secondary' : 'destructive'}>
                       {prod.status.toLowerCase()}
@@ -304,12 +304,12 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-foreground/90">Price ($ USD)</label>
+                <label className="text-xs font-semibold text-foreground/90">Price (₹ INR)</label>
                 <Input
                   required
                   type="number"
                   step="0.01"
-                  placeholder="e.g. 89.99"
+                  placeholder="e.g. 1500"
                   value={formData.price}
                   onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
                 />
@@ -319,13 +319,23 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-foreground/90">Category</label>
-                <Input
+                <select
                   required
-                  type="text"
-                  placeholder="e.g. Electronics, Fashion"
                   value={formData.category}
                   onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-                />
+                  className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="" disabled>Select a category</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Beauty">Beauty</option>
+                  <option value="Home & Living">Home & Living</option>
+                  <option value="Clay Crafts">Clay Crafts</option>
+                  <option value="DIY Crafts">DIY Crafts</option>
+                  <option value="Art & Collectibles">Art & Collectibles</option>
+                  <option value="Food & Beverages">Food & Beverages</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-foreground/90">Listing Status</label>

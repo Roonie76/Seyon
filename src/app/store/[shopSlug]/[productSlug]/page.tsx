@@ -164,10 +164,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.title}
             </h1>
 
-            {/* Price tag */}
             <div className="flex items-baseline gap-2 mb-6">
-              <span className="text-3xl font-black text-foreground">${product.price.toFixed(2)}</span>
-              <span className="text-xs text-muted-foreground">USD</span>
+              <span className="text-3xl font-black text-foreground">₹{product.price.toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground">INR</span>
             </div>
 
             {/* Order execution details helper */}
@@ -274,7 +273,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
                       <span className="font-extrabold text-foreground text-base">
-                        ${prod.price.toFixed(2)}
+                        ₹{prod.price.toFixed(2)}
                       </span>
                       <Badge variant="success" className="text-[10px] font-bold">
                         Chat Buy

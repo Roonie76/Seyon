@@ -254,7 +254,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                       </div>
                       <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
                         <span className="font-extrabold text-foreground text-base">
-                          ${prod.price.toFixed(2)}
+                          ₹{prod.price.toFixed(2)}
                         </span>
                         <Badge variant="success" className="text-[10px] font-bold">
                           WhatsApp Buy

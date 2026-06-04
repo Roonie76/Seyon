@@ -295,7 +295,7 @@ export default async function HomePage() {
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
                       <span className="font-extrabold text-foreground text-sm sm:text-base">
-                        ${prod.price.toFixed(2)}
+                        ₹{prod.price.toFixed(2)}
                       </span>
                       <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
                         WhatsApp Buy

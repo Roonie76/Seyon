@@ -114,7 +114,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 </div>
                 <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
                   <span className="font-extrabold text-foreground text-base">
-                    ${prod.price.toFixed(2)}
+                    ₹{prod.price.toFixed(2)}
                   </span>
                   <Badge variant="success" className="text-[10px] font-bold">
                     WhatsApp Buy
