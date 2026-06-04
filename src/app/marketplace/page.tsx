@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
+import { MarketplaceFilters } from './filters';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -224,228 +225,108 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
         </form>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Filters Sidebar */}
-        <aside className="w-full lg:w-64 shrink-0 flex flex-col gap-6">
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-950/20 backdrop-blur-md shadow-sm p-6 flex flex-col gap-6">
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-3">
-              <h2 className="text-sm font-black uppercase tracking-wider text-foreground flex items-center gap-2">
-                <Filter className="h-4 w-4 text-amber-500" /> Filter Listings
-              </h2>
-              {hasActiveFilters && (
-                <Link href="/marketplace" className="text-[10px] font-extrabold text-amber-600 hover:text-amber-500 transition-colors flex items-center gap-0.5 uppercase bg-amber-500/5 px-2 py-0.5 rounded-full border border-amber-500/10">
-                  <X size={10} /> Clear
-                </Link>
-              )}
-            </div>
+      {/* Horizontal Marketplace Filters */}
+      <MarketplaceFilters
+        categories={categoriesData}
+        selectedCategory={selectedCategory}
+        sort={sort}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        query={query}
+      />
 
-            {/* Categories list */}
-            <div>
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground mb-3.5">Category</h3>
-              <div className="flex flex-col gap-1">
-                <Link
-                  href={`/marketplace?q=${query}&sort=${sort}&minPrice=${minPrice}&maxPrice=${maxPrice}`}
-                  className={`flex items-center justify-between text-xs px-3 py-2 rounded-xl transition-all duration-200 group ${
-                    !selectedCategory
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-bold shadow-md shadow-amber-500/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <LayoutGrid size={14} className={!selectedCategory ? 'text-zinc-950' : 'text-muted-foreground group-hover:text-foreground'} />
-                    All Categories
-                  </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${!selectedCategory ? 'bg-zinc-950/10 border-zinc-950/10 text-zinc-950' : 'bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}`}>
-                    {allProductsCount}
-                  </span>
-                </Link>
-                
-                {categoriesData.map((cat) => {
-                  const isActive = selectedCategory.toLowerCase() === cat.name.toLowerCase();
-                  return (
-                    <Link
-                      key={cat.name}
-                      href={`/marketplace?q=${query}&category=${cat.name}&sort=${sort}&minPrice=${minPrice}&maxPrice=${maxPrice}`}
-                      className={`flex items-center justify-between text-xs px-3 py-2 rounded-xl transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-bold shadow-md shadow-amber-500/10'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2 capitalize">
-                        <CategoryIcon category={cat.name} className={isActive ? 'text-zinc-950' : 'text-muted-foreground group-hover:text-foreground'} />
-                        {cat.name}
-                      </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${isActive ? 'bg-zinc-950/10 border-zinc-950/10 text-zinc-950' : 'bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'}`}>
-                        {cat.count}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Price Range Filter */}
-            <div className="border-t border-zinc-100 dark:border-zinc-900 pt-5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground mb-3">Price Range</h3>
-              <form action="/marketplace" method="GET" className="flex flex-col gap-2">
-                {query && <input type="hidden" name="q" value={query} />}
-                {selectedCategory && <input type="hidden" name="category" value={selectedCategory} />}
-                {sort && <input type="hidden" name="sort" value={sort} />}
-                
-                <div className="flex gap-2 items-center">
-                  <div className="relative flex-1">
-                    <span className="absolute left-2.5 top-2.5 text-xs text-muted-foreground/60 font-semibold">₹</span>
-                    <input
-                      type="number"
-                      name="minPrice"
-                      defaultValue={minPrice}
-                      placeholder="Min"
-                      className="w-full pl-6 pr-2 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
-                    />
-                  </div>
-                  <span className="text-muted-foreground text-xs font-bold">—</span>
-                  <div className="relative flex-1">
-                    <span className="absolute left-2.5 top-2.5 text-xs text-muted-foreground/60 font-semibold">₹</span>
-                    <input
-                      type="number"
-                      name="maxPrice"
-                      defaultValue={maxPrice}
-                      placeholder="Max"
-                      className="w-full pl-6 pr-2 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
-                    />
-                  </div>
-                </div>
-                <Button type="submit" size="sm" variant="outline" className="w-full h-8 text-[11px] font-bold border-zinc-200 hover:bg-zinc-100 text-foreground transition-all duration-200 rounded-xl">
-                  Apply Price Filter
-                </Button>
-              </form>
-            </div>
-
-            {/* Sorting List */}
-            <div className="border-t border-zinc-100 dark:border-zinc-900 pt-5">
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground mb-3">Sort By</h3>
-              <div className="flex flex-col gap-1">
-                {[
-                  { label: 'Newest First', val: 'newest', icon: Clock },
-                  { label: 'Price: Low to High', val: 'price-asc', icon: ArrowUpNarrowWide },
-                  { label: 'Price: High to Low', val: 'price-desc', icon: ArrowDownWideNarrow },
-                ].map((s) => {
-                  const isActive = sort === s.val;
-                  const Icon = s.icon;
-                  return (
-                    <Link
-                      key={s.val}
-                      href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${s.val}&minPrice=${minPrice}&maxPrice=${maxPrice}`}
-                      className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-zinc-100 dark:bg-zinc-900 text-foreground font-bold border border-zinc-200 dark:border-zinc-800 shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
-                      }`}
-                    >
-                      <Icon size={14} className={isActive ? 'text-amber-500' : 'text-muted-foreground group-hover:text-foreground'} />
-                      {s.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Products Grid */}
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-6">
-            <span className="text-sm text-muted-foreground">
-              Showing <span className="text-foreground font-bold">{products.length}</span> of{' '}
-              <span className="text-foreground font-bold">{totalProducts}</span> products
-            </span>
-          </div>
-
-          {products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-200 rounded-xl bg-card shadow-sm">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-1">No products found</h3>
-              <p className="text-sm text-muted-foreground mb-6">Try refining your search terms or filters.</p>
-              <Link href="/marketplace">
-                <Button variant="outline">Clear All Filters</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {products.map((prod) => (
-                <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
-                  <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
-                    <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-                      {prod.images?.[0] ? (
-                        <Image
-                          src={prod.images[0].url}
-                          alt={prod.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                          No Image
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4 flex flex-col justify-between flex-grow">
-                      <div>
-                        <div className="flex justify-between items-start gap-2 mb-1.5">
-                          <span className="text-[10px] uppercase font-bold text-amber-700">
-                            {prod.category}
-                          </span>
-                          <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
-                            by {prod.shop.name}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
-                          {prod.title}
-                        </h3>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                        <span className="font-extrabold text-foreground text-base">
-                          ₹{prod.price.toFixed(2)}
-                        </span>
-                        <Badge variant="success" className="text-[10px] font-bold">
-                          WhatsApp Buy
-                        </Badge>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
-              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page - 1}`} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
-                <Button variant="outline" size="sm">
-                  Previous
-                </Button>
-              </Link>
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pNum = idx + 1;
-                return (
-                  <Link key={pNum} href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${pNum}`}>
-                    <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
-                      {pNum}
-                    </Button>
-                  </Link>
-                );
-              })}
-              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page + 1}`} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
-                <Button variant="outline" size="sm">
-                  Next
-                </Button>
-              </Link>
-            </div>
-          )}
+      {/* Products Grid */}
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <span className="text-sm text-muted-foreground">
+            Showing <span className="text-foreground font-bold">{products.length}</span> of{' '}
+            <span className="text-foreground font-bold">{totalProducts}</span> products
+          </span>
         </div>
+
+        {products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-200 rounded-xl bg-card shadow-sm">
+            <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-bold text-foreground mb-1">No products found</h3>
+            <p className="text-sm text-muted-foreground mb-6">Try refining your search terms or filters.</p>
+            <Link href="/marketplace">
+              <Button variant="outline">Clear All Filters</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {products.map((prod) => (
+              <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
+                <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
+                  <div className="relative aspect-video bg-zinc-100 overflow-hidden">
+                    {prod.images?.[0] ? (
+                      <Image
+                        src={prod.images[0].url}
+                        alt={prod.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 flex flex-col justify-between flex-grow">
+                    <div>
+                      <div className="flex justify-between items-start gap-2 mb-1.5">
+                        <span className="text-[10px] uppercase font-bold text-amber-700">
+                          {prod.category}
+                        </span>
+                        <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
+                          by {prod.shop.name}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
+                        {prod.title}
+                      </h3>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
+                      <span className="font-extrabold text-foreground text-base">
+                        ₹{prod.price.toFixed(2)}
+                      </span>
+                      <Badge variant="success" className="text-[10px] font-bold">
+                        WhatsApp Buy
+                      </Badge>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
+            <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page - 1}`} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
+              <Button variant="outline" size="sm">
+                Previous
+              </Button>
+            </Link>
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              const pNum = idx + 1;
+              return (
+                <Link key={pNum} href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${pNum}`}>
+                  <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
+                    {pNum}
+                  </Button>
+                </Link>
+              );
+            })}
+            <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page + 1}`} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
+              <Button variant="outline" size="sm">
+                Next
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
