@@ -27,6 +27,9 @@ export async function Navbar() {
           <Link href="/marketplace" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors">
             Marketplace
           </Link>
+          <Link href="/sell" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors">
+            Sell
+          </Link>
           {user && (
             <Link href="/dashboard" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" /> Seller Dashboard
@@ -76,7 +79,7 @@ export async function Navbar() {
                   Log In
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/sell">
                 <Button size="sm">
                   Sell Products
                 </Button>
