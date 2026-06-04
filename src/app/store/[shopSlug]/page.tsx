@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getShopBySlug } from '@/actions/shops';
-import { trackEvent } from '@/actions/analytics';
+import { trackEventInternal } from '@/backend/lib/analytics';
 import { generateStoreMetadata, generateStoreJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ export default async function StorePage({ params }: StorePageProps) {
   }
 
   // Track shop view metric asynchronously
-  trackEvent(shop.id, 'SHOP_VIEW').catch((err) =>
+  trackEventInternal(shop.id, 'SHOP_VIEW').catch((err) =>
     console.error('Analytics record error for shop view:', err)
   );
 

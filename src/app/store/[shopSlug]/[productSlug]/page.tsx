@@ -11,7 +11,7 @@ interface RelatedProduct {
   category: string;
   images: { url: string }[];
 }
-import { trackEvent } from '@/actions/analytics';
+import { trackEventInternal } from '@/backend/lib/analytics';
 import { generateProductMetadata, generateProductJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Track product view metric asynchronously
-  trackEvent(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) =>
+  trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) =>
     console.error('Analytics record error for product view:', err)
   );
 

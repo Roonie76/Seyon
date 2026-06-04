@@ -4,45 +4,12 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Role, AnalyticsEventType } from '@prisma/client';
 import { z } from 'zod';
+import { trackEventInternal } from '../lib/analytics';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
-const EventTypeSchema = z.nativeEnum(AnalyticsEventType);
 
 export async function trackEvent(shopId: string, eventType: AnalyticsEventType, productId?: string) {
-  try {
-    const parsedShopId = IdParamSchema.safeParse(shopId);
-    if (!parsedShopId.success) {
-      return { error: 'Invalid shop ID format' };
-    }
-
-    const parsedEventType = EventTypeSchema.safeParse(eventType);
-    if (!parsedEventType.success) {
-      return { error: 'Invalid event type' };
-    }
-
-    let cleanProductId: string | null = null;
-    if (productId) {
-      const parsedProductId = IdParamSchema.safeParse(productId);
-      if (!parsedProductId.success) {
-        return { error: 'Invalid product ID format' };
-      }
-      cleanProductId = parsedProductId.data;
-    }
-
-    // Public logging (no auth needed for traffic events)
-    const analytics = await db.analytics.create({
-      data: {
-        shopId: parsedShopId.data,
-        productId: cleanProductId,
-        eventType: parsedEventType.data,
-      },
-    });
-
-    return { success: true, id: analytics.id };
-  } catch (error) {
-    console.error('Error logging traffic analytics:', error);
-    return { error: 'Failed to record click metric' };
-  }
+  return trackEventInternal(shopId, eventType, productId);
 }
 
 export async function getShopAnalytics(shopId: string) {
