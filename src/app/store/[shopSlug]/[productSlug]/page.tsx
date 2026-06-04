@@ -290,8 +290,4 @@ export default async function ProductPage({ params }: ProductPageProps) {
     </div>
   );
 }
-export const revalidate = 5;
-export async function generateStaticParams() {
-  // Return empty list by default, letting pages generate dynamically (ISR fallback)
-  return [];
-}
+
