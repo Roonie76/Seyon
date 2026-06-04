@@ -9,6 +9,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   trustHost: true,
+  debug: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || 'mock_google_id',

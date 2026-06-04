@@ -71,16 +71,11 @@ export async function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <form
-                action={async () => {
-                  'use server';
-                  await signIn(undefined, { redirectTo: '/dashboard' });
-                }}
-              >
+              <Link href="/login?callbackUrl=/dashboard">
                 <Button variant="ghost" size="sm" className="text-zinc-300 hover:text-white">
                   Log In
                 </Button>
-              </form>
+              </Link>
               <Link href="/dashboard">
                 <Button size="sm">
                   Sell Products
