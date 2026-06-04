@@ -35,7 +35,7 @@ export function MarketplaceFilters({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-end justify-between w-full bg-card p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm mb-8 text-foreground">
+    <div className="flex flex-col sm:flex-row gap-4 items-end justify-between w-full bg-card p-4 rounded-xl border border-zinc-200 shadow-sm mb-8 text-foreground">
       <div className="flex flex-wrap gap-4 items-center w-full sm:w-auto">
         {/* Category Dropdown */}
         <div className="flex flex-col gap-1">
@@ -43,7 +43,7 @@ export function MarketplaceFilters({
           <select
             value={selectedCategory}
             onChange={(e) => handleFilterChange(e.target.value, sort, minPrice, maxPrice)}
-            className="h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+            className="h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
           >
             <option value="">All Categories</option>
             {categories.map((cat) => (
@@ -74,7 +74,7 @@ export function MarketplaceFilters({
                 name="minPrice"
                 defaultValue={minPrice}
                 placeholder="Min"
-                className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-lg text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+                className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
               />
             </div>
             <span className="text-muted-foreground text-xs font-bold">—</span>
@@ -85,7 +85,7 @@ export function MarketplaceFilters({
                 name="maxPrice"
                 defaultValue={maxPrice}
                 placeholder="Max"
-                className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-lg text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+                className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
               />
             </div>
             <Button type="submit" size="sm" variant="outline" className="h-9 text-xs rounded-lg px-3">
@@ -101,7 +101,7 @@ export function MarketplaceFilters({
         <select
           value={sort}
           onChange={(e) => handleFilterChange(selectedCategory, e.target.value, minPrice, maxPrice)}
-          className="h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+          className="h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
         >
           <option value="newest">Newest First</option>
           <option value="price-asc">Price: Low to High</option>
