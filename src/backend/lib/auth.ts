@@ -5,15 +5,22 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { db } from '@/lib/db';
 import { Role } from '@prisma/client';
 
+// Single source of truth for the secret. NextAuth v5 also auto-reads AUTH_SECRET
+// internally for some operations, so AUTH_SECRET and NEXTAUTH_SECRET MUST hold the
+// SAME value in every environment. A mismatch causes `error=Configuration` after a
+// successful Google consent (state/JWT signed with one secret, verified with another).
+const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  secret: authSecret,
   trustHost: true,
-  debug: true,
+  // Debug only outside production. It was leaking internals and spamming logs.
+  debug: process.env.NODE_ENV !== 'production',
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'mock_google_id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock_google_secret',
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
@@ -27,7 +34,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = credentials.email as string;
 
-        // Frictionless signup/login for MVP: check if user exists, if not create user.
         let user = await db.user.findUnique({
           where: { email },
         });
