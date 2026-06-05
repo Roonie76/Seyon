@@ -26,9 +26,6 @@ export async function Navbar() {
  
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/marketplace" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors">
-            Marketplace
-          </Link>
           {user && user.role && user.role === Role.ADMIN && (
             <Link href="/admin" className="text-sm font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5">
               <ShieldAlert className="h-4 w-4" /> Moderation
