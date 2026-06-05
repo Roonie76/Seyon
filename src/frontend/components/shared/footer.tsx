@@ -22,12 +22,6 @@ export function Footer() {
             <Link href="/marketplace" className="hover:text-white transition-colors">
               Marketplace
             </Link>
-            <Link href="/sell" className="hover:text-white transition-colors">
-              Sell on Seyon
-            </Link>
-            <Link href="/dashboard" className="hover:text-white transition-colors">
-              Register Shop
-            </Link>
             <Link href="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </Link>
