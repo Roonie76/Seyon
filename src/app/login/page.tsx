@@ -9,6 +9,7 @@ import { ShoppingBag, Globe } from 'lucide-react';
 interface LoginPageProps {
   searchParams: Promise<{
     callbackUrl?: string;
+    error?: string;
   }>;
 }
 
@@ -20,6 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const isSellerHost = host.startsWith('sell') || host.includes('sell.');
   const defaultCallback = isSellerHost ? '/dashboard' : '/marketplace';
   const callbackUrl = params.callbackUrl || defaultCallback;
+  const error = params.error;
 
   // If already authenticated, redirect immediately
   if (session && session.user) {
@@ -42,6 +44,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {error && (
+            <div className="p-3.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20 flex flex-col gap-1">
+              <span className="font-bold uppercase tracking-wider text-[10px]">Sign-In Failed</span>
+              <span>
+                {error === 'AccessDenied' 
+                  ? 'Access was denied or you cancelled the authentication request.' 
+                  : 'An error occurred during authentication. Please try again.'}
+              </span>
+            </div>
+          )}
           {/* Credentials Email Sign-In */}
           <form
             action={async (formData) => {
