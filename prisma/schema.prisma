@@ -46,6 +46,7 @@ model User {
   shop          Shop?
   reviews       Review[]
   reports       Report[]
+  wishlist      Wishlist[]
 }
 
 model Account {
@@ -121,6 +122,7 @@ model Product {
   shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images      ProductImage[]
   analytics   Analytics[]
+  wishlistedBy Wishlist[]
 
   @@unique([shopId, slug])
 }
@@ -170,4 +172,16 @@ model Analytics {
 
   shop      Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
   product   Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
 }

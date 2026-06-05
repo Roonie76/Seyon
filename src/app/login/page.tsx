@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { auth, signIn } from '@/lib/auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,11 @@ interface LoginPageProps {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await auth();
   const params = await searchParams;
-  const callbackUrl = params.callbackUrl || '/dashboard';
+  
+  const host = (await headers()).get('host') || '';
+  const isSellerHost = host.startsWith('sell') || host.includes('sell.');
+  const defaultCallback = isSellerHost ? '/dashboard' : '/marketplace';
+  const callbackUrl = params.callbackUrl || defaultCallback;
 
   // If already authenticated, redirect immediately
   if (session && session.user) {

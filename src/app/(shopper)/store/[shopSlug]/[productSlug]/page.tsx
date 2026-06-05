@@ -19,6 +19,8 @@ import RatingsStars from '@/components/shared/ratings-stars';
 import TrustBadge from '@/components/shared/trust-badge';
 import ProductGallery from '@/components/store/product-gallery';
 import { WhatsAppButton, ReportModal } from '@/components/store/store-client-buttons';
+import { WishlistButton } from '@/components/shared/wishlist-button';
+import { isProductWishlisted } from '@/actions/wishlist';
 import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info } from 'lucide-react';
 
 interface ProductPageProps {
@@ -82,6 +84,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) =>
     console.error('Analytics record error for product view:', err)
   );
+
+  const isWishlisted = await isProductWishlisted(product.id);
 
   const shop = product.shop;
 
@@ -182,14 +186,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Order CTA */}
             <div className="flex flex-col gap-3">
-              <WhatsAppButton
-                shopId={shop.id}
-                whatsappNumber={shop.whatsapp}
-                shopName={shop.name}
-                productId={product.id}
-                productName={product.title}
-                price={product.price}
-              />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <WhatsAppButton
+                  shopId={shop.id}
+                  whatsappNumber={shop.whatsapp}
+                  shopName={shop.name}
+                  productId={product.id}
+                  productName={product.title}
+                  price={product.price}
+                />
+                <WishlistButton
+                  productId={product.id}
+                  initialIsWishlisted={isWishlisted}
+                  variant="default"
+                  className="w-full sm:w-auto sm:flex-1"
+                />
+              </div>
               <ReportModal shopId={shop.id} />
             </div>
           </Card>

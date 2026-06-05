@@ -6,6 +6,8 @@ import { MarketplaceFilters } from './filters';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { auth } from '@/lib/auth';
+import { WishlistButton } from '@/components/shared/wishlist-button';
 import {
   ShoppingBag,
   Search,
@@ -66,6 +68,9 @@ function CategoryIcon({ category, className, size = 16 }: { category: string; cl
 }
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  const session = await auth();
+  const user = session?.user;
+
   const params = await searchParams;
   const query = params.q || '';
   const selectedCategory = params.category || '';
@@ -78,8 +83,18 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   let products: MarketplaceProduct[] = [];
   let totalProducts = 0;
   let categories: { name: string; count: number }[] = [];
+  let wishlistedProductIds = new Set<string>();
 
   try {
+    // Fetch user wishlist if authenticated
+    if (user && user.id) {
+      const userWishlist = await db.wishlist.findMany({
+        where: { userId: user.id },
+        select: { productId: true }
+      });
+      wishlistedProductIds = new Set(userWishlist.map((w) => w.productId));
+    }
+
     // 1. Fetch available categories dynamically with product counts
     const categoriesRaw = await db.product.groupBy({
       by: ['category'],
@@ -272,6 +287,12 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                         No Image
                       </div>
                     )}
+                    <div className="absolute top-2 right-2 z-10">
+                      <WishlistButton
+                        productId={prod.id}
+                        initialIsWishlisted={wishlistedProductIds.has(prod.id)}
+                      />
+                    </div>
                   </div>
                   <div className="p-4 flex flex-col justify-between flex-grow">
                     <div>

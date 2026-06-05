@@ -3,11 +3,13 @@ import Image from 'next/image';
 import { auth, signIn, signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Role } from '@prisma/client';
-import { ShoppingBag, LayoutDashboard, ShieldAlert, LogOut } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, ShieldAlert, LogOut, Heart } from 'lucide-react';
+import { getWishlistCount } from '@/actions/wishlist';
 
 export async function Navbar() {
   const session = await auth();
   const user = session?.user;
+  const wishlistCount = user ? await getWishlistCount() : 0;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-secondary text-secondary-foreground shadow-sm">
@@ -38,6 +40,14 @@ export async function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
+              <Link href="/wishlist" className="relative p-1.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center" title="My Wishlist">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[9px] text-white font-extrabold rounded-full flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
               <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-semibold text-white">{user.name}</span>
                 <span className="text-[10px] text-zinc-400 capitalize">{user.role?.toLowerCase() || ''}</span>
@@ -66,7 +76,7 @@ export async function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login?callbackUrl=/dashboard">
+              <Link href="/login?callbackUrl=/marketplace">
                 <Button variant="ghost" size="sm" className="text-zinc-300 hover:text-white">
                   Log In
                 </Button>

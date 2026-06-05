@@ -12,14 +12,14 @@ export function middleware(request: NextRequest) {
   if (isSellerHost) {
     // Seller Platform Domain:
     // If accessing any shopper-facing routes or the root path, redirect to the seller homepage `/sell`
-    if (path === '/' || path.startsWith('/marketplace') || path.startsWith('/store') || path.startsWith('/category')) {
+    if (path === '/' || path.startsWith('/marketplace') || path.startsWith('/store') || path.startsWith('/category') || path.startsWith('/wishlist')) {
       url.pathname = '/sell';
       return NextResponse.redirect(url);
     }
   } else {
     // Shopper Platform Domain:
     // If accessing any seller-specific routes, block access by rewriting to /404 to return a 404 Not Found error page
-    if (path.startsWith('/sell') || path.startsWith('/dashboard') || path.startsWith('/login')) {
+    if (path.startsWith('/sell') || path.startsWith('/dashboard')) {
       url.pathname = '/404';
       return NextResponse.rewrite(url);
     }
