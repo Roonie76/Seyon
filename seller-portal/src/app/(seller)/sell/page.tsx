@@ -28,6 +28,7 @@ interface FallbackProduct {
 }
 
 export default async function HomePage() {
+  const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
   let popularShops: FallbackShop[] = [];
   let popularProducts: FallbackProduct[] = [];
 
@@ -134,7 +135,7 @@ export default async function HomePage() {
                 Create Free Store <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/marketplace">
+            <Link href={`${buyerMarketUrl}/marketplace`}>
               <Button size="lg" variant="outline" className="w-full sm:w-auto text-base">
                 Explore Marketplace
               </Button>
@@ -197,7 +198,7 @@ export default async function HomePage() {
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-8 text-center md:text-left">Explore Categories</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => (
-              <Link key={cat.slug} href={`/marketplace?category=${cat.slug}`}>
+              <Link key={cat.slug} href={`${buyerMarketUrl}/marketplace?category=${cat.slug}`}>
                 <div className={`p-6 rounded-lg border bg-gradient-to-br ${cat.color} flex flex-col justify-between h-36 hover:scale-[1.02] transition-transform cursor-pointer shadow-sm`}>
                   <span className="text-xl font-bold">{cat.name}</span>
                   <span className="text-xs opacity-80">{cat.count}</span>
@@ -213,14 +214,14 @@ export default async function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">Popular Storefronts</h2>
-            <Link href="/marketplace" className="text-sm font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1">
+            <Link href={`${buyerMarketUrl}/marketplace`} className="text-sm font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1">
               View all <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
             {popularShops.map((shop) => (
-              <Link key={shop.id} href={`/store/${shop.slug}`}>
+              <Link key={shop.id} href={`${buyerMarketUrl}/store/${shop.slug}`}>
                 <Card className="glass-hover h-full cursor-pointer">
                   <CardContent className="p-6 flex flex-col h-full justify-between">
                     <div>
@@ -261,14 +262,14 @@ export default async function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-12">
             <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">Trending Products</h2>
-            <Link href="/marketplace" className="text-sm font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1">
+            <Link href={`${buyerMarketUrl}/marketplace`} className="text-sm font-semibold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1">
               Shop Marketplace <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {popularProducts.map((prod) => (
-              <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
+              <Link key={prod.id} href={`${buyerMarketUrl}/store/${prod.shop.slug}/${prod.slug}`}>
                 <div className="rounded-lg overflow-hidden border border-zinc-200 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-300 group cursor-pointer flex flex-col h-full justify-between shadow-sm">
                   <div className="relative aspect-video bg-zinc-100 overflow-hidden">
                     {prod.images?.[0] ? (
