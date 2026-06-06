@@ -1,0 +1,304 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { getShopBySlug } from '@/actions/shops';
+import { trackEventInternal } from '@/backend/lib/analytics';
+import { generateStoreMetadata, generateStoreJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import RatingsStars from '@/components/shared/ratings-stars';
+import TrustBadge from '@/components/shared/trust-badge';
+import { WhatsAppButton, ReviewModal, ReportModal } from '@/components/store/store-client-buttons';
+import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star } from 'lucide-react';
+
+const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
+interface StorePageProps {
+  params: Promise<{ shopSlug: string }>;
+}
+
+export async function generateMetadata({ params }: StorePageProps) {
+  const resolvedParams = await params;
+  const shop = await getShopBySlug(resolvedParams.shopSlug);
+  if (!shop || shop.isSuspended) {
+    return { title: 'Storefront Not Found' };
+  }
+  return generateStoreMetadata(shop);
+}
+
+export default async function StorePage({ params }: StorePageProps) {
+  const resolvedParams = await params;
+  const shop = await getShopBySlug(resolvedParams.shopSlug);
+
+  if (!shop) {
+    return notFound();
+  }
+
+  // Handle store suspension
+  if (shop.isSuspended) {
+    return (
+      <div className="container mx-auto px-4 py-24 text-center max-w-lg">
+        <div className="h-16 w-16 bg-red-500/10 border border-red-500/20 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <ShieldAlert size={32} />
+        </div>
+        <h1 className="text-3xl font-extrabold text-foreground mb-2">Storefront Suspended</h1>
+        <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+          This storefront has been suspended by system moderators for policy violation or user fraud reports.
+        </p>
+        <Link href="/marketplace">
+          <button className="px-5 py-2.5 bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-foreground rounded-md text-sm font-semibold transition-colors cursor-pointer">
+            Return to Marketplace
+          </button>
+        </Link>
+      </div>
+    );
+  }
+
+  // Track shop view metric asynchronously
+  trackEventInternal(shop.id, 'SHOP_VIEW').catch((err) =>
+    console.error('Analytics record error for shop view:', err)
+  );
+
+  // Compute Review Statistics
+  const reviewCount = shop.reviews.length;
+  const averageRating =
+    reviewCount > 0
+      ? shop.reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviewCount
+      : 0;
+
+  const activeProducts = shop.products;
+
+  // Generate Structured Data Schema JSON-LD
+  const jsonLd = generateStoreJSONLD(shop, 80, averageRating, reviewCount);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      {/* Inject JSON-LD Schema markup */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+      />
+
+      {/* Banner */}
+      <div className="relative h-48 md:h-64 lg:h-80 w-full overflow-hidden bg-zinc-100 border-b border-zinc-200">
+        {shop.banner ? (
+          <Image
+            src={shop.banner}
+            alt={shop.name}
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-yellow-600/10" />
+        )}
+      </div>
+
+      {/* Header Profile Section */}
+      <div className="container mx-auto px-4 sm:px-6 relative -mt-16 md:-mt-24 z-10 mb-12">
+        <div className="flex flex-col md:flex-row gap-6 items-start md:items-end justify-between border-b border-zinc-200 pb-8 bg-background/80 backdrop-blur-sm p-6 rounded-2xl border border-zinc-200 shadow-sm">
+          {/* Logo & Info */}
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-end">
+            <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl bg-card border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative shrink-0">
+              {shop.logo ? (
+                <Image
+                  src={shop.logo}
+                  alt={shop.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 112px, 144px"
+                />
+              ) : (
+                <ShoppingBag size={48} className="text-muted-foreground/30" />
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-foreground flex items-center gap-2">
+                  {shop.name}
+                </h1>
+                {shop.isVerified && (
+                  <Badge variant="success" className="gap-1 shadow-sm">
+                    <ShieldCheck className="h-3 w-3" /> Verified Seller
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground max-w-xl line-clamp-2 md:line-clamp-none">
+                {shop.description || 'Welcome to our catalog storefront! Click Chat to Buy on any product to chat.'}
+              </p>
+
+              {/* Social Channels and reviews */}
+              <div className="flex flex-wrap gap-4 items-center mt-3 text-xs text-muted-foreground font-semibold">
+                {shop.instagram && (
+                  <a href={`https://instagram.com/${shop.instagram}`} target="_blank" rel="noopener noreferrer" className="hover:text-pink-600 transition-colors flex items-center gap-1.5">
+                    <InstagramIcon /> Instagram
+                  </a>
+                )}
+                {shop.telegram && (
+                  <a href={`https://t.me/${shop.telegram}`} target="_blank" rel="noopener noreferrer" className="hover:text-sky-600 transition-colors flex items-center gap-1.5">
+                    <Send size={14} /> Telegram
+                  </a>
+                )}
+                <div className="flex items-center gap-1.5 border-l border-zinc-200 pl-4">
+                  <RatingsStars rating={averageRating} size={14} />
+                  <span className="text-foreground font-bold">{averageRating.toFixed(1)}</span>
+                  <span className="font-normal text-muted-foreground">({reviewCount} reviews)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick CTAs */}
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
+            <WhatsAppButton shopId={shop.id} whatsappNumber={shop.whatsapp} shopName={shop.name} />
+            <ReportModal shopId={shop.id} />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid: Products, Trust Score, and Reviews */}
+      <div className="container mx-auto px-4 sm:px-6 pb-24">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Products Column */}
+          <div className="lg:col-span-2 flex flex-col gap-8">
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5 text-primary" /> Active Listings ({activeProducts.length})
+              </h2>
+
+              {activeProducts.length === 0 ? (
+                <div className="p-12 border border-dashed border-zinc-200 rounded-xl text-center bg-card">
+                  <ShoppingBag size={32} className="text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-bold text-foreground text-base">No active listings</h3>
+                  <p className="text-xs text-muted-foreground">Check back later for new products from this store.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {activeProducts.map((prod) => (
+                    <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`}>
+                      <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
+                        <div className="relative aspect-video bg-zinc-100 overflow-hidden">
+                          {prod.images?.[0] ? (
+                            <Image
+                              src={prod.images[0].url}
+                              alt={prod.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 flex-grow flex flex-col justify-between">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-amber-750 mb-1 block">
+                              {prod.category}
+                            </span>
+                            <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
+                              {prod.title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                              {prod.description}
+                            </p>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
+                            <span className="font-extrabold text-foreground text-base">
+                              ₹{prod.price.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
+                              WhatsApp Buy
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Info Column */}
+          <div className="flex flex-col gap-6">
+            {/* Trust rating score */}
+            <TrustBadge
+              isVerified={shop.isVerified}
+              emailVerified={shop.owner.emailVerified !== null}
+              hasPhone={shop.owner.phone !== null}
+              averageRating={averageRating}
+              reviewCount={reviewCount}
+              createdAt={shop.createdAt}
+              openReportsCount={shop.reports.length}
+            />
+
+            {/* Shop statistics widget */}
+            <Card className="glass p-6">
+              <h3 className="font-bold text-foreground mb-4 border-b border-zinc-200 pb-2 text-sm uppercase tracking-wider text-muted-foreground">Store Statistics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-zinc-50 border border-zinc-100 text-center">
+                  <span className="text-2xl font-bold text-foreground">{activeProducts.length}</span>
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Listed Products</p>
+                </div>
+                <div className="p-4 rounded-lg bg-zinc-50 border border-zinc-100 text-center">
+                  <span className="text-2xl font-bold text-foreground">{reviewCount}</span>
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Total Reviews</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Reviews list widget */}
+            <Card className="glass p-6">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-3 mb-4">
+                <h3 className="font-bold text-foreground flex items-center gap-1.5 text-sm uppercase tracking-wider text-muted-foreground">
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> Buyer Feedback
+                </h3>
+                <ReviewModal shopId={shop.id} />
+              </div>
+
+              {shop.reviews.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">No buyer reviews submitted yet. Purchase and leave feedback!</p>
+              ) : (
+                <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                  {shop.reviews.map((rev) => (
+                    <div key={rev.id} className="p-3 bg-zinc-50 rounded-lg border border-zinc-100 text-xs">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-foreground">{rev.user.name || 'Anonymous User'}</span>
+                        <RatingsStars rating={rev.rating} size={11} />
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed">{rev.comment}</p>
+                      <span className="text-[10px] text-muted-foreground/60 block mt-2 text-right">
+                        {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+export const revalidate = 5; // ISR dynamic rendering with 5-second caching

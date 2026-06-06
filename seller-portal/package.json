@@ -1,0 +1,51 @@
+{
+  "name": "seyon",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.2",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@supabase/supabase-js": "^2.106.2",
+    "@types/pg": "^8.20.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.17.0",
+    "next": "16.2.7",
+    "next-auth": "^5.0.0-beta.25",
+    "pg": "^8.21.0",
+    "posthog-js": "^1.378.1",
+    "posthog-node": "^5.35.11",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/recharts": "^1.8.29",
+    "@vitejs/plugin-react": "^6.0.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.7",
+    "jsdom": "^29.1.1",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.22.4",
+    "typescript": "^5",
+    "vitest": "^4.1.8"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  }
+}

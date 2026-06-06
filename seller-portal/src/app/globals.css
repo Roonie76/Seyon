@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(0 0% 98%);
+  --color-foreground: hsl(0 0% 9%);
+  
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(0 0% 9%);
+  
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(0 0% 9%);
+  
+  --color-primary: hsl(38 92% 50%);
+  --color-primary-foreground: hsl(0 0% 3%);
+  
+  --color-secondary: hsl(218 22% 10%);
+  --color-secondary-foreground: hsl(0 0% 100%);
+  
+  --color-muted: hsl(0 0% 94%);
+  --color-muted-foreground: hsl(0 0% 40%);
+  
+  --color-accent: hsl(38 92% 94%);
+  --color-accent-foreground: hsl(38 92% 30%);
+  
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  
+  --color-border: hsl(0 0% 89%);
+  --color-input: hsl(0 0% 89%);
+  --color-ring: hsl(38 92% 50%);
+  
+  --color-whatsapp: hsl(142.1 76.2% 36.3%);
+  --color-whatsapp-foreground: hsl(210 40% 98%);
+
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    outline-color: var(--color-ring);
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+  }
+}
+
+/* Amazon-Style Bordered Card Styles */
+.glass {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.glass-hover {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-hover:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Premium Gold Glow Animations */
+.glow-border {
+  position: relative;
+}
+
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(90deg, var(--color-primary), #ffd814, #e47911, var(--color-primary));
+  background-size: 400% 400%;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: glow 8s linear infinite;
+}
+
+.glow-border:hover::after {
+  opacity: 0.8;
+}
+
+@keyframes glow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
