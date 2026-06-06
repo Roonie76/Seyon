@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ShoppingBag } from 'lucide-react';
 
 export function Footer() {
+  const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
   return (
     <footer className="border-t border-zinc-800 bg-secondary py-8 md:py-12 mt-auto text-secondary-foreground">
       <div className="container mx-auto px-4 sm:px-6">
@@ -19,7 +20,7 @@ export function Footer() {
             <Link href="/" className="hover:text-white transition-colors">
               Home
             </Link>
-            <Link href="/marketplace" className="hover:text-white transition-colors">
+            <Link href={`${buyerMarketUrl}/marketplace`} className="hover:text-white transition-colors">
               Marketplace
             </Link>
             <Link href="/privacy" className="hover:text-white transition-colors">
