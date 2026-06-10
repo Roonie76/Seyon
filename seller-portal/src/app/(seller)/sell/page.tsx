@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingBag, ArrowRight, MessageSquare, ShieldCheck, Globe } from 'lucide-react';
 import { Product, Review } from '@prisma/client';
+import { logger } from '@/backend/lib/logger';
 
 interface FallbackShop {
   id: string;
@@ -34,7 +35,7 @@ export default async function HomePage() {
 
   try {
     popularShops = await db.shop.findMany({
-      where: { isSuspended: false },
+      where: { isSuspended: false, isPaused: false },
       take: 3,
       include: {
         products: { where: { status: 'ACTIVE' } },
@@ -43,15 +44,17 @@ export default async function HomePage() {
     });
 
     popularProducts = await db.product.findMany({
-      where: { status: 'ACTIVE', shop: { isSuspended: false } },
+      where: { status: 'ACTIVE', shop: { isSuspended: false, isPaused: false } },
       take: 4,
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
         shop: true,
       },
     });
-  } catch {
-    console.warn('Database not initialized or connection failed, falling back to static presentation on landing page');
+  } catch (error) {
+    logger.warn('Database not initialized or connection failed, falling back to static presentation on landing page', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 
   // Fallbacks if DB is unmigrated or empty

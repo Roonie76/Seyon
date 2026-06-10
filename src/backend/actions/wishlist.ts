@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { logger } from '../lib/logger';
 
 export async function toggleWishlistItem(productId: string) {
   const session = await auth();
@@ -46,7 +47,7 @@ export async function toggleWishlistItem(productId: string) {
       return { success: true, added: true };
     }
   } catch (error) {
-    console.error('Error in toggleWishlistItem:', error);
+    logger.error('Error in toggleWishlistItem', error);
     return { success: false, error: 'Failed to update wishlist.' };
   }
 }
@@ -78,7 +79,7 @@ export async function getWishlistProducts() {
     const products = items.map(item => item.product);
     return { success: true, products };
   } catch (error) {
-    console.error('Error in getWishlistProducts:', error);
+    logger.error('Error in getWishlistProducts', error);
     return { success: false, error: 'Failed to fetch wishlist products.' };
   }
 }
@@ -97,7 +98,7 @@ export async function getWishlistCount() {
     });
     return count;
   } catch (error) {
-    console.error('Error in getWishlistCount:', error);
+    logger.error('Error in getWishlistCount', error);
     return 0;
   }
 }
@@ -119,7 +120,7 @@ export async function isProductWishlisted(productId: string) {
     });
     return !!existing;
   } catch (error) {
-    console.error('Error in isProductWishlisted:', error);
+    logger.error('Error in isProductWishlisted', error);
     return false;
   }
 }

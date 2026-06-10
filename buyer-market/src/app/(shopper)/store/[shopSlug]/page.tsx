@@ -3,13 +3,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getShopBySlug } from '@/actions/shops';
 import { trackEventInternal } from '@/backend/lib/analytics';
-import { generateStoreMetadata, generateStoreJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { generateStoreMetadata, generateStoreJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RatingsStars from '@/components/shared/ratings-stars';
 import TrustBadge from '@/components/shared/trust-badge';
 import { WhatsAppButton, ReviewModal, ReportModal } from '@/components/store/store-client-buttons';
-import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star } from 'lucide-react';
+import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star, MapPin, PauseCircle } from 'lucide-react';
+import { ShareButton } from '@/components/shared/share-button';
+import { logger } from '@/backend/lib/logger';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -72,9 +74,9 @@ export default async function StorePage({ params }: StorePageProps) {
   }
 
   // Track shop view metric asynchronously
-  trackEventInternal(shop.id, 'SHOP_VIEW').catch((err) =>
-    console.error('Analytics record error for shop view:', err)
-  );
+  trackEventInternal(shop.id, 'SHOP_VIEW').catch((err) => {
+    logger.error('Analytics record error for shop view', err, { shopId: shop.id });
+  });
 
   // Compute Review Statistics
   const reviewCount = shop.reviews.length;
@@ -87,6 +89,10 @@ export default async function StorePage({ params }: StorePageProps) {
 
   // Generate Structured Data Schema JSON-LD
   const jsonLd = generateStoreJSONLD(shop, 80, averageRating, reviewCount);
+  const breadcrumbJsonLd = generateBreadcrumbJSONLD([
+    { name: 'Marketplace', url: '/marketplace' },
+    { name: shop.name, url: `/store/${shop.slug}` },
+  ]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -94,6 +100,10 @@ export default async function StorePage({ params }: StorePageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
       />
 
       {/* Banner */}
@@ -144,6 +154,17 @@ export default async function StorePage({ params }: StorePageProps) {
               <p className="text-sm text-muted-foreground max-w-xl line-clamp-2 md:line-clamp-none">
                 {shop.description || 'Welcome to our catalog storefront! Click Chat to Buy on any product to chat.'}
               </p>
+              {(shop.city || shop.region || shop.deliveryNote) && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 font-semibold">
+                  <MapPin className="h-3.5 w-3.5 text-amber-600" />
+                  {[shop.city, shop.region].filter(Boolean).join(', ')}
+                  {shop.deliveryNote && (
+                    <span className="font-normal">
+                      {(shop.city || shop.region) ? ' · ' : ''}{shop.deliveryNote}
+                    </span>
+                  )}
+                </p>
+              )}
 
               {/* Social Channels and reviews */}
               <div className="flex flex-wrap gap-4 items-center mt-3 text-xs text-muted-foreground font-semibold">
@@ -168,7 +189,16 @@ export default async function StorePage({ params }: StorePageProps) {
 
           {/* Quick CTAs */}
           <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <WhatsAppButton shopId={shop.id} whatsappNumber={shop.whatsapp} shopName={shop.name} />
+            {shop.isPaused ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-800 text-sm font-bold">
+                <PauseCircle className="h-4 w-4" /> Currently away — back soon
+              </div>
+            ) : (
+              <WhatsAppButton shopId={shop.id} whatsappNumber={shop.whatsapp} shopName={shop.name} />
+            )}
+            <div className="flex gap-2 justify-end">
+              <ShareButton title={shop.name} url={`/store/${shop.slug}`} text={`Check out ${shop.name} on Seyon`} />
+            </div>
             <ReportModal shopId={shop.id} />
           </div>
         </div>
@@ -201,13 +231,18 @@ export default async function StorePage({ params }: StorePageProps) {
                               src={prod.images[0].url}
                               alt={prod.title}
                               fill
-                              className="object-cover"
+                              className={`object-cover ${!prod.inStock ? 'opacity-60 grayscale-[40%]' : ''}`}
                               sizes="(max-width: 768px) 50vw, 33vw"
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
                               No Image
                             </div>
+                          )}
+                          {!prod.inStock && (
+                            <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
+                              Sold out
+                            </span>
                           )}
                         </div>
                         <div className="p-4 flex-grow flex flex-col justify-between">
@@ -223,8 +258,11 @@ export default async function StorePage({ params }: StorePageProps) {
                             </p>
                           </div>
                           <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                            <span className="font-extrabold text-foreground text-base">
+                            <span className="font-extrabold text-foreground text-base flex items-baseline gap-1.5">
                               ₹{prod.price.toFixed(2)}
+                              {prod.compareAtPrice != null && prod.compareAtPrice > prod.price && (
+                                <span className="text-xs font-normal text-muted-foreground line-through">₹{prod.compareAtPrice.toFixed(2)}</span>
+                              )}
                             </span>
                             <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
                               WhatsApp Buy
@@ -246,6 +284,7 @@ export default async function StorePage({ params }: StorePageProps) {
               isVerified={shop.isVerified}
               emailVerified={shop.owner.emailVerified !== null}
               hasPhone={shop.owner.phone !== null}
+              whatsappVerified={shop.whatsappVerifiedAt !== null}
               averageRating={averageRating}
               reviewCount={reviewCount}
               createdAt={shop.createdAt}
@@ -301,4 +340,4 @@ export default async function StorePage({ params }: StorePageProps) {
     </div>
   );
 }
-export const revalidate = 5; // ISR dynamic rendering with 5-second caching
+export const revalidate = 300;

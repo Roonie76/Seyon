@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:indexes": "tsx prisma/apply-indexes.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@radix-ui/react-slot": "^1.2.4",
+    "@sentry/nextjs": "^10.57.0",
     "@supabase/supabase-js": "^2.106.2",
     "@types/pg": "^8.20.0",
     "clsx": "^2.1.1",
@@ -22,6 +25,7 @@
     "pg": "^8.21.0",
     "posthog-js": "^1.378.1",
     "posthog-node": "^5.35.11",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
@@ -32,6 +36,7 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/recharts": "^1.8.29",

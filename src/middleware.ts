@@ -1,15 +1,38 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Seller hosts are configured explicitly via the SELLER_HOSTS env var
+ * (comma-separated hostnames, no protocol, no port), e.g.:
+ *   SELLER_HOSTS="sell.seyon.in,seyon-seller.vercel.app"
+ *
+ * Exact hostname matching replaces the old substring sniffing
+ * (host.includes('sell')), which misclassified any shopper domain
+ * containing "sell" anywhere in it.
+ */
+function getSellerHosts(): Set<string> {
+  const configured = process.env.SELLER_HOSTS || 'seyon-seller.vercel.app,localhost:3001';
+  return new Set(
+    configured
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function isSellerHost(host: string): boolean {
+  const sellerHosts = getSellerHosts();
+  const normalized = host.toLowerCase();
+  const withoutPort = normalized.replace(/:\d+$/, '');
+  return sellerHosts.has(normalized) || sellerHosts.has(withoutPort);
+}
+
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const host = request.headers.get('host') || '';
-  
-  // A host is a seller host if it starts with 'sell', contains 'sell.', contains 'seller', or contains '-sell'
-  const isSellerHost = host.startsWith('sell') || host.includes('sell.') || host.includes('seller') || host.includes('-sell');
   const path = url.pathname;
 
-  if (isSellerHost) {
+  if (isSellerHost(host)) {
     // Seller Platform Domain:
     // If accessing any shopper-facing routes, redirect to the buyer marketplace
     if (

@@ -6,6 +6,9 @@ import { Role, ReportStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 import { z } from 'zod';
+import { logger } from '../lib/logger';
+import { notify } from '../lib/notify';
+import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
@@ -40,6 +43,7 @@ export async function getAdminDashboardStats() {
           user: { select: { name: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
+        take: 200, // bound the moderation queue view
       }),
       // Count signups in the last 24h
       db.user.count({
@@ -103,6 +107,7 @@ export async function getAdminDashboardStats() {
         owner: { select: { email: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: 500, // bound the admin table; add pagination before shop count approaches this
     });
 
     return {
@@ -120,7 +125,7 @@ export async function getAdminDashboardStats() {
       allStores: allStoresList,
     };
   } catch (error) {
-    console.error('Error fetching admin dashboard stats:', error);
+    logger.error('Error fetching admin dashboard stats', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
@@ -143,7 +148,7 @@ export async function verifyShopAction(shopId: string, isVerified: boolean) {
       data: { isVerified },
     });
 
-    revalidatePath(`/store/${shop.slug}`);
+    revalidateShopSurface(shop.slug);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -167,9 +172,23 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean) {
     const shop = await db.shop.update({
       where: { id: parsedShopId.data },
       data: { isSuspended },
+      include: { owner: { select: { email: true } } },
     });
 
-    revalidatePath(`/store/${shop.slug}`);
+    // Notify the owner (fire-and-forget)
+    if (shop.owner?.email) {
+      notify({
+        to: shop.owner.email,
+        subject: isSuspended
+          ? `Your storefront "${shop.name}" has been suspended`
+          : `Your storefront "${shop.name}" has been reinstated`,
+        text: isSuspended
+          ? `Your storefront "${shop.name}" on Seyon was suspended by a moderator and is no longer visible to buyers. If you believe this is a mistake, reply to this email.`
+          : `Good news — your storefront "${shop.name}" on Seyon has been reinstated and is visible to buyers again.`,
+      }).catch(() => undefined);
+    }
+
+    revalidateShopSurface(shop.slug);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -194,10 +213,19 @@ export async function resolveReportAction(reportId: string, status: ReportStatus
     const report = await db.report.update({
       where: { id: parsedReportId.data },
       data: { status: parsedStatus.data },
-      include: { shop: true },
+      include: { shop: true, user: { select: { email: true } } },
     });
 
-    revalidatePath(`/store/${report.shop.slug}`);
+    // Notify the reporter when their report reaches a final state (fire-and-forget)
+    if (report.user?.email && parsedStatus.data === 'RESOLVED') {
+      notify({
+        to: report.user.email,
+        subject: `Update on your report about "${report.shop.name}"`,
+        text: `Thanks for helping keep Seyon safe. Your report about the storefront "${report.shop.name}" has been reviewed and resolved by our moderation team.`,
+      }).catch(() => undefined);
+    }
+
+    revalidateShopSurface(report.shop.slug);
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
@@ -225,6 +253,8 @@ export async function deleteProductAction(productId: string) {
     await db.product.delete({
       where: { id: parsedProductId.data },
     });
+
+    revalidateMarketplace();
 
     return { success: true };
   } catch (error) {

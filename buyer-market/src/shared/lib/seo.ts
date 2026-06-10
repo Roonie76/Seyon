@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { SITE_URL } from './site';
 
 interface ShopSEOInput {
   name: string;
@@ -8,6 +9,8 @@ interface ShopSEOInput {
   banner: string | null;
   whatsapp: string;
   createdAt: Date;
+  city?: string | null;
+  region?: string | null;
 }
 
 interface ProductSEOInput {
@@ -17,9 +20,10 @@ interface ProductSEOInput {
   price: number;
   category: string;
   images: { url: string }[];
+  inStock?: boolean;
 }
 
-const PLATFORM_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const PLATFORM_URL = SITE_URL;
 
 /**
  * Generates OpenGraph and page metadata for a shop storefront.
@@ -28,8 +32,9 @@ export function generateStoreMetadata(shop: ShopSEOInput): Metadata {
   const shopUrl = `${PLATFORM_URL}/store/${shop.slug}`;
   const title = `${shop.name} | Chat to Buy Storefront`;
   const description = shop.description || `Browse products on ${shop.name} and chat directly on WhatsApp to purchase.`;
-  const imageUrl = shop.logo || shop.banner || `${PLATFORM_URL}/og-default.jpg`;
 
+  // No explicit images: the branded card from store/[shopSlug]/opengraph-image.tsx
+  // (file convention) supplies og:image / twitter:image.
   return {
     title,
     description,
@@ -41,21 +46,12 @@ export function generateStoreMetadata(shop: ShopSEOInput): Metadata {
       description,
       url: shopUrl,
       siteName: 'Seyon Marketplace',
-      images: [
-        {
-          url: imageUrl,
-          width: 800,
-          height: 600,
-          alt: `${shop.name} Logo`,
-        },
-      ],
       type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [imageUrl],
     },
   };
 }
@@ -67,8 +63,9 @@ export function generateProductMetadata(product: ProductSEOInput, shop: ShopSEOI
   const productUrl = `${PLATFORM_URL}/store/${shop.slug}/${product.slug}`;
   const title = `${product.title} - Buy from ${shop.name}`;
   const description = product.description || `Buy ${product.title} in ${product.category} from ${shop.name}. Chat on WhatsApp to complete transaction.`;
-  const imageUrl = product.images?.[0]?.url || `${PLATFORM_URL}/og-default.jpg`;
 
+  // No explicit images: the branded card from [productSlug]/opengraph-image.tsx
+  // (file convention) supplies og:image / twitter:image.
   return {
     title,
     description,
@@ -80,21 +77,12 @@ export function generateProductMetadata(product: ProductSEOInput, shop: ShopSEOI
       description,
       url: productUrl,
       siteName: 'Seyon Marketplace',
-      images: [
-        {
-          url: imageUrl,
-          width: 800,
-          height: 600,
-          alt: product.title,
-        },
-      ],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [imageUrl],
     },
   };
 }
@@ -120,6 +108,14 @@ export function generateStoreJSONLD(shop: ShopSEOInput, trustScore: number, aver
     knowsAbout: ['Social Commerce', 'Direct Messaging Sales'],
   };
 
+  if (shop.city || shop.region) {
+    schema.address = {
+      '@type': 'PostalAddress',
+      ...(shop.city ? { addressLocality: shop.city } : {}),
+      ...(shop.region ? { addressRegion: shop.region } : {}),
+    };
+  }
+
   // Add AggregateRating if reviews exist
   if (reviewCount > 0) {
     schema.aggregateRating = {
@@ -137,12 +133,30 @@ export function generateStoreJSONLD(shop: ShopSEOInput, trustScore: number, aver
 /**
  * Generates Schema.org JSON-LD structured data for a Product
  */
-export function generateProductJSONLD(product: ProductSEOInput, shop: ShopSEOInput) {
+export function generateProductJSONLD(
+  product: ProductSEOInput,
+  shop: ShopSEOInput,
+  rating?: { averageRating: number; reviewCount: number }
+) {
   const shopUrl = `${PLATFORM_URL}/store/${shop.slug}`;
   const productUrl = `${PLATFORM_URL}/store/${shop.slug}/${product.slug}`;
   const images = product.images?.map((img) => img.url) || [];
 
+  const aggregateRating =
+    rating && rating.reviewCount > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rating.averageRating.toFixed(1),
+            reviewCount: rating.reviewCount.toString(),
+            bestRating: '5',
+            worstRating: '1',
+          },
+        }
+      : {};
+
   return {
+    ...aggregateRating,
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': productUrl,
@@ -155,13 +169,51 @@ export function generateProductJSONLD(product: ProductSEOInput, shop: ShopSEOInp
       url: productUrl,
       priceCurrency: 'INR',
       price: product.price.toString(),
-      availability: 'https://schema.org/InStock',
+      availability: product.inStock === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       seller: {
         '@type': 'OnlineStore',
         name: shop.name,
         url: shopUrl,
       },
     },
+  };
+}
+
+/**
+ * Schema.org BreadcrumbList for navigational chains
+ * (e.g. Marketplace -> Category -> Store -> Product).
+ */
+export function generateBreadcrumbJSONLD(items: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: item.name,
+      item: item.url.startsWith('http') ? item.url : `${PLATFORM_URL}${item.url}`,
+    })),
+  };
+}
+
+/**
+ * Schema.org ItemList for product collection pages (marketplace, categories).
+ */
+export function generateItemListJSONLD(
+  listName: string,
+  products: { title: string; url: string }[]
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: products.length,
+    itemListElement: products.map((prod, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: prod.title,
+      url: prod.url.startsWith('http') ? prod.url : `${PLATFORM_URL}${prod.url}`,
+    })),
   };
 }
 
@@ -176,4 +228,3 @@ export function safeJsonLdStringify(data: unknown): string {
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 }
-

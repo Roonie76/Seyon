@@ -4,6 +4,8 @@ import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { db } from '@/lib/db';
 import { Role } from '@prisma/client';
+import { rateLimit, RATE_LIMITS } from './rate-limit';
+import { isDevLoginEnabled } from './dev-login';
 
 // Single source of truth for the secret. NextAuth v5 also auto-reads AUTH_SECRET
 // internally for some operations, so AUTH_SECRET and NEXTAUTH_SECRET MUST hold the
@@ -23,6 +25,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
     }),
+    // Dev/demo only: passwordless email login. Excluded from production builds
+    // (see src/backend/lib/dev-login.ts).
+    ...(isDevLoginEnabled()
+      ? [
     Credentials({
       name: 'Credentials',
       credentials: {
@@ -30,9 +36,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        // Defense in depth: refuse even if the provider was somehow registered.
+        if (!isDevLoginEnabled()) return null;
         if (!credentials?.email) return null;
 
         const email = credentials.email as string;
+
+        const rl = rateLimit(`login:${email.toLowerCase()}`, RATE_LIMITS.LOGIN.limit, RATE_LIMITS.LOGIN.windowMs);
+        if (!rl.success) {
+          return null;
+        }
 
         let user = await db.user.findUnique({
           where: { email },
@@ -57,6 +70,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+        ]
+      : []),
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {

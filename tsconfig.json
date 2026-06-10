@@ -28,6 +28,7 @@
       "@/lib/posthog": ["./src/frontend/lib/posthog"],
       "@/lib/utils": ["./src/frontend/lib/utils"],
       "@/lib/seo": ["./src/shared/lib/seo"],
+      "@/lib/site": ["./src/shared/lib/site"],
       "@/lib/zod-schemas": ["./src/shared/lib/zod-schemas"]
     }
   },
@@ -35,9 +36,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "**/node_modules", "buyer-market/**", "seller-portal/**"]
 }

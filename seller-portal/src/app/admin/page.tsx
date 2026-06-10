@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminModeration } from '@/components/admin/admin-moderation';
 import { Role, Report, Shop } from '@prisma/client';
 import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { logger } from '@/backend/lib/logger';
 
 type AdminReport = Report & {
   shop: { name: string; slug: string };
@@ -51,7 +52,7 @@ export default async function AdminPage() {
       allStores = res.allStores as AdminStore[];
     }
   } catch (error) {
-    console.error('Error fetching admin page stats:', error);
+    logger.error('Error fetching admin page stats', error);
   }
 
   return (

@@ -52,6 +52,7 @@ describe('Analytics trackEvent Validation and Limits', () => {
         data: {
           shopId: validShopCuid,
           productId: null,
+          userId: null,
           eventType: AnalyticsEventType.SHOP_VIEW,
         },
       });
@@ -76,6 +77,7 @@ describe('Analytics trackEvent Validation and Limits', () => {
         data: {
           shopId: validShopCuid,
           productId: null,
+          userId: null,
           eventType: AnalyticsEventType.SHOP_VIEW,
         },
       });
@@ -91,6 +93,7 @@ describe('Analytics trackEvent Validation and Limits', () => {
         data: {
           shopId: validShopCuid,
           productId: validProductCuid,
+          userId: null,
           eventType: AnalyticsEventType.PRODUCT_VIEW,
         },
       });

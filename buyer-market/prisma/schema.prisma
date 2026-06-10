@@ -47,6 +47,7 @@ model User {
   reviews       Review[]
   reports       Report[]
   wishlist      Wishlist[]
+  analytics     Analytics[]
 }
 
 model Account {
@@ -95,8 +96,13 @@ model Shop {
   whatsapp    String
   instagram   String?
   telegram    String?
+  city        String?
+  region      String?
+  deliveryNote String?
   isVerified  Boolean  @default(false)
   isSuspended Boolean  @default(false)
+  isPaused    Boolean  @default(false)
+  whatsappVerifiedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -105,6 +111,23 @@ model Shop {
   reviews     Review[]
   reports     Report[]
   analytics   Analytics[]
+  whatsappVerifications WhatsappVerification[]
+
+  @@index([isSuspended])
+}
+
+model WhatsappVerification {
+  id         String    @id @default(cuid())
+  shopId     String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, expiresAt])
 }
 
 model Product {
@@ -114,7 +137,10 @@ model Product {
   slug        String
   description String?
   price       Float
+  compareAtPrice Float?
   category    String
+  options     String?
+  inStock     Boolean       @default(true)
   status      ProductStatus @default(ACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -125,6 +151,10 @@ model Product {
   wishlistedBy Wishlist[]
 
   @@unique([shopId, slug])
+  @@index([status, category])
+  @@index([shopId, status])
+  @@index([createdAt])
+  @@index([price])
 }
 
 model ProductImage {
@@ -135,6 +165,8 @@ model ProductImage {
   isPrimary    Boolean  @default(false)
 
   product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, displayOrder])
 }
 
 model Review {
@@ -149,6 +181,7 @@ model Review {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([shopId, userId])
+  @@index([shopId, createdAt])
 }
 
 model Report {
@@ -161,17 +194,25 @@ model Report {
 
   shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
 }
 
 model Analytics {
   id        String             @id @default(cuid())
   shopId    String
   productId String?
+  userId    String?
   eventType AnalyticsEventType
   createdAt DateTime           @default(now())
 
   shop      Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
   product   Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
+  user      User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, eventType, createdAt])
+  @@index([productId, eventType])
+  @@index([userId, shopId, eventType, createdAt])
 }
 
 model Wishlist {

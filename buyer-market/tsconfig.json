@@ -28,6 +28,7 @@
       "@/lib/posthog": ["./src/frontend/lib/posthog"],
       "@/lib/utils": ["./src/frontend/lib/utils"],
       "@/lib/seo": ["./src/shared/lib/seo"],
+      "@/lib/site": ["./src/shared/lib/site"],
       "@/lib/zod-schemas": ["./src/shared/lib/zod-schemas"]
     }
   },

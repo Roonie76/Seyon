@@ -43,16 +43,39 @@ const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
 Tabs.displayName = 'Tabs';
 
 const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "inline-flex h-10 items-center justify-center rounded-md bg-neutral-100 border border-border p-1 text-muted-foreground",
-        className
-      )}
-      {...props}
-    />
-  )
+  ({ className, onKeyDown, ...props }, ref) => {
+    // Arrow-key navigation between tabs (WAI-ARIA tabs pattern)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDown?.(e);
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      const tabs = Array.from(
+        (e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]:not([disabled])')
+      );
+      if (tabs.length === 0) return;
+      const currentIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
+      let nextIndex = currentIndex;
+      if (e.key === 'ArrowLeft') nextIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1;
+      else if (e.key === 'ArrowRight') nextIndex = currentIndex >= tabs.length - 1 ? 0 : currentIndex + 1;
+      else if (e.key === 'Home') nextIndex = 0;
+      else if (e.key === 'End') nextIndex = tabs.length - 1;
+      e.preventDefault();
+      tabs[nextIndex]?.focus();
+      tabs[nextIndex]?.click();
+    };
+
+    return (
+      <div
+        ref={ref}
+        role="tablist"
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "inline-flex h-10 items-center justify-center rounded-md bg-neutral-100 border border-border p-1 text-muted-foreground",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 TabsList.displayName = 'TabsList';
 
@@ -71,6 +94,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         type="button"
         role="tab"
         aria-selected={isActive}
+        tabIndex={isActive ? 0 : -1}
         onClick={() => setActiveTab(value)}
         className={cn(
           "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 text-muted-foreground cursor-pointer",

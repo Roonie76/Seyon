@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { MarketplaceFilters } from './filters';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/auth';
@@ -11,30 +11,46 @@ import { WishlistButton } from '@/components/shared/wishlist-button';
 import {
   ShoppingBag,
   Search,
-  Filter,
-  LayoutGrid,
-  Shirt,
-  Laptop,
-  Sparkles,
-  Home,
-  Scissors,
-  Palette,
-  Coffee,
-  MoreHorizontal,
-  Clock,
-  ArrowUpNarrowWide,
-  ArrowDownWideNarrow,
-  X,
-  Tag
 } from 'lucide-react';
 import { Prisma } from '@prisma/client';
+import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
+import { generateItemListJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { logger } from '@/backend/lib/logger';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ searchParams }: MarketplacePageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const category = params.category || '';
+  const query = params.q || '';
+
+  let title = 'Marketplace — Shop Direct from Independent Sellers';
+  let description = 'Discover products from independent creators and order directly on WhatsApp. No checkout, no fees — chat to buy.';
+  if (category) {
+    title = `${category} — Seyon Marketplace`;
+    description = `Browse ${category} products from independent sellers on Seyon. Chat on WhatsApp to buy directly.`;
+  } else if (query) {
+    title = `Search: ${query} — Seyon Marketplace`;
+  }
+
+  return {
+    title,
+    description,
+    alternates: {
+      // Filtered/sorted/paginated states canonicalize to the base marketplace URL
+      canonical: '/marketplace',
+    },
+    robots: query ? { index: false, follow: true } : undefined,
+  };
+}
 
 interface MarketplaceProduct {
   id: string;
   title: string;
   slug: string;
   price: number;
+  compareAtPrice?: number | null;
   category: string;
+  inStock?: boolean;
   shop: { name: string; slug: string; isVerified: boolean };
   images: { url: string }[];
 }
@@ -43,28 +59,13 @@ interface MarketplacePageProps {
   searchParams: Promise<{
     q?: string;
     category?: string;
+    city?: string;
+    inStock?: string;
     sort?: string;
     page?: string;
     minPrice?: string;
     maxPrice?: string;
   }>;
-}
-
-const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
-  'fashion': Shirt,
-  'electronics': Laptop,
-  'beauty': Sparkles,
-  'home & living': Home,
-  'clay crafts': Palette,
-  'diy crafts': Scissors,
-  'art & collectibles': Palette,
-  'food & beverages': Coffee,
-};
-
-function CategoryIcon({ category, className, size = 16 }: { category: string; className?: string; size?: number }) {
-  const norm = category.toLowerCase().trim();
-  const IconComponent = CATEGORY_ICONS[norm] || Tag;
-  return <IconComponent className={className} size={size} />;
 }
 
 export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
@@ -75,6 +76,8 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   const query = params.q || '';
   const selectedCategory = params.category || '';
   const sort = params.sort || 'newest';
+  const selectedCity = params.city || '';
+  const inStockOnly = params.inStock === '1';
   const page = parseInt(params.page || '1', 10);
   const minPrice = params.minPrice || '';
   const maxPrice = params.maxPrice || '';
@@ -83,6 +86,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   let products: MarketplaceProduct[] = [];
   let totalProducts = 0;
   let categories: { name: string; count: number }[] = [];
+  let cities: string[] = [];
   let wishlistedProductIds = new Set<string>();
 
   try {
@@ -100,7 +104,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       by: ['category'],
       where: {
         status: 'ACTIVE',
-        shop: { isSuspended: false }
+        shop: { isSuspended: false, isPaused: false }
       },
       _count: {
         id: true,
@@ -111,56 +115,99 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       count: c._count.id,
     })).sort((a, b) => b.count - a.count); // Sort by popularity
 
-    // 2. Build Prisma filter conditions
-    const filterConditions: Prisma.ProductWhereInput = {
-      status: 'ACTIVE',
-      shop: { isSuspended: false },
-    };
+    // Distinct seller cities for the location filter
+    const cityRows = await db.shop.findMany({
+      where: { isSuspended: false, isPaused: false, city: { not: null } },
+      select: { city: true },
+      distinct: ['city'],
+      take: 100,
+    });
+    cities = cityRows.map((r) => r.city as string).sort();
 
     if (query) {
-      filterConditions.OR = [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-        { category: { contains: query, mode: 'insensitive' } },
-      ];
-    }
-
-    if (selectedCategory) {
-      filterConditions.category = selectedCategory;
-    }
-
-    if (minPrice || maxPrice) {
+      // 2a. Text search: index-backed Postgres full-text search (GIN),
+      // then hydrate the matched ids with their relations.
       const minVal = parseFloat(minPrice);
       const maxVal = parseFloat(maxPrice);
-      const priceFilter: Prisma.FloatFilter = {};
-      if (!isNaN(minVal)) priceFilter.gte = minVal;
-      if (!isNaN(maxVal)) priceFilter.lte = maxVal;
-      filterConditions.price = priceFilter;
-    }
+      const searchSort: ProductSearchSort =
+        sort === 'price-asc' || sort === 'price-desc' || sort === 'newest' ? sort : 'relevance';
 
-    // 3. Determine sorting logic
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
-    if (sort === 'price-asc') orderBy = { price: 'asc' };
-    else if (sort === 'price-desc') orderBy = { price: 'desc' };
+      const { ids, total } = await searchProductIds({
+        query,
+        category: selectedCategory || undefined,
+        city: selectedCity || undefined,
+        inStockOnly,
+        minPrice: !isNaN(minVal) ? minVal : undefined,
+        maxPrice: !isNaN(maxVal) ? maxVal : undefined,
+        sort: searchSort,
+        page,
+        perPage: itemsPerPage,
+      });
 
-    // 4. Fetch products matching query with pagination
-    [products, totalProducts] = await Promise.all([
-      db.product.findMany({
-        where: filterConditions,
+      const found = await db.product.findMany({
+        where: { id: { in: ids } },
         include: {
           images: { orderBy: { displayOrder: 'asc' }, take: 1 },
           shop: { select: { name: true, slug: true, isVerified: true } },
         },
-        orderBy,
-        skip: (page - 1) * itemsPerPage,
-        take: itemsPerPage,
-      }),
-      db.product.count({
-        where: filterConditions,
-      }),
-    ]);
+      });
+      const byId = new Map(found.map((prod) => [prod.id, prod]));
+      products = ids.map((id) => byId.get(id)).filter((prod): prod is NonNullable<typeof prod> => Boolean(prod));
+      totalProducts = total;
+    } else {
+      // 2b. Browse mode: standard filtered listing
+      const filterConditions: Prisma.ProductWhereInput = {
+        status: 'ACTIVE',
+        shop: { isSuspended: false, isPaused: false },
+      };
+
+      if (selectedCategory) {
+        filterConditions.category = selectedCategory;
+      }
+
+      if (selectedCity) {
+        filterConditions.shop = {
+          isSuspended: false,
+          isPaused: false,
+          city: { equals: selectedCity, mode: 'insensitive' },
+        };
+      }
+
+      if (inStockOnly) {
+        filterConditions.inStock = true;
+      }
+
+      if (minPrice || maxPrice) {
+        const minVal = parseFloat(minPrice);
+        const maxVal = parseFloat(maxPrice);
+        const priceFilter: Prisma.FloatFilter = {};
+        if (!isNaN(minVal)) priceFilter.gte = minVal;
+        if (!isNaN(maxVal)) priceFilter.lte = maxVal;
+        filterConditions.price = priceFilter;
+      }
+
+      let orderBy: Prisma.ProductOrderByWithRelationInput[] = [{ inStock: 'desc' }, { createdAt: 'desc' }];
+      if (sort === 'price-asc') orderBy = [{ inStock: 'desc' }, { price: 'asc' }];
+      else if (sort === 'price-desc') orderBy = [{ inStock: 'desc' }, { price: 'desc' }];
+
+      [products, totalProducts] = await Promise.all([
+        db.product.findMany({
+          where: filterConditions,
+          include: {
+            images: { orderBy: { displayOrder: 'asc' }, take: 1 },
+            shop: { select: { name: true, slug: true, isVerified: true } },
+          },
+          orderBy,
+          skip: (page - 1) * itemsPerPage,
+          take: itemsPerPage,
+        }),
+        db.product.count({
+          where: filterConditions,
+        }),
+      ]);
+    }
   } catch (error) {
-    console.error('Error fetching marketplace products:', error);
+    logger.error('Error fetching marketplace products', error);
   }
 
   // Fallbacks if database is unmigrated or empty
@@ -204,12 +251,22 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     totalProducts = products.length;
   }
 
-  const allProductsCount = categoriesData.reduce((sum, c) => sum + c.count, 0);
   const totalPages = Math.ceil(totalProducts / itemsPerPage);
-  const hasActiveFilters = query || selectedCategory || minPrice || maxPrice;
+
+  const itemListJsonLd = generateItemListJSONLD(
+    selectedCategory ? `${selectedCategory} products on Seyon` : 'Seyon Marketplace products',
+    products.map((prod) => ({
+      title: prod.title,
+      url: `/store/${prod.shop.slug}/${prod.slug}`,
+    }))
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 bg-background text-foreground">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListJsonLd) }}
+      />
       {/* Header Banner */}
       <div className="relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/5 to-amber-600/10 p-8 md:p-12 mb-12 overflow-hidden flex flex-col items-center text-center bg-card shadow-sm">
         <div className="absolute top-0 left-0 w-60 h-60 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
@@ -244,6 +301,9 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       <MarketplaceFilters
         categories={categoriesData}
         selectedCategory={selectedCategory}
+        cities={cities}
+        selectedCity={selectedCity}
+        inStockOnly={inStockOnly}
         sort={sort}
         minPrice={minPrice}
         maxPrice={maxPrice}
@@ -279,13 +339,18 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                         src={prod.images[0].url}
                         alt={prod.title}
                         fill
-                        className="object-cover"
+                        className={`object-cover ${prod.inStock === false ? 'opacity-60 grayscale-[40%]' : ''}`}
                         sizes="(max-width: 768px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
                         No Image
                       </div>
+                    )}
+                    {prod.inStock === false && (
+                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
+                        Sold out
+                      </span>
                     )}
                     <div className="absolute top-2 right-2 z-10">
                       <WishlistButton
@@ -309,11 +374,14 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                       </h3>
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                      <span className="font-extrabold text-foreground text-base">
+                      <span className="font-extrabold text-foreground text-base flex items-baseline gap-1.5">
                         ₹{prod.price.toFixed(2)}
+                        {prod.compareAtPrice != null && prod.compareAtPrice > prod.price && (
+                          <span className="text-xs font-normal text-muted-foreground line-through">₹{prod.compareAtPrice.toFixed(2)}</span>
+                        )}
                       </span>
                       <Badge variant="success" className="text-[10px] font-bold">
-                        WhatsApp Buy
+                        {prod.inStock === false ? 'Ask seller' : 'WhatsApp Buy'}
                       </Badge>
                     </div>
                   </div>
@@ -352,4 +420,4 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     </div>
   );
 }
-export const revalidate = 10; // Caches page for 10 seconds
+export const revalidate = 60;

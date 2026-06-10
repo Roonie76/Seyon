@@ -3,7 +3,10 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ReportSchema } from '@/lib/zod-schemas';
+import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { revalidatePath } from 'next/cache';
+import { logger } from '../lib/logger';
+import { revalidateShopSurface } from '@/shared/lib/cache';
 
 export async function createReport(shopId: string, rawData: unknown) {
   try {
@@ -15,6 +18,11 @@ export async function createReport(shopId: string, rawData: unknown) {
     const userId = session.user.id;
     if (!userId) {
       return { error: 'User ID not found in session' };
+    }
+
+    const rl = rateLimit(`report:${userId}`, RATE_LIMITS.REPORT_CREATE.limit, RATE_LIMITS.REPORT_CREATE.windowMs);
+    if (!rl.success) {
+      return { error: 'You have filed too many reports today. Please try again later.' };
     }
 
     // Verify shop exists
@@ -39,11 +47,11 @@ export async function createReport(shopId: string, rawData: unknown) {
       },
     });
 
-    revalidatePath(`/store/${shop.slug}`);
+    revalidateShopSurface(shop.slug);
     revalidatePath('/admin');
     return { success: true, report };
   } catch (error) {
-    console.error('Error creating report:', error);
+    logger.error('Error creating report', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return { error: errorMessage };
   }

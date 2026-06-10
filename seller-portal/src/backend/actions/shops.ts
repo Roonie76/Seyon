@@ -3,10 +3,12 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ShopSchema } from '@/lib/zod-schemas';
+import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { triggerSync } from '@/backend/lib/sync';
+import { logger } from '../lib/logger';
+import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
@@ -18,6 +20,11 @@ export async function createShop(rawData: unknown) {
     }
 
     const userId = session.user.id;
+
+    const rl = rateLimit(`shop-create:${userId}`, RATE_LIMITS.SHOP_CREATE.limit, RATE_LIMITS.SHOP_CREATE.windowMs);
+    if (!rl.success) {
+      return { error: 'Too many shop creation attempts today. Please try again later.' };
+    }
 
     // Check if user already owns a shop
     const existingShop = await db.shop.findUnique({
@@ -56,6 +63,9 @@ export async function createShop(rawData: unknown) {
           whatsapp: validated.data.whatsapp,
           instagram: validated.data.instagram || null,
           telegram: validated.data.telegram || null,
+          city: validated.data.city || null,
+          region: validated.data.region || null,
+          deliveryNote: validated.data.deliveryNote || null,
           isVerified: false,
         },
       });
@@ -68,19 +78,12 @@ export async function createShop(rawData: unknown) {
       return newShop;
     });
 
-    // Sync to buyer market
-    const owner = await db.user.findUnique({ where: { id: userId } });
-    await triggerSync('CREATE', 'SHOP', {
-      ...shop,
-      owner: owner ? { name: owner.name, email: owner.email } : null
-    });
-
     revalidatePath('/');
-    revalidatePath('/marketplace');
+    revalidateMarketplace();
     revalidatePath('/dashboard');
     return { success: true, shop };
   } catch (error) {
-    console.error('Error creating shop:', error);
+    logger.error('Error creating shop', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return { error: errorMessage };
   }
@@ -135,26 +138,53 @@ export async function updateShop(shopId: string, rawData: unknown) {
         logo: validated.data.logo || null,
         banner: validated.data.banner || null,
         whatsapp: validated.data.whatsapp,
+        whatsappVerifiedAt: validated.data.whatsapp === existingShop.whatsapp ? existingShop.whatsappVerifiedAt : null,
         instagram: validated.data.instagram || null,
         telegram: validated.data.telegram || null,
+        city: validated.data.city || null,
+        region: validated.data.region || null,
+        deliveryNote: validated.data.deliveryNote || null,
       },
     });
 
-    // Sync to buyer market
-    const owner = await db.user.findUnique({ where: { id: updatedShop.ownerId } });
-    await triggerSync('UPDATE', 'SHOP', {
-      ...updatedShop,
-      owner: owner ? { name: owner.name, email: owner.email } : null
-    });
-
-    revalidatePath(`/store/${existingShop.slug}`);
-    revalidatePath(`/store/${updatedShop.slug}`);
+    revalidateShopSurface(existingShop.slug);
+    revalidateShopSurface(updatedShop.slug);
     revalidatePath('/dashboard');
     return { success: true, shop: updatedShop };
   } catch (error) {
-    console.error('Error updating shop:', error);
+    logger.error('Error updating shop', error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return { error: errorMessage };
+  }
+}
+
+export async function toggleShopPause(isPaused: boolean) {
+  try {
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) {
+      return { error: 'Unauthorized' };
+    }
+
+    const shop = await db.shop.findUnique({
+      where: { ownerId: session.user.id },
+      select: { id: true, slug: true },
+    });
+
+    if (!shop) {
+      return { error: 'You do not own a storefront' };
+    }
+
+    const updated = await db.shop.update({
+      where: { id: shop.id },
+      data: { isPaused: Boolean(isPaused) },
+    });
+
+    revalidateShopSurface(shop.slug);
+    revalidatePath('/dashboard');
+    return { success: true, isPaused: updated.isPaused };
+  } catch (error) {
+    logger.error('Error toggling shop pause', error);
+    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
 
@@ -208,4 +238,3 @@ export async function getShopBySlug(slug: string) {
 
   return shop;
 }
-

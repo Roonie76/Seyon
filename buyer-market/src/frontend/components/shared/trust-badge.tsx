@@ -5,6 +5,7 @@ interface TrustBadgeProps {
   isVerified: boolean;
   emailVerified: boolean;
   hasPhone: boolean;
+  whatsappVerified?: boolean;
   averageRating: number;
   reviewCount: number;
   createdAt: Date;
@@ -16,6 +17,7 @@ export function TrustBadge({
   isVerified,
   emailVerified,
   hasPhone,
+  whatsappVerified = false,
   averageRating,
   reviewCount,
   createdAt,
@@ -26,6 +28,7 @@ export function TrustBadge({
     isVerified,
     emailVerified,
     hasPhone,
+    whatsappVerified,
     averageRating,
     reviewCount,
     createdAt,
@@ -77,6 +80,12 @@ export function TrustBadge({
             {emailVerified ? 'Email ' : ''}
             {hasPhone ? 'Phone' : ''}
             {!emailVerified && !hasPhone ? 'None' : ''}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>WhatsApp Contact:</span>
+          <span className={whatsappVerified ? 'text-emerald-600 font-bold' : 'text-muted-foreground/60'}>
+            {whatsappVerified ? 'Verified' : 'Unverified'}
           </span>
         </div>
       </div>

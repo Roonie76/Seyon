@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { _clearRateLimitStore } from '../src/backend/lib/rate-limit';
 import { createReview } from '../src/backend/actions/reviews';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
@@ -13,6 +14,13 @@ vi.mock('@/lib/db', () => ({
     review: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
+    },
+    analytics: {
+      findFirst: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
     },
   },
 }));
@@ -25,11 +33,44 @@ vi.mock('@/lib/auth', () => ({
 // Mock Next Cache
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 describe('Reviews Server Actions - Submission and Spam Prevention', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _clearRateLimitStore();
+    // Default: the buyer has a recent WHATSAPP_CLICK, so review gating passes.
+    vi.mocked(db.analytics.findFirst).mockResolvedValue({ id: 'evt_1' } as any);
+    // Owner lookup used by the fire-and-forget review notification
+    vi.mocked(db.user.findUnique).mockResolvedValue(null as any);
+  });
+
+  describe('createReview Contact Gating', () => {
+    it('rejects reviews from users who never contacted the seller', async () => {
+      vi.mocked(auth as any).mockResolvedValue({ user: { id: 'buyer_1' } } as any);
+      vi.mocked(db.shop.findUnique).mockResolvedValue({ id: 'shop_1', ownerId: 'seller_1', slug: 'shop-one' } as any);
+      vi.mocked(db.analytics.findFirst).mockResolvedValue(null);
+
+      const res = await createReview('shop_1', { rating: 5, comment: 'Nice!' });
+
+      expect(res.error).toContain('contacted this seller');
+      expect(db.review.create).not.toHaveBeenCalled();
+    });
+
+    it('queries the chat-click history scoped to user, shop, and event type', async () => {
+      vi.mocked(auth as any).mockResolvedValue({ user: { id: 'buyer_1' } } as any);
+      vi.mocked(db.shop.findUnique).mockResolvedValue({ id: 'shop_1', ownerId: 'seller_1', slug: 'shop-one' } as any);
+      vi.mocked(db.analytics.findFirst).mockResolvedValue(null);
+
+      await createReview('shop_1', { rating: 5, comment: 'Nice!' });
+
+      const arg = vi.mocked(db.analytics.findFirst).mock.calls[0][0] as any;
+      expect(arg.where.userId).toBe('buyer_1');
+      expect(arg.where.shopId).toBe('shop_1');
+      expect(arg.where.eventType).toBe('WHATSAPP_CLICK');
+      expect(arg.where.createdAt.gte).toBeInstanceOf(Date);
+    });
   });
 
   describe('createReview Authorization and Existence Checks', () => {
@@ -131,17 +172,25 @@ describe('Reviews Server Actions - Submission and Spam Prevention', () => {
         comment: 'Already commented',
       } as any);
 
+      vi.mocked(db.review.update).mockResolvedValue({
+        id: 'rev_1',
+        shopId: 'shop_1',
+        userId: 'buyer_1',
+        rating: 5,
+        comment: 'Trying to comment again',
+      } as any);
+
       const res = await createReview('shop_1', { rating: 5, comment: 'Trying to comment again' });
 
-      expect(res.error).toBe('You have already submitted a review for this storefront');
-      expect(db.review.findUnique).toHaveBeenCalledWith({
-        where: {
-          shopId_userId: {
-            shopId: 'shop_1',
-            userId: 'buyer_1',
-          },
-        },
-      });
+      // One review per user per shop: resubmission UPDATES the existing review
+      expect(res.success).toBe(true);
+      expect(res.updated).toBe(true);
+      expect(db.review.create).not.toHaveBeenCalled();
+      expect(db.review.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { shopId_userId: { shopId: 'shop_1', userId: 'buyer_1' } },
+        })
+      );
     });
   });
 

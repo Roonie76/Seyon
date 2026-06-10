@@ -12,16 +12,19 @@ interface RelatedProduct {
   images: { url: string }[];
 }
 import { trackEventInternal } from '@/backend/lib/analytics';
-import { generateProductMetadata, generateProductJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { generateProductMetadata, generateProductJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RatingsStars from '@/components/shared/ratings-stars';
 import TrustBadge from '@/components/shared/trust-badge';
 import ProductGallery from '@/components/store/product-gallery';
-import { WhatsAppButton, ReportModal } from '@/components/store/store-client-buttons';
+import { ReportModal } from '@/components/store/store-client-buttons';
+import { ProductCTA } from '@/components/store/product-cta';
+import { ShareButton } from '@/components/shared/share-button';
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import { isProductWishlisted } from '@/actions/wishlist';
-import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info, MapPin, PauseCircle } from 'lucide-react';
+import { logger } from '@/backend/lib/logger';
 
 interface ProductPageProps {
   params: Promise<{
@@ -81,9 +84,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Track product view metric asynchronously
-  trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) =>
-    console.error('Analytics record error for product view:', err)
-  );
+  trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) => {
+    logger.error('Analytics record error for product view', err, { shopId: product.shopId, productId: product.id });
+  });
 
   const isWishlisted = await isProductWishlisted(product.id);
 
@@ -105,7 +108,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       take: 4,
     });
   } catch (error) {
-    console.error('Error fetching related products:', error);
+    logger.error('Error fetching related products', error, { productId: product.id, category: product.category });
   }
 
   // Compute Review Statistics
@@ -116,7 +119,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
       : 0;
 
   // Schema.org structured data injection
-  const jsonLd = generateProductJSONLD(product, shop);
+  const jsonLd = generateProductJSONLD(product, shop, { averageRating, reviewCount });
+  const breadcrumbJsonLd = generateBreadcrumbJSONLD([
+    { name: 'Marketplace', url: '/marketplace' },
+    { name: product.category, url: `/category/${encodeURIComponent(product.category.toLowerCase())}` },
+    { name: shop.name, url: `/store/${shop.slug}` },
+    { name: product.title, url: `/store/${shop.slug}/${product.slug}` },
+  ]);
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 bg-background text-foreground animate-fade-in">
@@ -124,6 +133,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
       />
 
       {/* Breadcrumbs & Back buttons */}
@@ -138,6 +151,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
           Marketplace &rarr; {product.category} &rarr; {product.title}
         </span>
       </div>
+
+      {shop.isPaused && (
+        <div className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-center gap-3 text-sm text-amber-800">
+          <PauseCircle className="h-5 w-5 shrink-0 text-amber-600" />
+          <span><strong>This seller is currently away.</strong> You can browse the catalog, but ordering is paused until they return.</span>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Gallery & Description Column */}
@@ -168,10 +188,39 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.title}
             </h1>
 
-            <div className="flex items-baseline gap-2 mb-6">
-              <span className="text-3xl font-black text-foreground">₹{product.price.toFixed(2)}</span>
-              <span className="text-xs text-muted-foreground">INR</span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-3xl font-black text-foreground">₹{product.price.toFixed(2)}</span>
+                {product.compareAtPrice != null && product.compareAtPrice > product.price && (
+                  <>
+                    <span className="text-base text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
+                    <Badge variant="destructive" className="text-[10px] font-bold">
+                      {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
+                    </Badge>
+                  </>
+                )}
+                <span className="text-xs text-muted-foreground">INR</span>
+              </div>
+              <ShareButton
+                title={product.title}
+                url={`/store/${shop.slug}/${product.slug}`}
+                text={`Check out ${product.title} on Seyon`}
+              />
             </div>
+
+            {(shop.city || shop.region || shop.deliveryNote) && (
+              <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 mb-6 flex gap-2.5 items-start text-xs text-muted-foreground">
+                <MapPin className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <div className="leading-relaxed">
+                  {(shop.city || shop.region) && (
+                    <p className="font-semibold text-foreground">
+                      Ships from {[shop.city, shop.region].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                  {shop.deliveryNote && <p className="mt-0.5">{shop.deliveryNote}</p>}
+                </div>
+              </div>
+            )}
 
             {/* Order execution details helper */}
             <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-4 mb-6 flex gap-3 text-xs leading-relaxed text-amber-800">
@@ -186,22 +235,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Order CTA */}
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <WhatsAppButton
-                  shopId={shop.id}
-                  whatsappNumber={shop.whatsapp}
-                  shopName={shop.name}
-                  productId={product.id}
-                  productName={product.title}
-                  price={product.price}
-                />
-                <WishlistButton
-                  productId={product.id}
-                  initialIsWishlisted={isWishlisted}
-                  variant="default"
-                  className="w-full sm:w-auto sm:flex-1"
-                />
-              </div>
+              <ProductCTA
+                shopId={shop.id}
+                whatsappNumber={shop.whatsapp}
+                shopName={shop.name}
+                productId={product.id}
+                productName={product.title}
+                price={product.price}
+                productUrl={`${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || ''}/store/${shop.slug}/${product.slug}`}
+                options={product.options}
+                inStock={product.inStock}
+                shopPaused={shop.isPaused}
+              />
+              <WishlistButton
+                productId={product.id}
+                initialIsWishlisted={isWishlisted}
+                variant="default"
+                className="w-full"
+              />
               <ReportModal shopId={shop.id} />
             </div>
           </Card>
@@ -243,6 +294,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             isVerified={shop.isVerified}
             emailVerified={shop.owner.emailVerified !== null}
             hasPhone={shop.owner.phone !== null}
+            whatsappVerified={shop.whatsappVerifiedAt !== null}
             averageRating={averageRating}
             reviewCount={reviewCount}
             createdAt={shop.createdAt}
@@ -302,3 +354,4 @@ export default async function ProductPage({ params }: ProductPageProps) {
   );
 }
 
+export const revalidate = 300;

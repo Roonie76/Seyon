@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logger } from './logger';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://mock-project.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'mock-service-role-key';
@@ -74,6 +75,6 @@ export async function deleteFile(
 
   const { error } = await supabase.storage.from(bucket).remove([filePath]);
   if (error) {
-    console.error(`Supabase deletion error for ${fileUrl}:`, error.message);
+    logger.error('Supabase deletion error', error, { fileUrl });
   }
 }

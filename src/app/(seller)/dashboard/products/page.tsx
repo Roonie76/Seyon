@@ -6,6 +6,7 @@ import { ProductManager } from '@/components/dashboard/product-manager';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Shop, Product, ProductImage } from '@prisma/client';
+import { logger } from '@/backend/lib/logger';
 
 export default async function DashboardProductsPage() {
   const session = await auth();
@@ -31,7 +32,7 @@ export default async function DashboardProductsPage() {
       });
     }
   } catch (error) {
-    console.error('Error fetching dashboard products:', error);
+    logger.error('Error fetching dashboard products', error, { userId: session.user.id });
   }
 
   // Redirect to onboarding if no shop exists

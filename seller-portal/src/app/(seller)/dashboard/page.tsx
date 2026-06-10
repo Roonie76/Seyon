@@ -12,6 +12,7 @@ import { ShareStoreCard } from '@/components/dashboard/share-store';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { Shop, Review, Report } from '@prisma/client';
+import { logger } from '@/backend/lib/logger';
 
 type DashboardShop = Shop & {
   reviews: (Review & { user: { name: string | null; email: string | null } })[];
@@ -52,7 +53,7 @@ export default async function DashboardPage() {
       },
     });
   } catch (error) {
-    console.error('Error fetching dashboard shop:', error);
+    logger.error('Error fetching dashboard shop', error, { userId: user.id });
   }
 
   // 1. Render onboarding if user has no shop
@@ -80,7 +81,7 @@ export default async function DashboardPage() {
       chartData = analyticsRes.chartData as AnalyticsChartItem[];
     }
   } catch (error) {
-    console.error('Error loading analytics for dashboard page:', error);
+    logger.error('Error loading analytics for dashboard page', error, { shopId: shop.id });
   }
 
   // Calculate rating stats

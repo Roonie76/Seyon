@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { auth, signIn, signOut } from '@/lib/auth';
+import { auth, signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Role } from '@prisma/client';
-import { ShoppingBag, LayoutDashboard, ShieldAlert, LogOut, Heart } from 'lucide-react';
+import { ShoppingBag, ShieldAlert, LogOut, Heart } from 'lucide-react';
 import { getWishlistCount } from '@/actions/wishlist';
 
 export async function Navbar() {

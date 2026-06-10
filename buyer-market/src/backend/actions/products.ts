@@ -3,10 +3,13 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ProductSchema, ReorderImagesSchema } from '@/lib/zod-schemas';
+import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { deleteFile } from '@/lib/supabase';
 import { z } from 'zod';
+import { logger } from '../lib/logger';
+import { revalidateShopSurface } from '@/shared/lib/cache';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
@@ -56,12 +59,17 @@ export async function createProduct(shopId: string, rawData: unknown) {
 
     const { shop } = await verifyShopOwnership(parsedShopId.data);
 
+    const rl = rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
+    if (!rl.success) {
+      return { error: 'Too many products created today. Please try again later.' };
+    }
+
     const validated = ProductSchema.safeParse(rawData);
     if (!validated.success) {
       return { error: validated.error.issues[0].message };
     }
 
-    const { title, description, price, category, status, images } = validated.data;
+    const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
     
     // Base slug
     const slug = slugify(title);
@@ -90,7 +98,10 @@ export async function createProduct(shopId: string, rawData: unknown) {
         slug: finalSlug,
         description,
         price,
+        compareAtPrice: compareAtPrice ?? null,
         category,
+        options: options || null,
+        inStock,
         status,
         images: {
           create: images.map((img, idx) => ({
@@ -105,12 +116,11 @@ export async function createProduct(shopId: string, rawData: unknown) {
       },
     });
 
-    revalidatePath(`/store/${shop.slug}`);
-    revalidatePath('/marketplace');
+    revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
     return { success: true, product };
   } catch (error) {
-    console.error('Error creating product:', error);
+    logger.error('Error creating product', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
@@ -139,7 +149,7 @@ export async function updateProduct(productId: string, rawData: unknown) {
       return { error: validated.error.issues[0].message };
     }
 
-    const { title, description, price, category, status, images } = validated.data;
+    const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
     
     // Determine if slug needs updating
     let finalSlug = product.slug;
@@ -186,7 +196,10 @@ export async function updateProduct(productId: string, rawData: unknown) {
           slug: finalSlug,
           description,
           price,
+          compareAtPrice: compareAtPrice ?? null,
           category,
+          options: options || null,
+          inStock,
           status,
           images: {
             create: images.map((img, idx) => ({
@@ -202,14 +215,44 @@ export async function updateProduct(productId: string, rawData: unknown) {
       });
     });
 
-    revalidatePath(`/store/${shop.slug}`);
-    revalidatePath(`/store/${shop.slug}/${product.slug}`);
-    revalidatePath(`/store/${shop.slug}/${updatedProduct.slug}`);
-    revalidatePath('/marketplace');
+    revalidateShopSurface(shop.slug, product.slug, product.category);
+    revalidateShopSurface(shop.slug, updatedProduct.slug, updatedProduct.category);
     revalidatePath('/dashboard/products');
     return { success: true, product: updatedProduct };
   } catch (error) {
-    console.error('Error updating product:', error);
+    logger.error('Error updating product', error);
+    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+  }
+}
+
+export async function toggleProductStock(productId: string, inStock: boolean) {
+  try {
+    const parsedProductId = IdParamSchema.safeParse(productId);
+    if (!parsedProductId.success) {
+      return { error: 'Invalid product ID format' };
+    }
+
+    const product = await db.product.findUnique({
+      where: { id: parsedProductId.data },
+      select: { id: true, slug: true, shopId: true },
+    });
+
+    if (!product) {
+      return { error: 'Product not found' };
+    }
+
+    const { shop } = await verifyShopOwnership(product.shopId);
+
+    const updated = await db.product.update({
+      where: { id: parsedProductId.data },
+      data: { inStock: Boolean(inStock) },
+    });
+
+    revalidateShopSurface(shop.slug, product.slug, updated.category);
+    revalidatePath('/dashboard/products');
+    return { success: true, inStock: updated.inStock };
+  } catch (error) {
+    logger.error('Error toggling product stock', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
@@ -242,12 +285,11 @@ export async function deleteProduct(productId: string) {
       where: { id: parsedProductId.data },
     });
 
-    revalidatePath(`/store/${shop.slug}`);
-    revalidatePath('/marketplace');
+    revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
     return { success: true };
   } catch (error) {
-    console.error('Error deleting product:', error);
+    logger.error('Error deleting product', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
@@ -300,8 +342,7 @@ export async function reorderProductImages(productId: string, reorderedImages: u
 
     return { success: true };
   } catch (error) {
-    console.error('Error reordering images:', error);
+    logger.error('Error reordering images', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
-

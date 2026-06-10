@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
+import { SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +15,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seyon | Social Commerce Storefronts",
+  title: {
+    default: "Seyon | Social Commerce Storefronts",
+    template: "%s | Seyon",
+  },
   description: "Create a free, instant storefront for WhatsApp, Instagram, and Telegram sales. List your products and receive orders directly on chat.",
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    siteName: "Seyon Marketplace",
+    type: "website",
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

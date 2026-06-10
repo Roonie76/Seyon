@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { _clearRateLimitStore } from '../src/backend/lib/rate-limit';
 import { createShop, updateShop } from '../src/backend/actions/shops';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
@@ -29,11 +30,13 @@ vi.mock('@/lib/auth', () => ({
 // Mock Next Cache
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
 describe('Shops Server Actions - Onboarding and Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _clearRateLimitStore();
   });
 
   describe('createShop', () => {

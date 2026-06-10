@@ -15,6 +15,9 @@ export const ShopSchema = z.object({
     .regex(/^\+?[1-9]\d{1,14}$/, 'WhatsApp number must be a valid international phone number without spaces or symbols'),
   instagram: z.string().max(30).regex(/^[a-zA-Z0-9_.]+$/, 'Instagram handle must contain only letters, numbers, periods, and underscores').or(z.string().length(0)).optional().nullable(),
   telegram: z.string().max(32).regex(/^[a-zA-Z0-9_]+$/, 'Telegram username must contain only letters, numbers, and underscores').or(z.string().length(0)).optional().nullable(),
+  city: z.string().max(80, 'City cannot exceed 80 characters').optional().nullable(),
+  region: z.string().max(80, 'Region cannot exceed 80 characters').optional().nullable(),
+  deliveryNote: z.string().max(200, 'Delivery note cannot exceed 200 characters').optional().nullable(),
 });
 
 export const ProductImageSchema = z.object({
@@ -30,7 +33,16 @@ export const ProductSchema = z.object({
     (val) => (typeof val === 'string' ? parseFloat(val) : val),
     z.number().min(0, 'Price must be 0 or greater')
   ),
+  compareAtPrice: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      return typeof val === 'string' ? parseFloat(val) : val;
+    },
+    z.number().min(0, 'Compare-at price must be 0 or greater').nullable()
+  ).optional(),
   category: z.string().min(1, 'Category is required'),
+  options: z.string().max(200, 'Options cannot exceed 200 characters').optional().nullable(),
+  inStock: z.boolean().optional().default(true),
   status: z.nativeEnum(ProductStatus).default(ProductStatus.ACTIVE),
   images: z.array(ProductImageSchema).min(1, 'At least one product image is required'),
 });

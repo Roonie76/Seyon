@@ -5,6 +5,23 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { generateItemListJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { logger } from '@/backend/lib/logger';
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const slug = decodeURIComponent(resolvedParams.slug);
+  const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1);
+
+  return {
+    title: `${categoryName} — Buy Direct from Sellers`,
+    description: `Shop ${categoryName} from independent sellers on Seyon. Browse the catalog and order directly on WhatsApp — no checkout, no fees.`,
+    alternates: {
+      canonical: `/category/${encodeURIComponent(slug.toLowerCase())}`,
+    },
+  };
+}
 
 interface CategoryProduct {
   id: string;
@@ -33,7 +50,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       where: {
         category: { equals: categoryName, mode: 'insensitive' },
         status: 'ACTIVE',
-        shop: { isSuspended: false },
+        shop: { isSuspended: false, isPaused: false },
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
@@ -42,7 +59,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       orderBy: { createdAt: 'desc' },
     });
   } catch (error) {
-    console.error('Error fetching category products:', error);
+    logger.error('Error fetching category products', error, { category: categoryName });
   }
 
   // Fallback for mock presentation
@@ -65,8 +82,28 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     return notFound();
   }
 
+  const itemListJsonLd = generateItemListJSONLD(
+    `${categoryName} products on Seyon`,
+    products.map((prod) => ({
+      title: prod.title,
+      url: `/store/${prod.shop.slug}/${prod.slug}`,
+    }))
+  );
+  const breadcrumbJsonLd = generateBreadcrumbJSONLD([
+    { name: 'Marketplace', url: '/marketplace' },
+    { name: categoryName, url: `/category/${encodeURIComponent(slug.toLowerCase())}` },
+  ]);
+
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
+      />
       {/* Back button */}
       <Link href="/marketplace" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="h-4 w-4" /> Back to Marketplace

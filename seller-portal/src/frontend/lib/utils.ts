@@ -9,6 +9,7 @@ interface TrustScoreParams {
   isVerified: boolean;
   emailVerified: boolean;
   hasPhone: boolean;
+  whatsappVerified?: boolean;
   averageRating: number;
   reviewCount: number;
   createdAt: Date;
@@ -33,6 +34,7 @@ export function calculateTrustScore(params: TrustScoreParams): {
   // 2. Email and Phone configurations (Max +20)
   if (params.emailVerified) score += 10;
   if (params.hasPhone) score += 10;
+  if (params.whatsappVerified) score += 10;
 
   // 3. Ratings (Max +30)
   // If no reviews, we don't penalize, but don't add rating points

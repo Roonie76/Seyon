@@ -8,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { createProduct, updateProduct, deleteProduct } from '@/actions/products';
+import { createProduct, updateProduct, deleteProduct, toggleProductStock } from '@/actions/products';
 import { Product, ProductImage, ProductStatus } from '@prisma/client';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX } from 'lucide-react';
 
 interface ProductImageInput {
   url: string;
@@ -40,14 +40,20 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
     title: string;
     description: string;
     price: string;
+    compareAtPrice: string;
     category: string;
+    options: string;
+    inStock: boolean;
     status: ProductStatus;
     images: ProductImageInput[];
   }>({
     title: '',
     description: '',
     price: '',
+    compareAtPrice: '',
     category: '',
+    options: '',
+    inStock: true,
     status: ProductStatus.ACTIVE,
     images: [],
   });
@@ -57,7 +63,10 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
       title: '',
       description: '',
       price: '',
+      compareAtPrice: '',
       category: '',
+      options: '',
+      inStock: true,
       status: ProductStatus.ACTIVE,
       images: [],
     });
@@ -77,7 +86,10 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
       title: product.title,
       description: product.description || '',
       price: product.price.toString(),
+      compareAtPrice: product.compareAtPrice != null ? product.compareAtPrice.toString() : '',
       category: product.category,
+      options: product.options || '',
+      inStock: product.inStock,
       status: product.status,
       images: product.images.map((img: ProductImage) => ({
         url: img.url,
@@ -202,6 +214,19 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
     }
   };
 
+  const [togglingStock, setTogglingStock] = React.useState<string | null>(null);
+
+  const handleStockToggle = async (prod: ProductWithImages) => {
+    setTogglingStock(prod.id);
+    const res = await toggleProductStock(prod.id, !prod.inStock);
+    setTogglingStock(null);
+    if (res.error) {
+      alert(res.error);
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header Button */}
@@ -227,6 +252,7 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Stock</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -253,6 +279,28 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
                     <Badge variant={prod.status === 'ACTIVE' ? 'success' : prod.status === 'DRAFT' ? 'secondary' : 'destructive'}>
                       {prod.status.toLowerCase()}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      onClick={() => handleStockToggle(prod)}
+                      disabled={togglingStock === prod.id}
+                      title={prod.inStock ? 'Mark as sold out' : 'Mark as back in stock'}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer disabled:opacity-50 ${
+                        prod.inStock
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200'
+                      }`}
+                    >
+                      {togglingStock === prod.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : prod.inStock ? (
+                        <PackageCheck size={12} />
+                      ) : (
+                        <PackageX size={12} />
+                      )}
+                      {prod.inStock ? 'In stock' : 'Sold out'}
+                    </button>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -350,6 +398,40 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
                 </select>
               </div>
             </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-foreground/90">Compare-at Price (optional)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Original price, shown struck through"
+                  value={formData.compareAtPrice}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, compareAtPrice: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-foreground/90">Options (optional)</label>
+                <Input
+                  type="text"
+                  maxLength={200}
+                  placeholder="e.g. Sizes: S, M, L · Colors: Red, Black"
+                  value={formData.options}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, options: e.target.value }))}
+                />
+                <span className="text-[10px] text-muted-foreground">Buyers pick these and they are included in their WhatsApp message.</span>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-xs font-semibold text-foreground/90 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={formData.inStock}
+                onChange={(e) => setFormData((prev) => ({ ...prev, inStock: e.target.checked }))}
+                className="h-4 w-4 accent-amber-500"
+              />
+              In stock (uncheck to show as sold out)
+            </label>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-foreground/90">Description</label>

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Copy, Check, Share2, MessageCircle, Send } from 'lucide-react';
+import { Copy, Check, Share2, MessageCircle, Send, Download } from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface ShareStoreCardProps {
   shopSlug: string;
@@ -13,12 +14,23 @@ interface ShareStoreCardProps {
 export function ShareStoreCard({ shopSlug }: ShareStoreCardProps) {
   const [storeUrl, setStoreUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setStoreUrl(`${window.location.origin}/store/${shopSlug}`);
+      const timer = window.setTimeout(() => {
+        setStoreUrl(`${window.location.origin}/store/${shopSlug}`);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
   }, [shopSlug]);
+
+  useEffect(() => {
+    if (!storeUrl) return;
+    QRCode.toDataURL(storeUrl, { width: 480, margin: 2, color: { dark: '#18181b', light: '#ffffff' } })
+      .then(setQrDataUrl)
+      .catch((err: unknown) => console.error('QR generation failed:', err));
+  }, [storeUrl]);
 
   const handleCopy = async () => {
     try {
@@ -90,6 +102,30 @@ export function ShareStoreCard({ shopSlug }: ShareStoreCardProps) {
             <Send className="h-3.5 w-3.5 text-blue-500" /> Telegram
           </a>
         </div>
+
+        {/* QR code: print it, stick it in an Instagram bio highlight, or share it on stories */}
+        {qrDataUrl && (
+          <div className="flex items-center gap-4 pt-3 border-t border-zinc-100">
+            {/* eslint-disable-next-line @next/next/no-img-element -- data URL, not a remote asset */}
+            <img
+              src={qrDataUrl}
+              alt={`QR code linking to your storefront at ${storeUrl}`}
+              className="h-24 w-24 rounded-md border border-zinc-200 bg-white p-1 shrink-0"
+            />
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Buyers scan this to open your store. Add it to your Instagram bio highlight, story, or print it for your packaging.
+              </p>
+              <a
+                href={qrDataUrl}
+                download={`seyon-store-${shopSlug}-qr.png`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 hover:text-amber-800 w-fit"
+              >
+                <Download className="h-3.5 w-3.5" /> Download QR (PNG)
+              </a>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

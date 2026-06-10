@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { uploadFile } from '@/lib/supabase';
-import { Role } from '@prisma/client';
+import { rateLimit, RATE_LIMITS } from '@/backend/lib/rate-limit';
+import { logger } from '@/backend/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session || !session.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rl = rateLimit(`upload:${session.user.id}`, RATE_LIMITS.UPLOAD.limit, RATE_LIMITS.UPLOAD.windowMs);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Upload limit reached. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+      );
     }
 
     const formData = await req.formData();
@@ -36,7 +45,7 @@ export async function POST(req: NextRequest) {
     const publicUrl = await uploadFile(file, bucket);
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
-    console.error('File upload controller error:', error);
+    logger.error('File upload controller error', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

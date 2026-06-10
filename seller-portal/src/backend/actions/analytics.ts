@@ -5,11 +5,21 @@ import { db } from '@/lib/db';
 import { Role, AnalyticsEventType } from '@prisma/client';
 import { z } from 'zod';
 import { trackEventInternal } from '../lib/analytics';
+import { logger } from '../lib/logger';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
 export async function trackEvent(shopId: string, eventType: AnalyticsEventType, productId?: string) {
-  return trackEventInternal(shopId, eventType, productId);
+  // Attribute the event to the signed-in user when available. This powers
+  // review gating: only buyers who actually contacted a seller may review them.
+  let userId: string | null = null;
+  try {
+    const session = await auth();
+    userId = session?.user?.id ?? null;
+  } catch {
+    // Anonymous tracking is fine
+  }
+  return trackEventInternal(shopId, eventType, productId, userId);
 }
 
 export async function getShopAnalytics(shopId: string) {
@@ -108,7 +118,7 @@ export async function getShopAnalytics(shopId: string) {
       chartData: past7DaysData,
     };
   } catch (error) {
-    console.error('Error fetching shop analytics:', error);
+    logger.error('Error fetching shop analytics', error);
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }

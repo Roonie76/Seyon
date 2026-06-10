@@ -42,20 +42,50 @@ export function DialogTrigger({ children }: { children: React.ReactElement<{ onC
   });
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
 export function DialogContent({ className, children }: { className?: string; children: React.ReactNode }) {
   const { open, setOpen } = React.useContext(DialogContext);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
   React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      // Focus trap: keep Tab cycling inside the dialog
+      if (e.key === 'Tab' && contentRef.current) {
+        const focusables = Array.from(contentRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
+
     if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleEscape);
+      window.addEventListener('keydown', handleKeydown);
+      // Move focus into the dialog
+      requestAnimationFrame(() => {
+        const target = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? contentRef.current;
+        target?.focus();
+      });
     }
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('keydown', handleKeydown);
+      // Restore focus to the element that opened the dialog
+      previousFocusRef.current?.focus?.();
     };
   }, [open, setOpen]);
 
@@ -65,11 +95,16 @@ export function DialogContent({ className, children }: { className?: string; chi
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
+        aria-hidden="true"
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
         onClick={() => setOpen(false)}
       />
       {/* Content */}
       <div
+        ref={contentRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         className={cn(
           "relative z-50 w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200 glass flex flex-col max-h-[90vh] overflow-y-auto",
           className
@@ -92,8 +127,12 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
   return <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left mb-4", className)} {...props} />;
 }
 
-export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-lg font-semibold leading-none tracking-tight text-foreground", className)} {...props} />;
+export function DialogTitle({ className, children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h2 className={cn("text-lg font-semibold leading-none tracking-tight text-foreground", className)} {...props}>
+      {children}
+    </h2>
+  );
 }
 
 export function DialogDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {

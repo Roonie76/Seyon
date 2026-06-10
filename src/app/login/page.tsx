@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShoppingBag, Globe } from 'lucide-react';
+import { isDevLoginEnabled } from '@/backend/lib/dev-login';
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -22,6 +23,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const defaultCallback = isSellerHost ? '/dashboard' : '/marketplace';
   const callbackUrl = params.callbackUrl || defaultCallback;
   const error = params.error;
+  const devLogin = isDevLoginEnabled();
 
   // If already authenticated, redirect immediately
   if (session && session.user) {
@@ -54,37 +56,41 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </span>
             </div>
           )}
-          {/* Credentials Email Sign-In */}
-          <form
-            action={async (formData) => {
-              'use server';
-              const email = formData.get('email') as string;
-              if (email) {
-                await signIn('credentials', { email, redirectTo: callbackUrl });
-              }
-            }}
-            className="flex flex-col gap-3"
-          >
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Email Address</label>
-              <Input
-                required
-                type="email"
-                name="email"
-                placeholder="e.g. you@example.com"
-                className="h-11"
-              />
-            </div>
-            <Button type="submit" className="h-11 font-semibold">
-              Continue with Email
-            </Button>
-          </form>
+          {devLogin && (
+            <>
+              {/* Dev/demo only: passwordless email sign-in (disabled in production) */}
+              <form
+                action={async (formData) => {
+                  'use server';
+                  const email = formData.get('email') as string;
+                  if (email) {
+                    await signIn('credentials', { email, redirectTo: callbackUrl });
+                  }
+                }}
+                className="flex flex-col gap-3"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Email Address (dev login)</label>
+                  <Input
+                    required
+                    type="email"
+                    name="email"
+                    placeholder="e.g. you@example.com"
+                    className="h-11"
+                  />
+                </div>
+                <Button type="submit" className="h-11 font-semibold">
+                  Continue with Email
+                </Button>
+              </form>
 
-          <div className="relative flex py-2 items-center text-xs">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="flex-shrink mx-4 text-muted-foreground uppercase font-bold">Or</span>
-            <div className="flex-grow border-t border-border"></div>
-          </div>
+              <div className="relative flex py-2 items-center text-xs">
+                <div className="flex-grow border-t border-border"></div>
+                <span className="flex-shrink mx-4 text-muted-foreground uppercase font-bold">Or</span>
+                <div className="flex-grow border-t border-border"></div>
+              </div>
+            </>
+          )}
 
           {/* Google Sign-in */}
           <form

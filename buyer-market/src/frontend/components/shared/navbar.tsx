@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { auth, signIn, signOut } from '@/lib/auth';
+import { auth, signOut } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Role } from '@prisma/client';
-import { ShoppingBag, LayoutDashboard, ShieldAlert, LogOut, Heart } from 'lucide-react';
+import { ShoppingBag, ShieldAlert, LogOut, Heart } from 'lucide-react';
 import { getWishlistCount } from '@/actions/wishlist';
 
 export async function Navbar() {
+  const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
   const session = await auth();
   const user = session?.user;
   const wishlistCount = user ? await getWishlistCount() : 0;
@@ -37,7 +38,7 @@ export async function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
-              <Link href="/wishlist" className="relative p-1.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center" title="My Wishlist">
+              <Link href={`${buyerMarketUrl}/wishlist`} className="relative p-1.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center" title="My Wishlist">
                 <Heart className="h-5 w-5" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[9px] text-white font-extrabold rounded-full flex items-center justify-center">
@@ -73,7 +74,7 @@ export async function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login?callbackUrl=/marketplace">
+              <Link href="/login?callbackUrl=/dashboard">
                 <Button variant="ghost" size="sm" className="text-zinc-300 hover:text-white">
                   Log In
                 </Button>
