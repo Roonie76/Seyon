@@ -127,4 +127,50 @@ export function MarketplaceFilters({
                 className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
               />
             </div>
-            <span className="text-muted-foreground text-xs font-bold"
+            <span className="text-muted-foreground text-xs font-bold">—</span>
+            <div className="relative">
+              <span className="absolute left-2.5 top-2 text-xs text-muted-foreground/60 font-semibold">₹</span>
+              <input
+                type="number"
+                name="maxPrice"
+                aria-label="Maximum price"
+                defaultValue={maxPrice}
+                placeholder="Max"
+                className="w-20 h-9 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+              />
+            </div>
+            <Button type="submit" size="sm" variant="outline" className="h-9 text-xs rounded-lg px-3">
+              Apply
+            </Button>
+          </form>
+        </div>
+
+        {/* In-stock toggle */}
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 cursor-pointer select-none self-end pb-2">
+          <input
+            type="checkbox"
+            checked={inStockOnly}
+            onChange={(e) => applyFilters({ inStock: e.target.checked })}
+            className="h-3.5 w-3.5 accent-amber-500"
+          />
+          In stock only
+        </label>
+      </div>
+
+      {/* Sort Dropdown */}
+      <div className="flex flex-col gap-1 w-full sm:w-auto">
+        <label htmlFor="filter-sort" className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Sort By</label>
+        <select
+          id="filter-sort"
+          value={sort}
+          onChange={(e) => applyFilters({ sort: e.target.value })}
+          className="h-9 rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+        >
+          <option value="newest">Newest First</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+    </div>
+  );
+}
