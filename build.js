@@ -33,8 +33,30 @@ try {
     fs.cpSync(subfolderPublic, rootPublic, { recursive: true });
   }
 
+  // 5. Patch required-server-files.json to point to root appDir and node_modules
+  const reqFilesPath = path.join(rootNext, 'required-server-files.json');
+  if (fs.existsSync(reqFilesPath)) {
+    console.log('--- PATCHING REQUIRED-SERVER-FILES.JSON FOR VERCEL ---');
+    const reqFiles = JSON.parse(fs.readFileSync(reqFilesPath, 'utf8'));
+    
+    if (reqFiles.appDir && reqFiles.appDir.endsWith(subfolder)) {
+      reqFiles.appDir = reqFiles.appDir.slice(0, -subfolder.length).replace(/[\\/]+$/, '');
+    }
+    reqFiles.relativeAppDir = '';
+    
+    let updatedContent = JSON.stringify(reqFiles, null, 2);
+    
+    // Replace subfolder in any loader paths (e.g. seller-portal/node_modules -> node_modules)
+    updatedContent = updatedContent.split(subfolder + '\\\\node_modules').join('node_modules');
+    updatedContent = updatedContent.split(subfolder + '/node_modules').join('node_modules');
+    
+    fs.writeFileSync(reqFilesPath, updatedContent, 'utf8');
+    console.log('Successfully patched required-server-files.json');
+  }
+
   console.log('--- VERCEL BUILD COMPLETED SUCCESSFULLY ---');
 } catch (error) {
   console.error('Build router failed:', error);
   process.exit(1);
 }
+
