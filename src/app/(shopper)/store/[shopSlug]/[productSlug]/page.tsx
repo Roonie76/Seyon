@@ -21,6 +21,8 @@ import ProductGallery from '@/components/store/product-gallery';
 import { ReportModal } from '@/components/store/store-client-buttons';
 import { ProductCTA } from '@/components/store/product-cta';
 import { ShareButton } from '@/components/shared/share-button';
+import { StickyBuyBar } from '@/components/store/sticky-buy-bar';
+import { RecordRecentlyViewed, RecentlyViewedStrip } from '@/components/shared/recently-viewed';
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import { isProductWishlisted } from '@/actions/wishlist';
 import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info, MapPin, PauseCircle } from 'lucide-react';
@@ -302,6 +304,30 @@ export default async function ProductPage({ params }: ProductPageProps) {
           />
         </div>
       </div>
+
+      <RecordRecentlyViewed
+        item={{
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          shopSlug: shop.slug,
+          productSlug: product.slug,
+          image: product.images?.[0]?.url,
+        }}
+      />
+      <StickyBuyBar
+        shopId={shop.id}
+        whatsappNumber={shop.whatsapp}
+        shopName={shop.name}
+        productId={product.id}
+        productName={product.title}
+        price={product.price}
+        compareAtPrice={product.compareAtPrice}
+        productUrl={`${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || ''}/store/${shop.slug}/${product.slug}`}
+        inStock={product.inStock}
+        shopPaused={shop.isPaused}
+      />
+      <RecentlyViewedStrip excludeId={product.id} />
 
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (

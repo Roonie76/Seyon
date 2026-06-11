@@ -15,6 +15,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
 import { generateItemListJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import { RecentlyViewedStrip } from '@/components/shared/recently-viewed';
 import { logger } from '@/backend/lib/logger';
 import type { Metadata } from 'next';
 
@@ -417,6 +418,8 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
           </div>
         )}
       </div>
+
+      <RecentlyViewedStrip />
     </div>
   );
 }

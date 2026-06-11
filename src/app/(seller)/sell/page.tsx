@@ -8,6 +8,30 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingBag, ArrowRight, MessageSquare, ShieldCheck, Globe } from 'lucide-react';
 import { Product, Review } from '@prisma/client';
 import { logger } from '@/backend/lib/logger';
+import { generateFAQJSONLD, safeJsonLdStringify } from '@/lib/seo';
+
+const SELLER_FAQ = [
+  {
+    question: 'How much does a Seyon storefront cost?',
+    answer: 'Nothing. Creating a storefront, listing products, and receiving orders is completely free. Seyon takes no commission on your sales.',
+  },
+  {
+    question: 'How do buyers pay me?',
+    answer: 'Buyers tap "Chat to Buy" and land directly in your WhatsApp with a prefilled order message. You agree on payment and delivery directly with them — UPI, cash on delivery, whatever works for you.',
+  },
+  {
+    question: 'Do I need a GST number or business registration?',
+    answer: 'No. Anyone can open a storefront. You only need a WhatsApp number buyers can reach you on.',
+  },
+  {
+    question: 'How long does setup take?',
+    answer: 'Under five minutes. Pick a store name, add your WhatsApp number, upload product photos — your catalog is live and shareable immediately.',
+  },
+  {
+    question: 'Can I pause my store when I am away?',
+    answer: 'Yes. Vacation mode hides your products from the marketplace and shows buyers a "currently away" notice until you return.',
+  },
+];
 
 interface FallbackShop {
   id: string;
@@ -349,6 +373,31 @@ export default async function HomePage() {
               </Button>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="container mx-auto px-4 sm:px-6 py-16 max-w-3xl">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(generateFAQJSONLD(SELLER_FAQ)) }}
+        />
+        <h2 className="text-2xl md:text-3xl font-extrabold text-foreground text-center mb-10">
+          Frequently Asked Questions
+        </h2>
+        <div className="space-y-3">
+          {SELLER_FAQ.map((faq) => (
+            <details
+              key={faq.question}
+              className="group rounded-xl border border-zinc-200 bg-card p-5 open:shadow-sm transition-shadow"
+            >
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-4 text-sm font-bold text-foreground">
+                {faq.question}
+                <span aria-hidden="true" className="text-amber-600 transition-transform group-open:rotate-45 text-lg leading-none">+</span>
+              </summary>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
+            </details>
+          ))}
         </div>
       </section>
     </div>

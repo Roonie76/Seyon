@@ -18,6 +18,7 @@ interface ProductSEOInput {
   slug: string;
   description: string | null;
   price: number;
+  compareAtPrice?: number | null;
   category: string;
   images: { url: string }[];
   inStock?: boolean;
@@ -169,6 +170,10 @@ export function generateProductJSONLD(
       url: productUrl,
       priceCurrency: 'INR',
       price: product.price.toString(),
+      // Sale pricing: signal a time-bound offer so rich results show the deal
+      ...(product.compareAtPrice != null && product.compareAtPrice > product.price
+        ? { priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) }
+        : {}),
       availability: product.inStock === false ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       seller: {
         '@type': 'OnlineStore',
@@ -213,6 +218,59 @@ export function generateItemListJSONLD(
       position: idx + 1,
       name: prod.title,
       url: prod.url.startsWith('http') ? prod.url : `${PLATFORM_URL}${prod.url}`,
+    })),
+  };
+}
+
+/**
+ * Schema.org WebSite with SearchAction — enables the Google sitelinks
+ * search box pointing at the marketplace search.
+ */
+export function generateWebsiteJSONLD() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${PLATFORM_URL}/#website`,
+    name: 'Seyon',
+    url: PLATFORM_URL,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${PLATFORM_URL}/marketplace?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+}
+
+/**
+ * Schema.org Organization for brand knowledge-panel signals.
+ */
+export function generateOrganizationJSONLD() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${PLATFORM_URL}/#organization`,
+    name: 'Seyon',
+    url: PLATFORM_URL,
+    logo: `${PLATFORM_URL}/favicon.ico`,
+    description:
+      'Seyon is a social-commerce storefront platform where independent sellers list products and buyers order directly through WhatsApp.',
+  };
+}
+
+/**
+ * Schema.org FAQPage for question/answer content blocks.
+ */
+export function generateFAQJSONLD(items: { question: string; answer: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
     })),
   };
 }
