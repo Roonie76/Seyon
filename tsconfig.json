@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,24 +23,53 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/frontend/components/*"],
-      "@/actions/*": ["./src/backend/actions/*"],
-      "@/lib/auth": ["./src/backend/lib/auth"],
-      "@/lib/db": ["./src/backend/lib/db"],
-      "@/lib/supabase": ["./src/backend/lib/supabase"],
-      "@/lib/posthog": ["./src/frontend/lib/posthog"],
-      "@/lib/utils": ["./src/frontend/lib/utils"],
-      "@/lib/seo": ["./src/shared/lib/seo"],
-      "@/lib/site": ["./src/shared/lib/site"],
-      "@/lib/zod-schemas": ["./src/shared/lib/zod-schemas"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@/components/*": [
+        "./src/frontend/components/*"
+      ],
+      "@/actions/*": [
+        "./src/backend/actions/*"
+      ],
+      "@/lib/auth": [
+        "./src/backend/lib/auth"
+      ],
+      "@/lib/db": [
+        "./src/backend/lib/db"
+      ],
+      "@/lib/supabase": [
+        "./src/backend/lib/supabase"
+      ],
+      "@/lib/posthog": [
+        "./src/frontend/lib/posthog"
+      ],
+      "@/lib/utils": [
+        "./src/frontend/lib/utils"
+      ],
+      "@/lib/seo": [
+        "./src/shared/lib/seo"
+      ],
+      "@/lib/site": [
+        "./src/shared/lib/site"
+      ],
+      "@/lib/zod-schemas": [
+        "./src/shared/lib/zod-schemas"
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.mts"
+    "**/*.mts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "**/node_modules", "buyer-market/**", "seller-portal/**"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules",
+    "buyer-market/**",
+    "seller-portal/**"
+  ]
 }
