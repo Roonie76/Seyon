@@ -5,6 +5,55 @@ const path = require('path');
 const projectType = process.env.PROJECT_TYPE || 'buyer';
 const subfolder = projectType === 'seller' ? 'seller-portal' : 'buyer-market';
 
+function patchDirectory(dir, subfolder) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      patchDirectory(filePath, subfolder);
+    } else {
+      const ext = path.extname(file).toLowerCase();
+      if (['.json', '.js', '.map', '.html', '.txt', '.webmanifest'].includes(ext)) {
+        let content = fs.readFileSync(filePath, 'utf8');
+        let changed = false;
+        
+        const targets = [
+          subfolder + '//',
+          subfolder + '/',
+          subfolder + '\\\\',
+          subfolder + '\\'
+        ];
+        
+        for (const target of targets) {
+          if (content.includes(target)) {
+            content = content.split(target).join('');
+            changed = true;
+          }
+        }
+        
+        if (file === 'required-server-files.json') {
+          try {
+            const json = JSON.parse(content);
+            if (json.appDir && json.appDir.endsWith(subfolder)) {
+              json.appDir = json.appDir.slice(0, -subfolder.length).replace(/[\\/]+$/, '');
+              json.relativeAppDir = '';
+              content = JSON.stringify(json, null, 2);
+              changed = true;
+            }
+          } catch (e) {
+            console.error('Failed to parse required-server-files.json', e);
+          }
+        }
+        
+        if (changed) {
+          fs.writeFileSync(filePath, content, 'utf8');
+        }
+      }
+    }
+  }
+}
+
 try {
   console.log(`--- VERCEL BUILD START: ${projectType.toUpperCase()} (${subfolder}) ---`);
 
@@ -33,25 +82,11 @@ try {
     fs.cpSync(subfolderPublic, rootPublic, { recursive: true });
   }
 
-  // 5. Patch required-server-files.json to point to root appDir and node_modules
-  const reqFilesPath = path.join(rootNext, 'required-server-files.json');
-  if (fs.existsSync(reqFilesPath)) {
-    console.log('--- PATCHING REQUIRED-SERVER-FILES.JSON FOR VERCEL ---');
-    const reqFiles = JSON.parse(fs.readFileSync(reqFilesPath, 'utf8'));
-    
-    if (reqFiles.appDir && reqFiles.appDir.endsWith(subfolder)) {
-      reqFiles.appDir = reqFiles.appDir.slice(0, -subfolder.length).replace(/[\\/]+$/, '');
-    }
-    reqFiles.relativeAppDir = '';
-    
-    let updatedContent = JSON.stringify(reqFiles, null, 2);
-    
-    // Replace subfolder in any loader paths (e.g. seller-portal/node_modules -> node_modules)
-    updatedContent = updatedContent.split(subfolder + '\\\\node_modules').join('node_modules');
-    updatedContent = updatedContent.split(subfolder + '/node_modules').join('node_modules');
-    
-    fs.writeFileSync(reqFilesPath, updatedContent, 'utf8');
-    console.log('Successfully patched required-server-files.json');
+  // 5. Patch build assets to point to root appDir and node_modules
+  if (fs.existsSync(rootNext)) {
+    console.log('--- PATCHING BUILD MANIFESTS AND CONFIGS FOR VERCEL ---');
+    patchDirectory(rootNext, subfolder);
+    console.log('Successfully patched build assets for root compatibility');
   }
 
   console.log('--- VERCEL BUILD COMPLETED SUCCESSFULLY ---');
@@ -59,4 +94,5 @@ try {
   console.error('Build router failed:', error);
   process.exit(1);
 }
+
 
