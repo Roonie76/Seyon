@@ -10,6 +10,7 @@ import RatingsStars from '@/components/shared/ratings-stars';
 import { StoreOnboardingForm, StoreSettingsForm } from '@/components/dashboard/store-forms';
 import { ShareStoreCard } from '@/components/dashboard/share-store';
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
+import { LiveRefresh } from '@/components/dashboard/live-refresh';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { Shop, Review, Report } from '@prisma/client';
@@ -98,7 +99,10 @@ export default async function DashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 pb-6">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">{shop.name}</h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">{shop.name}</h1>
+              <LiveRefresh />
+            </div>
             {shop.isVerified && (
               <Badge variant="success" className="gap-0.5">
                 <ShieldCheck size={12} /> Verified

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Shop, Product, ProductImage } from '@prisma/client';
 import { logger } from '@/backend/lib/logger';
+import { LiveRefresh } from '@/components/dashboard/live-refresh';
 
 export default async function DashboardProductsPage() {
   const session = await auth();
@@ -76,7 +77,10 @@ export default async function DashboardProductsPage() {
       </div>
 
       <div className="border-b border-border pb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">Product Catalog</h1>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">Product Catalog</h1>
+          <LiveRefresh />
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           Upload products, manage statuses (Active/Draft/Archived), upload multiple images, and set primary cover images.
         </p>
