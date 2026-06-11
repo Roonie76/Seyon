@@ -8,9 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { createProduct, updateProduct, deleteProduct, toggleProductStock } from '@/actions/products';
+import { createProduct, updateProduct, deleteProduct, toggleProductStock, quickAddProducts } from '@/actions/products';
 import { Product, ProductImage, ProductStatus } from '@prisma/client';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap } from 'lucide-react';
 
 interface ProductImageInput {
   url: string;
@@ -25,9 +25,44 @@ interface ProductWithImages extends Product {
 interface ProductManagerProps {
   shopId: string;
   products: ProductWithImages[];
+  clickStats?: Record<string, { total: number; week: number }>;
 }
 
-export function ProductManager({ shopId, products }: ProductManagerProps) {
+export function ProductManager({ shopId, products, clickStats = {} }: ProductManagerProps) {
+  const [quickAdding, setQuickAdding] = React.useState(false);
+
+  const handleQuickAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (files.length > 12) {
+      alert('Maximum 12 images per quick-add.');
+      return;
+    }
+
+    setQuickAdding(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('bucket', 'products');
+        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!data.url) throw new Error(data.error || 'Image upload failed');
+        urls.push(data.url);
+      }
+      const result = await quickAddProducts(shopId, urls);
+      if (result.error) {
+        alert(result.error);
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Quick-add failed');
+    } finally {
+      setQuickAdding(false);
+    }
+  };
   const [activeProduct, setActiveProduct] = React.useState<ProductWithImages | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
@@ -232,9 +267,25 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
       {/* Header Button */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-foreground">All Products ({products.length})</h2>
-        <Button size="sm" className="gap-1" onClick={openAdd}>
-          <Plus size={16} /> Add Product
-        </Button>
+        <div className="flex gap-2">
+          <div className="relative">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleQuickAdd}
+              disabled={quickAdding}
+              title="Drop multiple photos — each becomes a draft product"
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+            <Button size="sm" variant="outline" className="gap-1" disabled={quickAdding}>
+              {quickAdding ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />} Quick Add
+            </Button>
+          </div>
+          <Button size="sm" className="gap-1" onClick={openAdd}>
+            <Plus size={16} /> Add Product
+          </Button>
+        </div>
       </div>
 
       {/* Product List Table */}
@@ -253,6 +304,7 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Stock</TableHead>
+              <TableHead title="WhatsApp order taps">Buy taps</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -301,6 +353,20 @@ export function ProductManager({ shopId, products }: ProductManagerProps) {
                       )}
                       {prod.inStock ? 'In stock' : 'Sold out'}
                     </button>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const stats = clickStats[prod.id];
+                      if (!stats || stats.total === 0) {
+                        return <span className="text-xs text-muted-foreground/50">—</span>;
+                      }
+                      return (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-foreground" title={`${stats.total} total WhatsApp taps`}>
+                          <MessageCircle size={12} className="text-emerald-600" />
+                          {stats.week} <span className="text-muted-foreground font-normal">this week</span>
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

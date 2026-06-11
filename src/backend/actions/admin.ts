@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { notify } from '../lib/notify';
+import { deleteFile } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
@@ -248,6 +249,15 @@ export async function deleteProductAction(productId: string) {
     });
 
     if (!product) return { error: 'Product not found' };
+
+    // Clean up Supabase storage first (best-effort; never block DB delete on storage)
+    for (const img of product.images) {
+      try {
+        await deleteFile(img.url, 'products');
+      } catch {
+        // Orphaned files are acceptable; log happens inside deleteFile
+      }
+    }
 
     // Delete database records
     await db.product.delete({

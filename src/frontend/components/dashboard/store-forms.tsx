@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { createShop, updateShop, toggleShopPause } from '@/actions/shops';
+import { createShop, updateShop, toggleShopPause, deleteShop } from '@/actions/shops';
 import { confirmWhatsappVerification, requestWhatsappVerification } from '@/backend/actions/whatsapp';
-import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound } from 'lucide-react';
+import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound, Trash2 } from 'lucide-react';
 
 export function StoreOnboardingForm() {
   const [formData, setFormData] = React.useState({
@@ -295,6 +295,26 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
   });
   const [isPaused, setIsPaused] = React.useState(shop.isPaused);
   const [pauseLoading, setPauseLoading] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  const handleDeleteShop = async () => {
+    const typed = window.prompt(
+      `This permanently deletes "${shop.name}" with all products and reviews.\n\nType the store name to confirm:`
+    );
+    if (typed === null) return;
+    if (typed.trim().toLowerCase() !== shop.name.trim().toLowerCase()) {
+      setMessage({ type: 'error', text: 'Store name did not match. Deletion cancelled.' });
+      return;
+    }
+    setDeleting(true);
+    const res = await deleteShop();
+    setDeleting(false);
+    if (res.error) {
+      setMessage({ type: 'error', text: res.error });
+    } else {
+      window.location.href = '/sell';
+    }
+  };
   const [whatsappVerifiedAt, setWhatsappVerifiedAt] = React.useState(shop.whatsappVerifiedAt);
   const [verificationCode, setVerificationCode] = React.useState('');
   const [verificationLoading, setVerificationLoading] = React.useState<'request' | 'confirm' | null>(null);
@@ -640,6 +660,30 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? 'Saving Configurations...' : 'Save Profile Changes'}
           </Button>
+
+          {/* Danger zone */}
+          <div className="border-t border-red-200 pt-6 mt-2">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-red-700 flex items-center gap-1.5">
+                  <Trash2 className="h-4 w-4" /> Delete storefront
+                </p>
+                <p className="text-xs text-red-600/80 mt-1">
+                  Permanently removes your store, all products, images, and reviews. This cannot be undone. You&apos;ll return to the seller landing page.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={deleting}
+                className="shrink-0"
+                onClick={handleDeleteShop}
+              >
+                {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Delete Store'}
+              </Button>
+            </div>
+          </div>
         </form>
       </CardContent>
     </Card>

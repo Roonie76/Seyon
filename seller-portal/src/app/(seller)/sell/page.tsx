@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import NextImage from 'next/image';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,25 @@ interface FallbackProduct {
 }
 
 export default async function HomePage() {
+  // Sellers with a live store skip the marketing page entirely and land in
+  // their dashboard. They only see this page again after deleting the store.
+  const session = await auth();
+  if (session?.user?.id) {
+    try {
+      const ownedShop = await db.shop.findUnique({
+        where: { ownerId: session.user.id },
+        select: { id: true },
+      });
+      if (ownedShop) {
+        redirect('/dashboard');
+      }
+    } catch (error) {
+      // redirect() throws NEXT_REDIRECT internally — let it propagate
+      if (error && typeof error === 'object' && 'digest' in error) throw error;
+      logger.error('Landing page shop-ownership check failed', error);
+    }
+  }
+
   const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
   let popularShops: FallbackShop[] = [];
   let popularProducts: FallbackProduct[] = [];

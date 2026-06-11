@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { deleteFile } from '@/lib/supabase';
 import { ShopSchema } from '@/lib/zod-schemas';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { Role } from '@prisma/client';
@@ -158,6 +159,64 @@ export async function updateShop(shopId: string, rawData: unknown) {
   }
 }
 
+export async function deleteShop() {
+  try {
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) {
+      return { error: 'Unauthorized' };
+    }
+
+    const shop = await db.shop.findUnique({
+      where: { ownerId: session.user.id },
+      include: {
+        products: {
+          include: { images: { select: { url: true } } },
+        },
+      },
+    });
+
+    if (!shop) {
+      return { error: 'You do not own a storefront' };
+    }
+
+    // Best-effort storage cleanup; DB rows cascade via Prisma relations.
+    const imageUrls = shop.products.flatMap((p) => p.images.map((img) => img.url));
+    for (const url of imageUrls) {
+      try {
+        await deleteFile(url, 'products');
+      } catch {
+        // Orphaned files are acceptable; never block deletion on storage
+      }
+    }
+    if (shop.logo) {
+      try { await deleteFile(shop.logo, 'logos'); } catch { /* best-effort */ }
+    }
+    if (shop.banner) {
+      try { await deleteFile(shop.banner, 'banners'); } catch { /* best-effort */ }
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.shop.delete({ where: { id: shop.id } });
+      // Hand back the regular buyer role so the landing page shows again
+      await tx.user.update({
+        where: { id: session.user.id as string },
+        data: { role: Role.USER },
+      });
+    });
+
+    revalidateShopSurface(shop.slug);
+    revalidateMarketplace();
+    revalidatePath('/sell');
+    revalidatePath('/dashboard');
+
+    logger.info('Storefront deleted by owner', { shopId: shop.id, slug: shop.slug });
+    return { success: true };
+  } catch (error) {
+    logger.error('Error deleting shop', error);
+    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+  }
+}
+
 export async function toggleShopPause(isPaused: boolean) {
   try {
     const session = await auth();
@@ -228,13 +287,10 @@ export async function getShopBySlug(slug: string) {
       },
     },
   });
-
   if (!shop) return null;
-
   // Mask the owner's phone number to protect personal privacy, preserving type check phone !== null
   if (shop.owner) {
     shop.owner.phone = shop.owner.phone ? 'hidden' : null;
   }
-
   return shop;
 }

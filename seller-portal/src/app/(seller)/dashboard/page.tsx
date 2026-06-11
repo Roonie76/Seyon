@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import RatingsStars from '@/components/shared/ratings-stars';
 import { StoreOnboardingForm, StoreSettingsForm } from '@/components/dashboard/store-forms';
 import { ShareStoreCard } from '@/components/dashboard/share-store';
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart } from 'lucide-react';
 import { Shop, Review, Report } from '@prisma/client';
@@ -194,6 +195,12 @@ export default async function DashboardPage() {
 
         {/* Reviews and Reports */}
         <div className="flex flex-col gap-6">
+          <OnboardingChecklist
+            hasLogo={Boolean(shop.logo)}
+            whatsappVerified={Boolean(shop.whatsappVerifiedAt)}
+            productCount={shop._count.products}
+            hasLocation={Boolean(shop.city || shop.deliveryNote)}
+          />
           <ShareStoreCard shopSlug={shop.slug} />
           {/* Reviews Widget */}
           <Card className="glass">

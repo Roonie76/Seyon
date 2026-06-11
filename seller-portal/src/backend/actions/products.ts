@@ -225,6 +225,62 @@ export async function updateProduct(productId: string, rawData: unknown) {
   }
 }
 
+const QuickAddSchema = z.array(z.string().url('Invalid image URL')).min(1, 'At least one image required').max(12, 'Maximum 12 images per quick-add');
+
+/**
+ * Bulk onboarding helper: every uploaded image becomes a DRAFT product the
+ * seller then titles and prices. Drafts are invisible to buyers until edited
+ * and switched to ACTIVE.
+ */
+export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
+  try {
+    const parsedShopId = IdParamSchema.safeParse(shopId);
+    if (!parsedShopId.success) {
+      return { error: 'Invalid shop ID format' };
+    }
+
+    const { shop } = await verifyShopOwnership(parsedShopId.data);
+
+    const validated = QuickAddSchema.safeParse(rawImageUrls);
+    if (!validated.success) {
+      return { error: validated.error.issues[0].message };
+    }
+
+    const rl = rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
+    if (!rl.success) {
+      return { error: 'Too many products created today. Please try again later.' };
+    }
+
+    const created = [];
+    for (const [idx, url] of validated.data.entries()) {
+      const baseSlug = `untitled-product-${Date.now()}-${idx}`;
+      const product = await db.product.create({
+        data: {
+          shopId: parsedShopId.data,
+          title: 'Untitled product',
+          slug: baseSlug,
+          description: null,
+          price: 0,
+          category: 'Other',
+          status: 'DRAFT',
+          inStock: true,
+          images: {
+            create: [{ url, displayOrder: 0, isPrimary: true }],
+          },
+        },
+        select: { id: true },
+      });
+      created.push(product.id);
+    }
+
+    revalidatePath('/dashboard/products');
+    return { success: true, count: created.length };
+  } catch (error) {
+    logger.error('Error in quick-add products', error);
+    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+  }
+}
+
 export async function toggleProductStock(productId: string, inStock: boolean) {
   try {
     const parsedProductId = IdParamSchema.safeParse(productId);

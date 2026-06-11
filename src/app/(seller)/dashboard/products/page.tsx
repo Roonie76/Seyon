@@ -17,6 +17,7 @@ export default async function DashboardProductsPage() {
   // Load shop
   let shop: Shop | null = null;
   let products: (Product & { images: ProductImage[] })[] = [];
+  const clickStats: Record<string, { total: number; week: number }> = {};
   try {
     shop = await db.shop.findUnique({
       where: { ownerId: session.user.id },
@@ -30,6 +31,29 @@ export default async function DashboardProductsPage() {
         },
         orderBy: { createdAt: 'desc' },
       });
+
+      // Per-product chat-to-buy clicks: all-time + trailing 7 days
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const [totals, weekly] = await Promise.all([
+        db.analytics.groupBy({
+          by: ['productId'],
+          where: { shopId: shop.id, eventType: 'WHATSAPP_CLICK', productId: { not: null } },
+          _count: { id: true },
+        }),
+        db.analytics.groupBy({
+          by: ['productId'],
+          where: { shopId: shop.id, eventType: 'WHATSAPP_CLICK', productId: { not: null }, createdAt: { gte: weekAgo } },
+          _count: { id: true },
+        }),
+      ]);
+      for (const row of totals) {
+        if (row.productId) clickStats[row.productId] = { total: row._count.id, week: 0 };
+      }
+      for (const row of weekly) {
+        if (row.productId) {
+          clickStats[row.productId] = { ...(clickStats[row.productId] ?? { total: row._count.id, week: 0 }), week: row._count.id };
+        }
+      }
     }
   } catch (error) {
     logger.error('Error fetching dashboard products', error, { userId: session.user.id });
@@ -58,7 +82,7 @@ export default async function DashboardProductsPage() {
         </p>
       </div>
 
-      <ProductManager shopId={shop.id} products={products} />
+      <ProductManager shopId={shop.id} products={products} clickStats={clickStats} />
     </div>
   );
 }
