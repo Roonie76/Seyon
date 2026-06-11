@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { Briefcase } from 'lucide-react';
+import { auth } from '@/lib/auth';
 
-export function SellerFooter() {
+export async function SellerFooter() {
+  const session = await auth();
+  const isLoggedIn = !!session?.user;
+
   return (
     <footer className="border-t border-zinc-800 bg-zinc-950 py-8 md:py-12 mt-auto text-zinc-400">
       <div className="container mx-auto px-4 sm:px-6">
@@ -17,17 +21,21 @@ export function SellerFooter() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-zinc-400">
-            <Link href="/sell" className="hover:text-white transition-colors">
-              Seller Home
-            </Link>
+            {!isLoggedIn && (
+              <Link href="/sell" className="hover:text-white transition-colors">
+                Seller Home
+              </Link>
+            )}
             <Link href="/dashboard" className="hover:text-white transition-colors">
               Dashboard
             </Link>
-            <Link href="/login" className="hover:text-white transition-colors">
-              Login / Register
-            </Link>
+            {!isLoggedIn && (
+              <Link href="/login" className="hover:text-white transition-colors">
+                Login / Register
+              </Link>
+            )}
             <Link href="/privacy" className="hover:text-white transition-colors">
-              Seller Privacy
+              Privacy Policy
             </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               Terms & Conditions
@@ -43,3 +51,4 @@ export function SellerFooter() {
   );
 }
 export default SellerFooter;
+
