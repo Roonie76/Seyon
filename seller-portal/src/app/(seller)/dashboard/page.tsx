@@ -101,7 +101,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">{shop.name}</h1>
-              <LiveRefresh />
+              <LiveRefresh isPaused={shop.isPaused} />
             </div>
             {shop.isVerified && (
               <Badge variant="success" className="gap-0.5">

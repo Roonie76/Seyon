@@ -79,7 +79,7 @@ export default async function DashboardProductsPage() {
       <div className="border-b border-border pb-4">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">Product Catalog</h1>
-          <LiveRefresh />
+          <LiveRefresh isPaused={shop.isPaused} />
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           Upload products, manage statuses (Active/Draft/Archived), upload multiple images, and set primary cover images.
