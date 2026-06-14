@@ -42,7 +42,8 @@ export function StickyBuyBar({
       console.error('Analytics tracking failed:', error);
     }
     const text = buildOrderMessage({ productName, shopName, price, productUrl, selections: {}, inStock });
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
+    const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   if (shopPaused) return null;

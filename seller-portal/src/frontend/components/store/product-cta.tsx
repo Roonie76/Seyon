@@ -56,7 +56,8 @@ export function ProductCTA({
     }
 
     const text = buildOrderMessage({ productName, shopName, price, productUrl, selections, inStock });
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+    const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank');
   };
 
