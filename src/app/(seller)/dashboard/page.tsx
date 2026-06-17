@@ -144,7 +144,7 @@ export default async function DashboardPage() {
         <Card className="glass">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-muted-foreground uppercase">Clicks (Buy)</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Clicks</span>
               <span className="text-3xl font-black text-foreground block mt-1">{metrics.whatsappClicks}</span>
             </div>
             <div className="h-10 w-10 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-600">
