@@ -2,15 +2,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
-import { MarketplaceFilters } from './filters';
+import { MarketplaceClient } from './marketplace-client';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/auth';
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import {
   ShoppingBag,
-  Search,
 } from 'lucide-react';
 import { Prisma } from '@prisma/client';
 import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
@@ -268,38 +266,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(itemListJsonLd) }}
       />
-      {/* Header Banner */}
-      <div className="relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/5 to-amber-600/10 p-8 md:p-12 mb-12 overflow-hidden flex flex-col items-center text-center bg-card shadow-sm">
-        <div className="absolute top-0 left-0 w-60 h-60 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight mb-4 animate-fade-in">
-          Discover Seyon Marketplace
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto mb-6">
-          Find products listed by independent creators globally. Buy securely by connecting with them directly on chat.
-        </p>
-
-        {/* Search Input bar */}
-        <form action="/marketplace" method="GET" className="relative w-full max-w-lg">
-          <Input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder="Search products, stores, or categories..."
-            className="pl-10 pr-20 h-12 rounded-full border-zinc-200 shadow-md bg-white text-foreground focus-visible:ring-amber-500"
-          />
-          <Search className="absolute left-3.5 top-3.5 h-5 w-5 text-muted-foreground" />
-          <Button type="submit" size="sm" className="absolute right-1.5 top-1.5 h-9 rounded-full px-5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:brightness-105 hover:shadow-md transition-all text-black font-bold">
-            Search
-          </Button>
-          {selectedCategory && <input type="hidden" name="category" value={selectedCategory} />}
-          {sort && <input type="hidden" name="sort" value={sort} />}
-          {minPrice && <input type="hidden" name="minPrice" value={minPrice} />}
-          {maxPrice && <input type="hidden" name="maxPrice" value={maxPrice} />}
-        </form>
-      </div>
-
-      {/* Horizontal Marketplace Filters */}
-      <MarketplaceFilters
+      <MarketplaceClient
         categories={categoriesData}
         selectedCategory={selectedCategory}
         cities={cities}
@@ -309,116 +276,115 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
         minPrice={minPrice}
         maxPrice={maxPrice}
         query={query}
-      />
-
-      {/* Products Grid */}
-      <div>
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-sm text-muted-foreground">
-            Showing <span className="text-foreground font-bold">{products.length}</span> of{' '}
-            <span className="text-foreground font-bold">{totalProducts}</span> products
-          </span>
-        </div>
-
-        {products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-200 rounded-xl bg-card shadow-sm">
-            <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-bold text-foreground mb-1">No products found</h3>
-            <p className="text-sm text-muted-foreground mb-6">Try refining your search terms or filters.</p>
-            <Link href="/marketplace">
-              <Button variant="outline">Clear All Filters</Button>
-            </Link>
+      >
+        {/* Products Grid */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-sm text-muted-foreground">
+              Showing <span className="text-foreground font-bold">{products.length}</span> of{' '}
+              <span className="text-foreground font-bold">{totalProducts}</span> products
+            </span>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {products.map((prod) => (
-              <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
-                <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
-                  <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-                    {prod.images?.[0] ? (
-                      <Image
-                        src={prod.images[0].url}
-                        alt={prod.title}
-                        fill
-                        className={`object-cover ${prod.inStock === false ? 'opacity-60 grayscale-[40%]' : ''}`}
-                        sizes="(max-width: 768px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                        No Image
-                      </div>
-                    )}
-                    {prod.inStock === false && (
-                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
-                        Sold out
-                      </span>
-                    )}
-                    <div className="absolute top-2 right-2 z-10">
-                      <WishlistButton
-                        productId={prod.id}
-                        initialIsWishlisted={wishlistedProductIds.has(prod.id)}
-                      />
-                    </div>
-                  </div>
-                  <div className="p-4 flex flex-col justify-between flex-grow">
-                    <div>
-                      <div className="flex justify-between items-start gap-2 mb-1.5">
-                        <span className="text-[10px] uppercase font-bold text-amber-700">
-                          {prod.category}
-                        </span>
-                        <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
-                          by {prod.shop.name}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
-                        {prod.title}
-                      </h3>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                      <span className="font-extrabold text-foreground text-base flex items-baseline gap-1.5">
-                        ₹{prod.price.toFixed(2)}
-                        {prod.compareAtPrice != null && prod.compareAtPrice > prod.price && (
-                          <span className="text-xs font-normal text-muted-foreground line-through">₹{prod.compareAtPrice.toFixed(2)}</span>
-                        )}
-                      </span>
-                      <Badge variant="success" className="text-[10px] font-bold">
-                        {prod.inStock === false ? 'Ask seller' : 'WhatsApp Buy'}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
+
+          {products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-200 rounded-xl bg-card shadow-sm">
+              <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-bold text-foreground mb-1">No products found</h3>
+              <p className="text-sm text-muted-foreground mb-6">Try refining your search terms or filters.</p>
+              <Link href="/marketplace">
+                <Button variant="outline">Clear All Filters</Button>
               </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
-            <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page - 1}`} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
-              <Button variant="outline" size="sm">
-                Previous
-              </Button>
-            </Link>
-            {Array.from({ length: totalPages }).map((_, idx) => {
-              const pNum = idx + 1;
-              return (
-                <Link key={pNum} href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${pNum}`}>
-                  <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
-                    {pNum}
-                  </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {products.map((prod) => (
+                <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
+                  <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
+                    <div className="relative aspect-video bg-zinc-100 overflow-hidden">
+                      {prod.images?.[0] ? (
+                        <Image
+                          src={prod.images[0].url}
+                          alt={prod.title}
+                          fill
+                          className={`object-cover ${prod.inStock === false ? 'opacity-60 grayscale-[40%]' : ''}`}
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                          No Image
+                        </div>
+                      )}
+                      {prod.inStock === false && (
+                        <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
+                          Sold out
+                        </span>
+                      )}
+                      <div className="absolute top-2 right-2 z-10">
+                        <WishlistButton
+                          productId={prod.id}
+                          initialIsWishlisted={wishlistedProductIds.has(prod.id)}
+                        />
+                      </div>
+                    </div>
+                    <div className="p-4 flex flex-col justify-between flex-grow">
+                      <div>
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <span className="text-[10px] uppercase font-bold text-amber-700">
+                            {prod.category}
+                          </span>
+                          <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
+                            by {prod.shop.name}
+                          </span>
+                        </div>
+                        <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
+                          {prod.title}
+                        </h3>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
+                        <span className="font-extrabold text-foreground text-base flex items-baseline gap-1.5">
+                          ₹{prod.price.toFixed(2)}
+                          {prod.compareAtPrice != null && prod.compareAtPrice > prod.price && (
+                            <span className="text-xs font-normal text-muted-foreground line-through">₹{prod.compareAtPrice.toFixed(2)}</span>
+                          )}
+                        </span>
+                        <Badge variant="success" className="text-[10px] font-bold">
+                          {prod.inStock === false ? 'Ask seller' : 'WhatsApp Buy'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </Card>
                 </Link>
-              );
-            })}
-            <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page + 1}`} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-            </Link>
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
 
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
+              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page - 1}`} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
+                <Button variant="outline" size="sm">
+                  Previous
+                </Button>
+              </Link>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pNum = idx + 1;
+                return (
+                  <Link key={pNum} href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${pNum}`}>
+                    <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
+                      {pNum}
+                    </Button>
+                  </Link>
+                );
+              })}
+              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page + 1}`} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
+                <Button variant="outline" size="sm">
+                  Next
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </MarketplaceClient>
       <RecentlyViewedStrip />
     </div>
   );
