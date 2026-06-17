@@ -168,6 +168,70 @@ describe('Shops Server Actions - Onboarding and Management', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/marketplace');
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard');
     });
+
+    it('automatically formats and prepends +91 to 10-digit WhatsApp numbers', async () => {
+      vi.mocked(auth as any).mockResolvedValue({
+        user: { id: 'user_1', role: 'USER' },
+        expires: '',
+      });
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null);
+
+      const mockShop = {
+        id: 'new_shop_id',
+        ownerId: 'user_1',
+        name: 'My Store',
+        slug: 'my-store',
+        whatsapp: '+919911225445',
+        isVerified: false,
+      };
+      vi.mocked(db.shop.create).mockResolvedValueOnce(mockShop as any);
+
+      const res = await createShop({
+        name: 'My Store',
+        slug: 'my-store',
+        whatsapp: '9911225445',
+      });
+
+      expect(res.success).toBe(true);
+      expect(db.shop.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          whatsapp: '+919911225445',
+        }),
+      });
+    });
+
+    it('automatically prepends + to WhatsApp numbers starting with country code but missing the + symbol', async () => {
+      vi.mocked(auth as any).mockResolvedValue({
+        user: { id: 'user_1', role: 'USER' },
+        expires: '',
+      });
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null);
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null);
+
+      const mockShop = {
+        id: 'new_shop_id',
+        ownerId: 'user_1',
+        name: 'My Store',
+        slug: 'my-store',
+        whatsapp: '+919911225445',
+        isVerified: false,
+      };
+      vi.mocked(db.shop.create).mockResolvedValueOnce(mockShop as any);
+
+      const res = await createShop({
+        name: 'My Store',
+        slug: 'my-store',
+        whatsapp: '919911225445',
+      });
+
+      expect(res.success).toBe(true);
+      expect(db.shop.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          whatsapp: '+919911225445',
+        }),
+      });
+    });
   });
 
   describe('updateShop', () => {

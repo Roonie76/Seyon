@@ -17,7 +17,7 @@ export function StoreOnboardingForm() {
     description: '',
     logo: '',
     banner: '',
-    whatsapp: '',
+    whatsapp: '+91',
     instagram: '',
     telegram: '',
     city: '',

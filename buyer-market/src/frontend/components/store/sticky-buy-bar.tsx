@@ -42,7 +42,10 @@ export function StickyBuyBar({
       console.error('Analytics tracking failed:', error);
     }
     const text = buildOrderMessage({ productName, shopName, price, productUrl, selections: {}, inStock });
-    const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    let cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    if (cleanNumber.length === 10) {
+      cleanNumber = `91${cleanNumber}`;
+    }
     window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 

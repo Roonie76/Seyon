@@ -34,7 +34,10 @@ export function WhatsAppButton({ shopId, whatsappNumber, shopName, productId, pr
     }
 
     const encodedText = encodeURIComponent(text);
-    const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    let cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    if (cleanNumber.length === 10) {
+      cleanNumber = `91${cleanNumber}`;
+    }
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedText}`;
     
     // Open WhatsApp in new tab

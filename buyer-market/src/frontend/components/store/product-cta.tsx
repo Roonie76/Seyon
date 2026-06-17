@@ -56,7 +56,10 @@ export function ProductCTA({
     }
 
     const text = buildOrderMessage({ productName, shopName, price, productUrl, selections, inStock });
-    const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    let cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+    if (cleanNumber.length === 10) {
+      cleanNumber = `91${cleanNumber}`;
+    }
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank');
   };
