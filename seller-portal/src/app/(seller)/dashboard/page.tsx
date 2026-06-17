@@ -35,6 +35,7 @@ export default async function DashboardPage() {
   }
 
   const user = session.user;
+  const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
 
   // Check if shop exists
   let shop: DashboardShop | null = null;
@@ -114,7 +115,7 @@ export default async function DashboardPage() {
           </span>
         </div>
         <div className="flex gap-3">
-          <Link href={`/store/${shop.slug}`} target="_blank">
+          <Link href={`${buyerMarketUrl}/store/${shop.slug}`} target="_blank">
             <Button variant="outline" className="gap-1.5 text-xs">
               <ExternalLink size={14} /> Visit Storefront
             </Button>
@@ -205,7 +206,7 @@ export default async function DashboardPage() {
             productCount={shop._count.products}
             hasLocation={Boolean(shop.city || shop.deliveryNote)}
           />
-          <ShareStoreCard shopSlug={shop.slug} />
+          <ShareStoreCard shopSlug={shop.slug} buyerMarketUrl={buyerMarketUrl} />
           {/* Reviews Widget */}
           <Card className="glass">
             <CardHeader className="border-b border-zinc-200">

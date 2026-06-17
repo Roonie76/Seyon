@@ -20,9 +20,10 @@ type AdminStore = Shop & {
 interface AdminModerationProps {
   reports: AdminReport[];
   allStores: AdminStore[];
+  buyerMarketUrl?: string;
 }
 
-export function AdminModeration({ reports: initialReports, allStores: initialStores }: AdminModerationProps) {
+export function AdminModeration({ reports: initialReports, allStores: initialStores, buyerMarketUrl }: AdminModerationProps) {
   const [reports, setReports] = React.useState(initialReports);
   const [stores, setStores] = React.useState(initialStores);
 
@@ -88,7 +89,7 @@ export function AdminModeration({ reports: initialReports, allStores: initialSto
               {reports.map((rep) => (
                 <TableRow key={rep.id} className={rep.status === 'RESOLVED' ? 'opacity-50' : ''}>
                   <TableCell>
-                    <a href={`/store/${rep.shop.slug}`} target="_blank" className="font-bold text-foreground hover:underline">
+                    <a href={`${buyerMarketUrl || ''}/store/${rep.shop.slug}`} target="_blank" className="font-bold text-foreground hover:underline">
                       {rep.shop.name}
                     </a>
                   </TableCell>
@@ -146,7 +147,7 @@ export function AdminModeration({ reports: initialReports, allStores: initialSto
               {stores.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell>
-                    <a href={`/store/${s.slug}`} target="_blank" className="font-bold text-foreground hover:underline flex items-center gap-1.5">
+                    <a href={`${buyerMarketUrl || ''}/store/${s.slug}`} target="_blank" className="font-bold text-foreground hover:underline flex items-center gap-1.5">
                       {s.name}
                       {s.isVerified && <ShieldCheck className="h-4 w-4 text-emerald-400" />}
                     </a>

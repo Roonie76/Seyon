@@ -35,6 +35,8 @@ export default async function AdminPage() {
     redirect('/');
   }
 
+  const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
+
   // Load admin stats
   let stats = { totalSellers: 0, totalProducts: 0, totalStores: 0, dailySignups: 0, reportsCount: 0 };
   let reports: AdminReport[] = [];
@@ -121,7 +123,7 @@ export default async function AdminPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Interactive Moderation Lists */}
         <div className="lg:col-span-2">
-          <AdminModeration reports={reports} allStores={allStores} />
+          <AdminModeration reports={reports} allStores={allStores} buyerMarketUrl={buyerMarketUrl} />
         </div>
 
         {/* Analytics Highlights */}
@@ -136,7 +138,7 @@ export default async function AdminPage() {
               ) : (
                 popularShops.map((shop, idx) => (
                   <div key={idx} className="flex justify-between items-center text-sm border-b border-border pb-2 last:border-0">
-                    <a href={`/store/${shop.slug}`} target="_blank" className="font-bold text-foreground hover:underline">
+                    <a href={`${buyerMarketUrl}/store/${shop.slug}`} target="_blank" className="font-bold text-foreground hover:underline">
                       {shop.name}
                     </a>
                     <span className="text-xs text-muted-foreground font-semibold">{shop.views} views</span>
@@ -156,7 +158,7 @@ export default async function AdminPage() {
               ) : (
                 popularProducts.map((prod, idx) => (
                   <div key={idx} className="flex justify-between items-center text-sm border-b border-border pb-2 last:border-0">
-                    <a href={`/store/${prod.shopSlug}/${prod.slug}`} target="_blank" className="font-bold text-foreground hover:underline line-clamp-1 max-w-[170px]">
+                    <a href={`${buyerMarketUrl}/store/${prod.shopSlug}/${prod.slug}`} target="_blank" className="font-bold text-foreground hover:underline line-clamp-1 max-w-[170px]">
                       {prod.title}
                     </a>
                     <span className="text-xs text-muted-foreground font-semibold">{prod.views} views</span>

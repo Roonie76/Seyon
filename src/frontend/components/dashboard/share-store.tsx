@@ -9,21 +9,26 @@ import QRCode from 'qrcode';
 
 interface ShareStoreCardProps {
   shopSlug: string;
+  buyerMarketUrl?: string;
 }
 
-export function ShareStoreCard({ shopSlug }: ShareStoreCardProps) {
+export function ShareStoreCard({ shopSlug, buyerMarketUrl }: ShareStoreCardProps) {
   const [storeUrl, setStoreUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const timer = window.setTimeout(() => {
-        setStoreUrl(`${window.location.origin}/store/${shopSlug}`);
-      }, 0);
-      return () => window.clearTimeout(timer);
+    let base = buyerMarketUrl;
+    if (!base && typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      if (origin.includes('seller') || origin.includes('3001') || origin.includes('3002')) {
+        base = 'https://seyon-pied.vercel.app';
+      } else {
+        base = origin;
+      }
     }
-  }, [shopSlug]);
+    setStoreUrl(`${base || 'https://seyon-pied.vercel.app'}/store/${shopSlug}`);
+  }, [shopSlug, buyerMarketUrl]);
 
   useEffect(() => {
     if (!storeUrl) return;
