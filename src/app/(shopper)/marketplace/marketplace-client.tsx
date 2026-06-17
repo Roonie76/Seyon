@@ -45,13 +45,18 @@ export function MarketplaceClient({
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
 
+  const parsedMin = parseFloat(minPrice);
+  const parsedMax = parseFloat(maxPrice);
+  const safeMinPrice = !isNaN(parsedMin) ? Math.max(0, parsedMin).toString() : '';
+  const safeMaxPrice = !isNaN(parsedMax) ? Math.max(0, parsedMax).toString() : '';
+
   const current: FilterState = {
     category: selectedCategory,
     city: selectedCity,
     inStock: inStockOnly,
     sort,
-    minPrice,
-    maxPrice,
+    minPrice: safeMinPrice,
+    maxPrice: safeMaxPrice,
   };
 
   const getFilterUrl = (state: FilterState, newQuery: string = query) => {
@@ -67,7 +72,16 @@ export function MarketplaceClient({
   };
 
   const handleApplyFilters = (next: Partial<FilterState>) => {
-    const nextState = { ...current, ...next };
+    const sanitizedNext = { ...next };
+    if (next.minPrice !== undefined) {
+      const p = parseFloat(next.minPrice);
+      sanitizedNext.minPrice = !isNaN(p) ? Math.max(0, p).toString() : '';
+    }
+    if (next.maxPrice !== undefined) {
+      const p = parseFloat(next.maxPrice);
+      sanitizedNext.maxPrice = !isNaN(p) ? Math.max(0, p).toString() : '';
+    }
+    const nextState = { ...current, ...sanitizedNext };
     const nextUrl = getFilterUrl(nextState);
     startTransition(() => {
       router.push(nextUrl);
@@ -108,14 +122,14 @@ export function MarketplaceClient({
       onClear: () => handleApplyFilters({ inStock: false }),
     });
   }
-  if (minPrice || maxPrice) {
+  if (safeMinPrice || safeMaxPrice) {
     let priceLabel = 'Price: ';
-    if (minPrice && maxPrice) {
-      priceLabel += `₹${minPrice} - ₹${maxPrice}`;
-    } else if (minPrice) {
-      priceLabel += `≥ ₹${minPrice}`;
+    if (safeMinPrice && safeMaxPrice) {
+      priceLabel += `₹${safeMinPrice} - ₹${safeMaxPrice}`;
+    } else if (safeMinPrice) {
+      priceLabel += `≥ ₹${safeMinPrice}`;
     } else {
-      priceLabel += `≤ ₹${maxPrice}`;
+      priceLabel += `≤ ₹${safeMaxPrice}`;
     }
     activeChips.push({
       label: priceLabel,
@@ -151,8 +165,8 @@ export function MarketplaceClient({
         selectedCity={selectedCity}
         inStockOnly={inStockOnly}
         sort={sort}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
+        minPrice={safeMinPrice}
+        maxPrice={safeMaxPrice}
         query={query}
         applyFilters={handleApplyFilters}
       />

@@ -422,6 +422,7 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
                 <Input
                   required
                   type="number"
+                  min="0"
                   step="0.01"
                   placeholder="e.g. 1500"
                   value={formData.price}
@@ -470,6 +471,7 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
                 <label className="text-xs font-semibold text-foreground/90">Compare-at Price (optional)</label>
                 <Input
                   type="number"
+                  min="0"
                   step="0.01"
                   placeholder="Original price, shown struck through"
                   value={formData.compareAtPrice}

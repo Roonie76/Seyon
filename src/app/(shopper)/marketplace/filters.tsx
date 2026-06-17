@@ -136,16 +136,16 @@ export function MarketplaceFilters({
   // Price state for slider
   const defaultMax = 50000;
   const [sliderRange, setSliderRange] = React.useState<[number, number]>([
-    minPrice ? parseFloat(minPrice) : 0,
-    maxPrice ? parseFloat(maxPrice) : defaultMax,
+    minPrice ? Math.max(0, parseFloat(minPrice)) : 0,
+    maxPrice ? Math.max(0, parseFloat(maxPrice)) : defaultMax,
   ]);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   // Sync slider range when price props change (e.g. from filter clearing chips)
   React.useEffect(() => {
     setSliderRange([
-      minPrice ? parseFloat(minPrice) : 0,
-      maxPrice ? parseFloat(maxPrice) : defaultMax,
+      minPrice ? Math.max(0, parseFloat(minPrice)) : 0,
+      maxPrice ? Math.max(0, parseFloat(maxPrice)) : defaultMax,
     ]);
   }, [minPrice, maxPrice]);
 

@@ -48,8 +48,8 @@ export async function searchProductIds(params: ProductSearchParams): Promise<Pro
   if (category) conditions.push(Prisma.sql`p."category" = ${category}`);
   if (city) conditions.push(Prisma.sql`s."city" ILIKE ${city}`);
   if (inStockOnly) conditions.push(Prisma.sql`p."inStock" = true`);
-  if (minPrice !== undefined && !Number.isNaN(minPrice)) conditions.push(Prisma.sql`p."price" >= ${minPrice}`);
-  if (maxPrice !== undefined && !Number.isNaN(maxPrice)) conditions.push(Prisma.sql`p."price" <= ${maxPrice}`);
+  if (minPrice !== undefined && !Number.isNaN(minPrice)) conditions.push(Prisma.sql`p."price" >= ${Math.max(0, minPrice)}`);
+  if (maxPrice !== undefined && !Number.isNaN(maxPrice)) conditions.push(Prisma.sql`p."price" <= ${Math.max(0, maxPrice)}`);
 
   // Sold-out products always sort after in-stock ones.
   let orderBy: Prisma.Sql;

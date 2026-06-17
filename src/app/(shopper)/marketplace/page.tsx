@@ -126,8 +126,10 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     if (query) {
       // 2a. Text search: index-backed Postgres full-text search (GIN),
       // then hydrate the matched ids with their relations.
-      const minVal = parseFloat(minPrice);
-      const maxVal = parseFloat(maxPrice);
+      const parsedMin = parseFloat(minPrice);
+      const parsedMax = parseFloat(maxPrice);
+      const minVal = !isNaN(parsedMin) ? Math.max(0, parsedMin) : undefined;
+      const maxVal = !isNaN(parsedMax) ? Math.max(0, parsedMax) : undefined;
       const searchSort: ProductSearchSort =
         sort === 'price-asc' || sort === 'price-desc' || sort === 'newest' ? sort : 'relevance';
 
@@ -136,8 +138,8 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
         category: selectedCategory || undefined,
         city: selectedCity || undefined,
         inStockOnly,
-        minPrice: !isNaN(minVal) ? minVal : undefined,
-        maxPrice: !isNaN(maxVal) ? maxVal : undefined,
+        minPrice: minVal,
+        maxPrice: maxVal,
         sort: searchSort,
         page,
         perPage: itemsPerPage,
@@ -177,11 +179,11 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
       }
 
       if (minPrice || maxPrice) {
-        const minVal = parseFloat(minPrice);
-        const maxVal = parseFloat(maxPrice);
+        const parsedMin = parseFloat(minPrice);
+        const parsedMax = parseFloat(maxPrice);
         const priceFilter: Prisma.FloatFilter = {};
-        if (!isNaN(minVal)) priceFilter.gte = minVal;
-        if (!isNaN(maxVal)) priceFilter.lte = maxVal;
+        if (!isNaN(parsedMin)) priceFilter.gte = Math.max(0, parsedMin);
+        if (!isNaN(parsedMax)) priceFilter.lte = Math.max(0, parsedMax);
         filterConditions.price = priceFilter;
       }
 

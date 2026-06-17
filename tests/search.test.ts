@@ -67,4 +67,19 @@ describe('searchProductIds', () => {
     const sqlArg = mockQueryRaw.mock.calls[0][0] as { values: unknown[] };
     expect(sqlArg.values).toContain(0); // offset clamped to 0
   });
+
+  it('clamps negative price parameters to 0 in SQL inputs', async () => {
+    mockQueryRaw.mockResolvedValue([]);
+
+    await searchProductIds({
+      query: 'mug',
+      minPrice: -10,
+      maxPrice: -50,
+    });
+
+    const sqlArg = mockQueryRaw.mock.calls[0][0] as { values: unknown[] };
+    expect(sqlArg.values).toContain(0);
+    expect(sqlArg.values).not.toContain(-10);
+    expect(sqlArg.values).not.toContain(-50);
+  });
 });
