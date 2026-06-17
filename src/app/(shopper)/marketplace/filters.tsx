@@ -73,25 +73,25 @@ function CustomSelect({ id, label, value, options, onChange, icon, placeholder }
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
-    <div ref={containerRef} className="relative flex flex-col gap-1 w-full sm:w-auto min-w-[150px]">
-      <label htmlFor={id} className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider select-none">
+    <div ref={containerRef} className="relative flex flex-col gap-1.5 w-full md:w-auto min-w-[160px]">
+      <label htmlFor={id} className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider select-none">
         {label}
       </label>
       <button
         id={id}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between gap-2 h-9 w-full sm:w-auto rounded-lg border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-800 focus:outline-none focus:ring-1 focus:ring-amber-500 hover:border-amber-500/50 hover:bg-zinc-50 transition-all cursor-pointer font-semibold text-left"
+        className="flex items-center justify-between gap-2 h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 hover:bg-zinc-50/50 transition-all cursor-pointer font-medium text-left shadow-sm"
       >
-        <span className="flex items-center gap-1.5 truncate max-w-[130px]">
+        <span className="flex items-center gap-2 truncate">
           {icon && <span className="text-zinc-400 shrink-0">{icon}</span>}
           <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
-        <ChevronDown className={`h-3 w-3 text-zinc-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-3.5 w-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-zinc-600' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 w-full sm:w-56 bg-white rounded-xl border border-zinc-200 shadow-xl py-1 z-40 max-h-60 overflow-y-auto animate-fade-in">
+        <div className="absolute top-[105%] left-0 mt-1 w-full md:w-60 bg-white rounded-xl border border-zinc-200 shadow-xl py-1 z-50 max-h-64 overflow-y-auto origin-top animate-in fade-in slide-in-from-top-1 duration-150">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -100,18 +100,18 @@ function CustomSelect({ id, label, value, options, onChange, icon, placeholder }
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              className={`flex items-center justify-between w-full text-left px-3 py-2 text-xs hover:bg-amber-50/50 hover:text-amber-900 transition-colors font-medium ${
-                value === opt.value ? 'bg-amber-50/70 text-amber-950 font-bold' : 'text-zinc-800'
+              className={`flex items-center justify-between w-full text-left px-3.5 py-2 text-xs hover:bg-zinc-50 transition-colors font-medium ${
+                value === opt.value ? 'bg-amber-50/60 text-amber-900 font-semibold' : 'text-zinc-700'
               }`}
             >
               <span className="truncate pr-2">{opt.label}</span>
               <span className="flex items-center gap-1.5 shrink-0">
                 {opt.count !== undefined && (
-                  <span className="text-[10px] text-muted-foreground bg-zinc-100 rounded-full px-1.5 py-0.5">
+                  <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-100 rounded-md px-1.5 py-0.5">
                     {opt.count}
                   </span>
                 )}
-                {value === opt.value && <Check className="h-3 w-3 text-amber-600" />}
+                {value === opt.value && <Check className="h-3.5 w-3.5 text-amber-600 stroke-[2.5]" />}
               </span>
             </button>
           ))}
@@ -189,76 +189,81 @@ export function MarketplaceFilters({
 
   const renderFiltersList = (isMobile: boolean = false) => {
     return (
-      <div className={`flex ${isMobile ? 'flex-col gap-6' : 'flex-wrap gap-5 items-center'}`}>
-        {/* Category Combobox */}
-        <CustomSelect
-          id={isMobile ? 'mobile-filter-category' : 'filter-category'}
-          label="Category"
-          value={selectedCategory}
-          options={categoryOptions}
-          onChange={(val) => applyFilters({ category: val })}
-          icon={<Layers className="h-3.5 w-3.5" />}
-          placeholder="All Categories"
-        />
-
-        {/* Seller Location Combobox */}
-        {cities.length > 0 && (
+      <div className={`grid gap-5 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[1fr_auto] items-end w-full'}`}>
+        {/* Left Side Grouping: Controls */}
+        <div className="flex flex-col md:flex-row flex-wrap gap-4 items-stretch md:items-end">
+          {/* Category Dropdown */}
           <CustomSelect
-            id={isMobile ? 'mobile-filter-city' : 'filter-city'}
-            label="Location"
-            value={selectedCity}
-            options={cityOptions}
-            onChange={(val) => applyFilters({ city: val })}
-            icon={<MapPin className="h-3.5 w-3.5" />}
-            placeholder="All Locations"
+            id={isMobile ? 'mobile-filter-category' : 'filter-category'}
+            label="Category"
+            value={selectedCategory}
+            options={categoryOptions}
+            onChange={(val) => applyFilters({ category: val })}
+            icon={<Layers className="h-3.5 w-3.5" />}
+            placeholder="All Categories"
           />
-        )}
 
-        {/* Price Range Slider */}
-        <div className="flex flex-col gap-1 w-full sm:w-48">
-          <div className="flex justify-between items-center select-none">
-            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
-              Price Range
-            </span>
-            <span className="text-[10px] font-bold text-amber-700">
-              ₹{sliderRange[0]} - ₹{sliderRange[1] === defaultMax ? '50k+' : sliderRange[1]}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            <PriceRangeSlider
-              min={0}
-              max={defaultMax}
-              step={100}
-              value={sliderRange}
-              onValueChange={setSliderRange}
-              onValueCommit={handlePriceCommit}
+          {/* Seller Location Dropdown */}
+          {cities.length > 0 && (
+            <CustomSelect
+              id={isMobile ? 'mobile-filter-city' : 'filter-city'}
+              label="Location"
+              value={selectedCity}
+              options={cityOptions}
+              onChange={(val) => applyFilters({ city: val })}
+              icon={<MapPin className="h-3.5 w-3.5" />}
+              placeholder="All Locations"
             />
-            {(minPrice || maxPrice) && (
-              <button
-                type="button"
-                onClick={handlePriceReset}
-                title="Reset Price"
-                className="text-muted-foreground hover:text-red-650 transition-colors p-0.5"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            )}
+          )}
+
+          {/* Price Range Slider */}
+          <div className="flex flex-col gap-1.5 w-full md:w-48">
+            <div className="flex justify-between items-center select-none">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                Price Range
+              </span>
+              <span className="text-[11px] font-bold text-amber-700">
+                ₹{sliderRange[0]} - {sliderRange[1] === defaultMax ? '₹50k+' : `₹${sliderRange[1]}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 h-10">
+              <div className="flex-1 pt-1">
+                <PriceRangeSlider
+                  min={0}
+                  max={defaultMax}
+                  step={100}
+                  value={sliderRange}
+                  onValueChange={setSliderRange}
+                  onValueCommit={handlePriceCommit}
+                />
+              </div>
+              {(minPrice || maxPrice) && (
+                <button
+                  type="button"
+                  onClick={handlePriceReset}
+                  title="Reset Price"
+                  className="text-zinc-400 hover:text-zinc-650 transition-colors p-1 hover:bg-zinc-100 rounded-md shrink-0"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* In-Stock Toggle */}
+          <label className={`flex items-center gap-2.5 text-xs font-semibold text-zinc-700 cursor-pointer select-none h-10 px-1 hover:text-zinc-900 transition-colors ${isMobile ? 'py-4 border-y border-zinc-100 my-2' : ''}`}>
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => applyFilters({ inStock: e.target.checked })}
+              className="h-4 w-4 accent-amber-500 rounded border-zinc-300 text-amber-600 focus:ring-amber-500/20 cursor-pointer"
+            />
+            In stock only
+          </label>
         </div>
 
-        {/* In-Stock Toggle */}
-        <label className={`flex items-center gap-2 text-xs font-semibold text-foreground/80 cursor-pointer select-none ${isMobile ? 'py-2 border-y border-zinc-100' : 'self-end pb-2'}`}>
-          <input
-            type="checkbox"
-            checked={inStockOnly}
-            onChange={(e) => applyFilters({ inStock: e.target.checked })}
-            className="h-4.5 w-4.5 accent-amber-500 rounded border-zinc-350 cursor-pointer"
-          />
-          In stock only
-        </label>
-
-        {/* Sort By Dropdown */}
-        <div className={isMobile ? '' : 'ml-auto'}>
+        {/* Right Side Grouping: Sorting (Aligned beautifully on Desktop) */}
+        <div className={isMobile ? 'pt-2' : 'w-full lg:w-auto border-t lg:border-t-0 border-zinc-100 pt-4 lg:pt-0'}>
           <CustomSelect
             id={isMobile ? 'mobile-filter-sort' : 'filter-sort'}
             label="Sort By"
@@ -274,25 +279,25 @@ export function MarketplaceFilters({
   };
 
   return (
-    <div className="w-full mb-8">
-      {/* Desktop Filter Panel: Hidden on mobile (under md) */}
-      <div className="hidden md:flex flex-col gap-4 w-full bg-card p-4 rounded-xl border border-zinc-200 shadow-sm text-foreground">
+    <div className="w-full space-y-3 mb-8">
+      {/* Desktop Filter Panel */}
+      <div className="hidden md:block w-full bg-white p-5 rounded-xl border border-zinc-200 shadow-sm">
         {renderFiltersList()}
       </div>
 
-      {/* Mobile Filter Button and Modal (Hidden on Desktop) */}
+      {/* Mobile Filter Trigger Button */}
       <div className="flex md:hidden items-center justify-between w-full gap-3">
         <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
           <DialogTrigger>
             <Button
               variant="outline"
-              className="flex items-center justify-center gap-2 h-10 w-full text-sm font-semibold border-zinc-200 hover:border-amber-500/50 hover:bg-amber-50/10 text-zinc-800"
+              className="flex items-center justify-center gap-2 h-11 w-full text-sm font-semibold border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 shadow-sm"
             >
               <SlidersHorizontal className="h-4 w-4 text-amber-500" />
               Filters & Sort {isFilterActive ? '(Active)' : ''}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-xl">
             <DialogHeader>
               <DialogTitle>Filter Listings</DialogTitle>
               <DialogDescription>
@@ -300,14 +305,14 @@ export function MarketplaceFilters({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4">{renderFiltersList(true)}</div>
+            <div className="py-2">{renderFiltersList(true)}</div>
 
-            <DialogFooter>
-              <div className="flex gap-2 w-full">
+            <DialogFooter className="pt-4 border-t border-zinc-100">
+              <div className="flex gap-3 w-full">
                 {isFilterActive && (
                   <Button
                     variant="outline"
-                    className="w-1/2 flex items-center justify-center gap-1.5"
+                    className="w-1/2 flex items-center justify-center gap-1.5 font-medium border-zinc-200"
                     onClick={() => {
                       applyFilters({
                         category: '',
@@ -323,7 +328,7 @@ export function MarketplaceFilters({
                   </Button>
                 )}
                 <Button
-                  className={`bg-amber-500 hover:bg-amber-600 text-black font-bold ${isFilterActive ? 'w-1/2' : 'w-full'}`}
+                  className={`bg-amber-500 hover:bg-amber-600 text-black font-semibold ${isFilterActive ? 'w-1/2' : 'w-full'}`}
                   onClick={() => setMobileOpen(false)}
                 >
                   Show Results
