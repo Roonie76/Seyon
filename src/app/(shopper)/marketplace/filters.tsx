@@ -5,14 +5,12 @@ import {
   SlidersHorizontal,
   Check,
   ChevronDown,
-  RotateCcw,
   MapPin,
   Layers,
   ArrowUpDown,
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PriceRangeSlider } from '@/components/ui/price-range-slider';
 import {
   Dialog,
   DialogTrigger,
@@ -133,33 +131,7 @@ export function MarketplaceFilters({
   query,
   applyFilters,
 }: MarketplaceFiltersProps) {
-  // Price state for slider
-  const defaultMax = 50000;
-  const [sliderRange, setSliderRange] = React.useState<[number, number]>([
-    minPrice ? Math.max(0, parseFloat(minPrice)) : 0,
-    maxPrice ? Math.max(0, parseFloat(maxPrice)) : defaultMax,
-  ]);
   const [mobileOpen, setMobileOpen] = React.useState(false);
-
-  // Sync slider range when price props change (e.g. from filter clearing chips)
-  React.useEffect(() => {
-    setSliderRange([
-      minPrice ? Math.max(0, parseFloat(minPrice)) : 0,
-      maxPrice ? Math.max(0, parseFloat(maxPrice)) : defaultMax,
-    ]);
-  }, [minPrice, maxPrice]);
-
-  const handlePriceCommit = (val: [number, number]) => {
-    applyFilters({
-      minPrice: val[0] > 0 ? val[0].toString() : '',
-      maxPrice: val[1] < defaultMax ? val[1].toString() : '',
-    });
-  };
-
-  const handlePriceReset = () => {
-    setSliderRange([0, defaultMax]);
-    applyFilters({ minPrice: '', maxPrice: '' });
-  };
 
   const isFilterActive = selectedCategory || selectedCity || inStockOnly || minPrice || maxPrice;
 
@@ -216,38 +188,51 @@ export function MarketplaceFilters({
             />
           )}
 
-          {/* Price Range Slider */}
-          <div className="flex flex-col gap-1.5 w-full md:w-48">
-            <div className="flex justify-between items-center select-none">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                Price Range
-              </span>
-              <span className="text-[11px] font-bold text-amber-700">
-                ₹{sliderRange[0]} - {sliderRange[1] === defaultMax ? '₹50k+' : `₹${sliderRange[1]}`}
-              </span>
-            </div>
-            <div className="flex items-center gap-3 h-10">
-              <div className="flex-1 pt-1">
-                <PriceRangeSlider
-                  min={0}
-                  max={defaultMax}
-                  step={100}
-                  value={sliderRange}
-                  onValueChange={setSliderRange}
-                  onValueCommit={handlePriceCommit}
+          {/* Price Range Inputs */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider select-none">
+              Price Range
+            </span>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                applyFilters({
+                  minPrice: (fd.get('minPrice') as string) || '',
+                  maxPrice: (fd.get('maxPrice') as string) || '',
+                });
+              }}
+              className="flex items-center gap-1.5 h-10"
+            >
+              <div className="relative">
+                <span className="absolute left-2.5 top-2.5 text-xs text-zinc-400 font-semibold select-none">₹</span>
+                <input
+                  type="number"
+                  name="minPrice"
+                  aria-label="Minimum price"
+                  key={minPrice}
+                  defaultValue={minPrice}
+                  placeholder="Min"
+                  className="w-20 h-10 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
                 />
               </div>
-              {(minPrice || maxPrice) && (
-                <button
-                  type="button"
-                  onClick={handlePriceReset}
-                  title="Reset Price"
-                  className="text-zinc-400 hover:text-zinc-650 transition-colors p-1 hover:bg-zinc-100 rounded-md shrink-0"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+              <span className="text-zinc-450 text-xs font-bold select-none">—</span>
+              <div className="relative">
+                <span className="absolute left-2.5 top-2.5 text-xs text-zinc-400 font-semibold select-none">₹</span>
+                <input
+                  type="number"
+                  name="maxPrice"
+                  aria-label="Maximum price"
+                  key={maxPrice}
+                  defaultValue={maxPrice}
+                  placeholder="Max"
+                  className="w-20 h-10 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
+                />
+              </div>
+              <Button type="submit" size="sm" variant="outline" className="h-10 text-xs rounded-lg px-3 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold cursor-pointer shadow-sm">
+                Apply
+              </Button>
+            </form>
           </div>
 
           {/* In-Stock Toggle */}
