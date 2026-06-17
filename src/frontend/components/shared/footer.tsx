@@ -35,9 +35,6 @@ export function Footer() {
             <Link href="/" className="hover:text-white transition-colors">
               Home
             </Link>
-            <Link href={`${buyerMarketUrl}/marketplace`} className="hover:text-white transition-colors">
-              Marketplace
-            </Link>
             <Link href="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </Link>
