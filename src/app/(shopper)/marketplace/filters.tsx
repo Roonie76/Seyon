@@ -133,6 +133,20 @@ export function MarketplaceFilters({
 }: MarketplaceFiltersProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isDesktopOpen, setIsDesktopOpen] = React.useState(false);
+  const [isStuck, setIsStuck] = React.useState(false);
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+
+  // Use IntersectionObserver to detect when the filter bar becomes sticky
+  React.useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsStuck(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-64px 0px 0px 0px' } // 64px = navbar h-16
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   const isFilterActive = selectedCategory || selectedCity || inStockOnly || minPrice || maxPrice;
 
@@ -256,10 +270,26 @@ export function MarketplaceFilters({
   };
 
   return (
-    <div className="w-full space-y-3 mb-8">
-      {/* Desktop Filter Panel */}
-      <div className="hidden md:flex flex-col w-full">
-        <div className="flex items-center justify-between w-full bg-white px-5 py-3 rounded-xl border border-zinc-200 shadow-sm">
+    <>
+      {/* Invisible sentinel — when it scrolls above the viewport the bar is "stuck" */}
+      <div ref={sentinelRef} className="h-0 w-full" aria-hidden="true" />
+
+      <div
+        className={`w-full space-y-3 mb-8 sticky top-16 z-30 transition-all duration-300 ${
+          isStuck
+            ? 'py-3 -mx-1 px-1'
+            : ''
+        }`}
+      >
+        {/* Desktop Filter Panel */}
+        <div className="hidden md:flex flex-col w-full">
+          <div
+            className={`flex items-center justify-between w-full px-5 py-3 rounded-xl border shadow-sm transition-all duration-300 ${
+              isStuck
+                ? 'bg-white/70 backdrop-blur-xl border-white/40 shadow-lg shadow-zinc-200/40'
+                : 'bg-white border-zinc-200'
+            }`}
+          >
           {/* Left Side: Filter toggler and clear indicator */}
           <div className="flex items-center gap-4">
             <button
@@ -319,7 +349,11 @@ export function MarketplaceFilters({
           }`}
         >
           <div className="overflow-hidden">
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm mt-1">
+            <div className={`p-5 rounded-xl border shadow-sm mt-1 transition-all duration-300 ${
+                isStuck
+                  ? 'bg-white/70 backdrop-blur-xl border-white/40 shadow-lg shadow-zinc-200/40'
+                  : 'bg-white border-zinc-200'
+              }`}>
               {renderFiltersList(false)}
             </div>
           </div>
@@ -395,5 +429,6 @@ export function MarketplaceFilters({
         </Dialog>
       </div>
     </div>
+    </>
   );
 }
