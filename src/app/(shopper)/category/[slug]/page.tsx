@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { generateItemListJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { logger } from '@/backend/lib/logger';
+import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
@@ -136,9 +137,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                    No Image
-                  </div>
+                  <NoImagePlaceholder />
                 )}
               </div>
               <div className="p-4 flex flex-col justify-between flex-grow">

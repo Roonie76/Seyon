@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
 import { generateItemListJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { RecentlyViewedStrip } from '@/components/shared/recently-viewed';
+import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { logger } from '@/backend/lib/logger';
 import type { Metadata } from 'next';
 
@@ -300,7 +301,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {products.map((prod) => (
-                <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
+                <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`} className="group">
                   <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
                     <div className="relative aspect-video bg-zinc-100 overflow-hidden">
                       {prod.images?.[0] ? (
@@ -312,9 +313,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
                           sizes="(max-width: 768px) 50vw, 33vw"
                         />
                       ) : (
-                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                          No Image
-                        </div>
+                        <NoImagePlaceholder />
                       )}
                       {prod.inStock === false && (
                         <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
@@ -361,30 +360,42 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
-              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page - 1}`} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
-                <Button variant="outline" size="sm">
-                  Previous
-                </Button>
-              </Link>
-              {Array.from({ length: totalPages }).map((_, idx) => {
-                const pNum = idx + 1;
-                return (
-                  <Link key={pNum} href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${pNum}`}>
-                    <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
-                      {pNum}
-                    </Button>
-                  </Link>
-                );
-              })}
-              <Link href={`/marketplace?q=${query}&category=${selectedCategory}&sort=${sort}&page=${page + 1}`} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
-                <Button variant="outline" size="sm">
-                  Next
-                </Button>
-              </Link>
-            </div>
-          )}
+          {totalPages > 1 && (() => {
+            const paginationParams = new URLSearchParams();
+            if (query) paginationParams.set('q', query);
+            if (selectedCategory) paginationParams.set('category', selectedCategory);
+            if (selectedCity) paginationParams.set('city', selectedCity);
+            if (inStockOnly) paginationParams.set('inStock', '1');
+            if (sort && sort !== 'newest') paginationParams.set('sort', sort);
+            if (minPrice) paginationParams.set('minPrice', minPrice);
+            if (maxPrice) paginationParams.set('maxPrice', maxPrice);
+            const baseQs = paginationParams.toString();
+            const buildUrl = (p: number) => `/marketplace?${baseQs}${baseQs ? '&' : ''}page=${p}`;
+            return (
+              <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
+                <Link href={buildUrl(page - 1)} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>
+                  <Button variant="outline" size="sm">
+                    Previous
+                  </Button>
+                </Link>
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const pNum = idx + 1;
+                  return (
+                    <Link key={pNum} href={buildUrl(pNum)}>
+                      <Button variant={page === pNum ? 'default' : 'outline'} size="sm" className="h-8 w-8 p-0">
+                        {pNum}
+                      </Button>
+                    </Link>
+                  );
+                })}
+                <Link href={buildUrl(page + 1)} className={page === totalPages ? 'pointer-events-none opacity-40' : ''}>
+                  <Button variant="outline" size="sm">
+                    Next
+                  </Button>
+                </Link>
+              </div>
+            );
+          })()}
         </div>
       </MarketplaceClient>
       <RecentlyViewedStrip />

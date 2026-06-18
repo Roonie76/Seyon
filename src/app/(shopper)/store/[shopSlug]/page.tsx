@@ -13,6 +13,7 @@ import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star, MapPin, PauseCircle 
 import { ShareButton } from '@/components/shared/share-button';
 import { logger } from '@/backend/lib/logger';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
+import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -229,7 +230,7 @@ export default async function StorePage({ params }: StorePageProps) {
               ) : (
                 <div className="grid sm:grid-cols-2 gap-6">
                   {activeProducts.map((prod) => (
-                    <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`}>
+                    <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`} className="group">
                       <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
                         <div className="relative aspect-video bg-zinc-100 overflow-hidden">
                           {prod.images?.[0] ? (
@@ -241,9 +242,7 @@ export default async function StorePage({ params }: StorePageProps) {
                               sizes="(max-width: 768px) 50vw, 33vw"
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                              No Image
-                            </div>
+                            <NoImagePlaceholder />
                           )}
                           {!prod.inStock && (
                             <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
@@ -253,7 +252,7 @@ export default async function StorePage({ params }: StorePageProps) {
                         </div>
                         <div className="p-4 flex-grow flex flex-col justify-between">
                           <div>
-                            <span className="text-[10px] uppercase font-bold text-amber-750 mb-1 block">
+                            <span className="text-[10px] uppercase font-bold text-amber-700 mb-1 block">
                               {prod.category}
                             </span>
                             <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">

@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Heart, ArrowLeft } from 'lucide-react';
+import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 export default async function WishlistPage() {
@@ -71,9 +72,7 @@ export default async function WishlistPage() {
                       sizes="(max-width: 768px) 50vw, 25vw"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                      No Image
-                    </div>
+                    <NoImagePlaceholder />
                   )}
                   <div className="absolute top-2 right-2 z-10">
                     <WishlistButton

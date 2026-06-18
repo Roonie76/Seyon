@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '@/lib/db';
+import { Breadcrumbs } from '@/components/shared/breadcrumbs';
+import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 
 interface RelatedProduct {
   id: string;
@@ -142,16 +144,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
       />
 
       {/* Breadcrumbs & Back buttons */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
         <Link
           href={`/store/${shop.slug}`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Storefront
         </Link>
-        <span className="text-xs text-muted-foreground">
-          Marketplace &rarr; {product.category} &rarr; {product.title}
-        </span>
+        <Breadcrumbs
+          items={[
+            { label: shop.name, href: `/store/${shop.slug}` },
+            { label: product.category, href: `/category/${encodeURIComponent(product.category.toLowerCase())}` },
+            { label: product.title },
+          ]}
+        />
       </div>
 
       {shop.isPaused && (
@@ -164,6 +170,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Gallery & Description Column */}
         <div className="lg:col-span-2 flex flex-col gap-8">
+          {/* Mobile-only: Title + Price above gallery so user sees product name first */}
+          <div className="lg:hidden">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 mb-2 capitalize">
+              <Tag size={10} /> {product.category}
+            </span>
+            <h1 className="text-xl font-extrabold text-foreground tracking-tight leading-tight mb-1">
+              {product.title}
+            </h1>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-2xl font-black text-foreground">₹{product.price.toFixed(2)}</span>
+              {product.compareAtPrice != null && product.compareAtPrice > product.price && (
+                <>
+                  <span className="text-sm text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
+                  <Badge variant="destructive" className="text-[10px] font-bold">
+                    {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
+                  </Badge>
+                </>
+              )}
+            </div>
+          </div>
           <ProductGallery images={product.images} />
 
           {/* Product Description */}
@@ -186,7 +212,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <Tag size={10} /> {product.category}
             </span>
 
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-2">
+            <h1 className="hidden lg:block text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-2">
               {product.title}
             </h1>
 
@@ -224,16 +250,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             )}
 
-            {/* Order execution details helper */}
-            <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-4 mb-6 flex gap-3 text-xs leading-relaxed text-amber-800">
-              <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-              <div>
-                <p className="font-bold text-foreground">How purchasing works:</p>
-                <p className="mt-1">
-                  Seyon connects you directly to the seller. Clicking the button below opens WhatsApp with a prefilled purchase inquiry message.
-                </p>
+            {/* Order execution details helper — collapsible */}
+            <details className="rounded-lg bg-amber-500/5 border border-amber-500/10 mb-6 group/info">
+              <summary className="p-4 flex gap-3 text-xs leading-relaxed text-amber-800 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <span className="font-bold text-foreground">How purchasing works</span>
+                <svg className="h-4 w-4 shrink-0 ml-auto text-amber-600 transition-transform group-open/info:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </summary>
+              <div className="px-4 pb-4 text-xs leading-relaxed text-amber-800 ml-7">
+                Seyon connects you directly to the seller. Clicking the button below opens WhatsApp with a prefilled purchase inquiry message.
               </div>
-            </div>
+            </details>
 
             {/* Order CTA */}
             <div className="flex flex-col gap-3">
@@ -335,7 +362,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h2 className="text-xl font-bold text-foreground mb-8">Other Products from this Store</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {relatedProducts.map((prod) => (
-              <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`}>
+              <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`} className="group">
                 <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
                   <div className="relative aspect-video bg-zinc-100 overflow-hidden">
                     {prod.images?.[0] ? (
@@ -347,9 +374,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                        No Image
-                      </div>
+                      <NoImagePlaceholder />
                     )}
                   </div>
                   <div className="p-4 flex-grow flex flex-col justify-between">

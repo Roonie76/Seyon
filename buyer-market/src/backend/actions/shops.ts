@@ -256,6 +256,9 @@ export async function getShopBySlug(slug: string) {
   const shop = await db.shop.findUnique({
     where: { slug: cleanSlug },
     include: {
+      _count: {
+        select: { products: true },
+      },
       owner: {
         select: {
           emailVerified: true,
