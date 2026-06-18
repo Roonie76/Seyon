@@ -12,7 +12,7 @@ export async function Navbar() {
   const dbUser = user?.id
     ? await db.user.findUnique({
         where: { id: user.id },
-        select: { name: true, email: true, role: true },
+        select: { name: true, email: true, image: true, role: true },
       })
     : null;
 
@@ -22,9 +22,9 @@ export async function Navbar() {
   };
 
   const displayUser = dbUser
-    ? { name: dbUser.name, email: dbUser.email, role: dbUser.role }
+    ? { name: dbUser.name, email: dbUser.email, image: dbUser.image, role: dbUser.role }
     : user
-    ? { name: user.name, email: user.email, role: user.role }
+    ? { name: user.name, email: user.email, image: user.image, role: user.role }
     : undefined;
 
   return (

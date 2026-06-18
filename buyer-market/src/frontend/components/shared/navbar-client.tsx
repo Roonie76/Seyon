@@ -10,6 +10,7 @@ interface NavbarClientProps {
     name?: string | null;
     email?: string | null;
     role?: string;
+    image?: string | null;
   };
   wishlistCount: number;
   buyerMarketUrl: string;
@@ -309,30 +310,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 </Link>
               </div>
 
-              {user && (
-                <div className="space-y-3">
-                  <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Account</span>
-                  <Link
-                    href="/account"
-                    onClick={closeAll}
-                    className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
-                  >
-                    My Account Settings
-                    <ChevronRight className="h-4 w-4 text-zinc-500" />
-                  </Link>
-                  <button
-                    onClick={async () => {
-                      closeAll();
-                      await onSignOut();
-                    }}
-                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-800 hover:border-red-500/35 bg-zinc-900/40 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer mt-2"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Log Out
-                  </button>
-                </div>
-              )}
-
               <div className="space-y-3">
                 <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Support</span>
                 <a
@@ -352,6 +329,56 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 </Link>
               </div>
             </nav>
+
+            {/* Auth / Account Panel */}
+            {user ? (
+              <div className="border-t border-zinc-900 pt-6 mt-6 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
+                    {user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-bold text-primary">
+                        {user.name ? user.name[0].toUpperCase() : 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-white">{user.name}</span>
+                    <span className="text-[10px] text-zinc-500 capitalize">{user.role?.toLowerCase() || ''}</span>
+                  </div>
+                </div>
+                <Link
+                  href="/account"
+                  onClick={closeAll}
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                >
+                  My Account Settings
+                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                </Link>
+                <button
+                  onClick={async () => {
+                    closeAll();
+                    await onSignOut();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-800 hover:border-red-500/35 bg-zinc-900/40 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Log Out
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-zinc-900 pt-6 mt-6">
+                <Link
+                  href="/login"
+                  onClick={closeAll}
+                  className="w-full flex items-center justify-center rounded-lg bg-primary hover:bg-primary/90 text-black text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer"
+                >
+                  Login / Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
