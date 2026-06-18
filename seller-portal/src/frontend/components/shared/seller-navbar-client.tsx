@@ -308,14 +308,6 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
               <div className="space-y-3">
                 <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Seller Portal</span>
                 <Link
-                  href="/sell"
-                  onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
-                >
-                  Seller Home
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
-                </Link>
-                <Link
                   href="/dashboard"
                   onClick={closeAll}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
