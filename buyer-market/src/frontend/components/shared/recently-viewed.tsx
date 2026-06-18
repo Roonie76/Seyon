@@ -48,7 +48,9 @@ export function RecentlyViewedStrip({ excludeId }: { excludeId?: string }) {
   const [items, setItems] = React.useState<RecentItem[]>([]);
 
   React.useEffect(() => {
-    setItems(readRecent().filter((r) => r.id !== excludeId));
+    requestAnimationFrame(() => {
+      setItems(readRecent().filter((r) => r.id !== excludeId));
+    });
   }, [excludeId]);
 
   if (items.length === 0) return null;

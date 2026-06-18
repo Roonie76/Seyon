@@ -13,7 +13,6 @@ interface NavbarClientProps {
   };
   wishlistCount: number;
   buyerMarketUrl: string;
-  onSignOut: () => Promise<void>;
 }
 
 interface Suggestion {
@@ -22,13 +21,12 @@ interface Suggestion {
   products: { id: string; title: string; slug: string; price: number; shopSlug: string }[];
 }
 
-export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: NavbarClientProps) {
+export function NavbarClient({ user, wishlistCount, buyerMarketUrl }: NavbarClientProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
-  const [loadingSuggestions, setLoadingSuggestions] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Focus search input when opened
@@ -40,13 +38,9 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
 
   // Fetch search suggestions
   React.useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSuggestions(null);
-      return;
-    }
+    if (!searchQuery.trim()) return;
 
     const delayDebounce = setTimeout(async () => {
-      setLoadingSuggestions(true);
       try {
         const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(searchQuery)}`);
         if (res.ok) {
@@ -55,8 +49,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
         }
       } catch (err) {
         console.error('Failed to load suggestions:', err);
-      } finally {
-        setLoadingSuggestions(false);
       }
     }, 300);
 
@@ -156,7 +148,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 {searchQuery && (
                   <button
                     type="button"
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => { setSearchQuery(''); setSuggestions(null); }}
                     className="text-zinc-400 hover:text-zinc-200 transition-colors"
                   >
                     <X className="h-4 w-4" />
@@ -259,6 +251,10 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
             onClick={() => setIsMenuOpen(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setIsMenuOpen(false); }}
+            role="button"
+            tabIndex={-1}
+            aria-label="Close menu"
           />
 
           {/* Drawer Body */}

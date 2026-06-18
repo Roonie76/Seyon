@@ -8,7 +8,6 @@ import {
   MapPin,
   Layers,
   ArrowUpDown,
-  Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -128,7 +127,6 @@ export function MarketplaceFilters({
   sort,
   minPrice,
   maxPrice,
-  query,
   applyFilters,
 }: MarketplaceFiltersProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);

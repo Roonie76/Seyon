@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,10 @@ interface ShareStoreCardProps {
 }
 
 export function ShareStoreCard({ shopSlug, buyerMarketUrl }: ShareStoreCardProps) {
-  const [storeUrl, setStoreUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
 
-  useEffect(() => {
+  const storeUrl = useMemo(() => {
     let base = buyerMarketUrl;
     if (!base && typeof window !== 'undefined') {
       const origin = window.location.origin;
@@ -27,7 +26,7 @@ export function ShareStoreCard({ shopSlug, buyerMarketUrl }: ShareStoreCardProps
         base = origin;
       }
     }
-    setStoreUrl(`${base || 'https://seyon-pied.vercel.app'}/store/${shopSlug}`);
+    return `${base || 'https://seyon-pied.vercel.app'}/store/${shopSlug}`;
   }, [shopSlug, buyerMarketUrl]);
 
   useEffect(() => {

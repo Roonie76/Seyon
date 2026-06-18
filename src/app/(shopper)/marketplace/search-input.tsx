@@ -51,10 +51,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
 
   // Fetch suggestions when debounced query changes
   React.useEffect(() => {
-    if (debouncedQuery.trim().length < 2) {
-      setSuggestions({ categories: [], shops: [], products: [] });
-      return;
-    }
+    if (debouncedQuery.trim().length < 2) return;
 
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
@@ -98,6 +95,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
 
   const clearSearch = () => {
     setQuery('');
+    setSuggestions({ categories: [], shops: [], products: [] });
     onSearch('');
   };
 
@@ -113,8 +111,12 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
           type="text"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            const val = e.target.value;
+            setQuery(val);
             setShowDropdown(true);
+            if (val.trim().length < 2) {
+              setSuggestions({ categories: [], shops: [], products: [] });
+            }
           }}
           onFocus={() => setShowDropdown(true)}
           placeholder="Search products, stores, or categories..."

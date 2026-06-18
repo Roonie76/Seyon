@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -280,6 +281,7 @@ export function StoreOnboardingForm() {
 import { Shop } from '@prisma/client';
 
 export function StoreSettingsForm({ shop }: { shop: Shop }) {
+  const router = useRouter();
   const [formData, setFormData] = React.useState({
     name: shop.name,
     slug: shop.slug,
@@ -312,7 +314,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
     if (res.error) {
       setMessage({ type: 'error', text: res.error });
     } else {
-      window.location.href = '/sell';
+      router.push('/sell');
     }
   };
   const [whatsappVerifiedAt, setWhatsappVerifiedAt] = React.useState(shop.whatsappVerifiedAt);

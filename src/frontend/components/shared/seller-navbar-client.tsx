@@ -268,6 +268,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
             onClick={() => setIsMenuOpen(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setIsMenuOpen(false); }}
             role="button"
             tabIndex={-1}
             aria-label="Close menu"

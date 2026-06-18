@@ -34,7 +34,7 @@ export function MarketplaceFilters({
   sort,
   minPrice,
   maxPrice,
-  query,
+  query: _query,
 }: MarketplaceFiltersProps) {
   const router = useRouter();
 
@@ -50,7 +50,7 @@ export function MarketplaceFilters({
   const applyFilters = (next: Partial<FilterState>) => {
     const state = { ...current, ...next };
     const params = new URLSearchParams();
-    if (query) params.set('q', query);
+    if (_query) params.set('q', _query);
     if (state.category) params.set('category', state.category);
     if (state.city) params.set('city', state.city);
     if (state.inStock) params.set('inStock', '1');

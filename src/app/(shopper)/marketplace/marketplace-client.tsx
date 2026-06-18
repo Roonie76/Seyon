@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X } from 'lucide-react';
 import { ProductSkeletonGrid } from '@/components/ui/product-skeleton';
 import { MarketplaceSearchInput } from './search-input';
 import { MarketplaceFilters } from './filters';
