@@ -117,7 +117,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
 
           {/* Right Side: Account, Wishlist */}
           <div className="flex items-center gap-4 sm:gap-6">
-            {user && (
+            {user ? (
               <Link
                 href="/account"
                 className="p-0.5 text-zinc-300 hover:text-primary transition-colors flex items-center justify-center"
@@ -131,6 +131,15 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 ) : (
                   <User className="h-5 w-5 stroke-[1.5]" />
                 )}
+              </Link>
+            ) : (
+              <Link
+                href="/login?callbackUrl=/dashboard"
+                className="inline-flex items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white px-3 py-1 text-[11px] sm:text-xs font-semibold text-zinc-350 transition-all shadow-sm active:scale-95 cursor-pointer"
+                title="Login or Sign Up"
+              >
+                <span className="xs:hidden">Login</span>
+                <span className="hidden xs:inline">Login / Sign Up</span>
               </Link>
             )}
             <Link
