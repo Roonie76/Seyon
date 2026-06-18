@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '@/lib/db';
+import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 interface RelatedProduct {
   id: string;
@@ -142,16 +143,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
       />
 
       {/* Breadcrumbs & Back buttons */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
         <Link
           href={`/store/${shop.slug}`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Storefront
         </Link>
-        <span className="text-xs text-muted-foreground">
-          Marketplace &rarr; {product.category} &rarr; {product.title}
-        </span>
+        <Breadcrumbs
+          items={[
+            { label: shop.name, href: `/store/${shop.slug}` },
+            { label: product.category, href: `/category/${encodeURIComponent(product.category.toLowerCase())}` },
+            { label: product.title },
+          ]}
+        />
       </div>
 
       {shop.isPaused && (

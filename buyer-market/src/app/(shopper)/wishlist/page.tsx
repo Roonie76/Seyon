@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Heart, ArrowLeft } from 'lucide-react';
+import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 export default async function WishlistPage() {
   const session = await auth();
@@ -22,13 +23,16 @@ export default async function WishlistPage() {
     <div className="container mx-auto px-4 py-8 md:py-12 bg-background text-foreground min-h-[70vh]">
       {/* Breadcrumbs & Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 border-b border-zinc-200 pb-6">
-        <div>
-          <Link
-            href="/marketplace"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-2"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to Marketplace
-          </Link>
+        <div className="w-full">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-3">
+            <Link
+              href="/marketplace"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to Marketplace
+            </Link>
+            <Breadcrumbs items={[{ label: 'Wishlist' }]} />
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight flex items-center gap-2.5">
             <Heart className="h-8 w-8 text-rose-500 fill-rose-500" />
             My Wishlist

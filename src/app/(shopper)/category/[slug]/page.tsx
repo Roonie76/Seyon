@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { generateItemListJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { logger } from '@/backend/lib/logger';
+import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const resolvedParams = await params;
@@ -104,10 +105,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
       />
-      {/* Back button */}
-      <Link href="/marketplace" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Back to Marketplace
-      </Link>
+      {/* Breadcrumbs & Back button */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+        <Link href="/marketplace" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
+          <ArrowLeft className="h-4 w-4" /> Back to Marketplace
+        </Link>
+        <Breadcrumbs items={[{ label: categoryName }]} />
+      </div>
 
       <div className="relative rounded-2xl border border-neutral-800 bg-neutral-900 p-8 md:p-12 mb-12 overflow-hidden shadow-lg">
         <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-2">

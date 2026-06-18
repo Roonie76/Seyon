@@ -12,6 +12,7 @@ import { WhatsAppButton, ReviewModal, ReportModal } from '@/components/store/sto
 import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star, MapPin, PauseCircle } from 'lucide-react';
 import { ShareButton } from '@/components/shared/share-button';
 import { logger } from '@/backend/lib/logger';
+import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -202,6 +203,11 @@ export default async function StorePage({ params }: StorePageProps) {
             <ReportModal shopId={shop.id} />
           </div>
         </div>
+      </div>
+
+      {/* Breadcrumbs */}
+      <div className="container mx-auto px-4 sm:px-6 mb-6">
+        <Breadcrumbs items={[{ label: shop.name }]} />
       </div>
 
       {/* Main Grid: Products, Trust Score, and Reviews */}

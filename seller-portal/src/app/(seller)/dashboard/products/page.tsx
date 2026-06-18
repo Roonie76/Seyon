@@ -86,7 +86,7 @@ export default async function DashboardProductsPage() {
         </p>
       </div>
 
-      <ProductManager shopId={shop.id} products={products} clickStats={clickStats} />
+      <ProductManager shopId={shop.id} shopSlug={shop.slug} products={products} clickStats={clickStats} />
     </div>
   );
 }

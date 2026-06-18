@@ -10,7 +10,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { createProduct, updateProduct, deleteProduct, toggleProductStock, quickAddProducts } from '@/actions/products';
 import { Product, ProductImage, ProductStatus } from '@prisma/client';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap, Share2, Check } from 'lucide-react';
 
 interface ProductImageInput {
   url: string;
@@ -24,11 +24,12 @@ interface ProductWithImages extends Product {
 
 interface ProductManagerProps {
   shopId: string;
+  shopSlug: string;
   products: ProductWithImages[];
   clickStats?: Record<string, { total: number; week: number }>;
 }
 
-export function ProductManager({ shopId, products, clickStats = {} }: ProductManagerProps) {
+export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: ProductManagerProps) {
   const [quickAdding, setQuickAdding] = React.useState(false);
 
   const handleQuickAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,6 +263,33 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
     }
   };
 
+  const [copiedId, setCopiedId] = React.useState<string | null>(null);
+
+  const handleShare = async (product: ProductWithImages) => {
+    const shareUrl = `${window.location.origin}/store/${shopSlug}/${product.slug}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.title,
+          text: `Check out ${product.title} on Seyon!`,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {
+        console.log('Web Share failed, falling back to clipboard copy:', err);
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedId(product.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      alert('Failed to copy link.');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header Button */}
@@ -370,6 +398,19 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:text-emerald-650 transition-colors"
+                        onClick={() => handleShare(prod)}
+                        title="Copy product storefront link"
+                      >
+                        {copiedId === prod.id ? (
+                          <Check size={14} className="text-emerald-600" />
+                        ) : (
+                          <Share2 size={14} />
+                        )}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-amber-600" onClick={() => openEdit(prod)}>
                         <Edit2 size={14} />
                       </Button>
@@ -422,6 +463,7 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
                 <Input
                   required
                   type="number"
+                  min="0"
                   step="0.01"
                   placeholder="e.g. 1500"
                   value={formData.price}
@@ -470,6 +512,7 @@ export function ProductManager({ shopId, products, clickStats = {} }: ProductMan
                 <label className="text-xs font-semibold text-foreground/90">Compare-at Price (optional)</label>
                 <Input
                   type="number"
+                  min="0"
                   step="0.01"
                   placeholder="Original price, shown struck through"
                   value={formData.compareAtPrice}
