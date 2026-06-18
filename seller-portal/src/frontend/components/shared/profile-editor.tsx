@@ -14,9 +14,10 @@ interface ProfileEditorProps {
     role: string;
     createdAt: Date;
   };
+  type: 'shopper' | 'seller';
 }
 
-export function ProfileEditor({ user }: ProfileEditorProps) {
+export function ProfileEditor({ user, type }: ProfileEditorProps) {
   const [name, setName] = React.useState(user.name || '');
   const [phone, setPhone] = React.useState(user.phone || '');
   const [image, setImage] = React.useState(user.image || '');
@@ -72,7 +73,7 @@ export function ProfileEditor({ user }: ProfileEditorProps) {
     setSaving(true);
     setMessage(null);
 
-    const result = await updateUserProfile({ name, phone, image });
+    const result = await updateUserProfile(type, { name, phone, image });
 
     if (result.success) {
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -85,7 +86,7 @@ export function ProfileEditor({ user }: ProfileEditorProps) {
 
   const roleBadgeColor: Record<string, string> = {
     ADMIN: 'bg-red-500/10 text-red-400 border-red-500/20',
-    SELLER: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    SELLER: 'bg-amber-50/10 text-amber-400 border-amber-500/20',
     USER: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   };
 
@@ -93,8 +94,12 @@ export function ProfileEditor({ user }: ProfileEditorProps) {
     <div className="w-full max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">My Account</h1>
-        <p className="text-sm text-zinc-400 mt-1">Manage your profile information</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          {type === 'seller' ? 'Seller Account' : 'My Account'}
+        </h1>
+        <p className="text-sm text-zinc-400 mt-1">
+          {type === 'seller' ? 'Manage your seller profile information' : 'Manage your shopper profile information'}
+        </p>
       </div>
 
       {/* Profile Card */}

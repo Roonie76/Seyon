@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function ShopperAccountPage() {
-  const user = await getUserProfile();
+  const user = await getUserProfile('shopper');
 
   if (!user) {
     redirect('/login?callbackUrl=/account');
@@ -16,7 +16,7 @@ export default async function ShopperAccountPage() {
 
   return (
     <section className="min-h-[calc(100vh-4rem)] bg-secondary py-10 px-4 sm:px-6">
-      <ProfileEditor user={user} />
+      <ProfileEditor user={user} type="shopper" />
     </section>
   );
 }

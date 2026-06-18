@@ -116,15 +116,18 @@ describe('Root Middleware Host Detection (SELLER_HOSTS)', () => {
 describe('Seller Portal Middleware Routing', () => {
   it('redirects to the buyer market storefront when accessing shopper paths', () => {
     const req = new NextRequest(new URL('https://seyon-seller.vercel.app/store/pasteldreams'));
+    req.headers.set('host', 'seyon-seller.vercel.app');
     const res = sellerMiddleware(req as any) as any;
 
     expect(res).toBeDefined();
+    // It should be a redirect response (status 307/308)
     expect([307, 308]).toContain(res.status);
     expect(res.headers.get('location')).toBe('https://seyon-pied.vercel.app/store/pasteldreams');
   });
 
   it('redirects root path to /sell', () => {
     const req = new NextRequest(new URL('https://seyon-seller.vercel.app/'));
+    req.headers.set('host', 'seyon-seller.vercel.app');
     const res = sellerMiddleware(req as any) as any;
 
     expect(res).toBeDefined();
@@ -134,6 +137,7 @@ describe('Seller Portal Middleware Routing', () => {
 
   it('allows access to dashboard path', () => {
     const req = new NextRequest(new URL('https://seyon-seller.vercel.app/dashboard'));
+    req.headers.set('host', 'seyon-seller.vercel.app');
     const res = sellerMiddleware(req as any) as any;
 
     expect(res).toBeDefined();
@@ -144,6 +148,7 @@ describe('Seller Portal Middleware Routing', () => {
 describe('Buyer Market Middleware Routing', () => {
   it('allows access to shopper routes', () => {
     const req = new NextRequest(new URL('https://seyon-pied.vercel.app/store/pasteldreams'));
+    req.headers.set('host', 'seyon-pied.vercel.app');
     const res = buyerMiddleware(req as any) as any;
 
     expect(res).toBeDefined();
@@ -152,6 +157,7 @@ describe('Buyer Market Middleware Routing', () => {
 
   it('blocks access to /sell by rewriting to 404', () => {
     const req = new NextRequest(new URL('https://seyon-pied.vercel.app/sell'));
+    req.headers.set('host', 'seyon-pied.vercel.app');
     const res = buyerMiddleware(req as any) as any;
 
     expect(res).toBeDefined();

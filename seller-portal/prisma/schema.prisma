@@ -38,6 +38,9 @@ model User {
   image         String?
   phone         String?
   role          Role      @default(USER)
+  sellerName    String?
+  sellerPhone   String?
+  sellerImage   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
