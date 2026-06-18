@@ -14,9 +14,9 @@ export async function SellerFooter() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-black shadow-md">
               <Briefcase className="h-4 w-4" />
             </div>
-            <span className="text-lg font-black text-white tracking-wide">
-              Seyon<span className="text-amber-500 font-bold">.</span>
-              <span className="text-[10px] text-zinc-500 ml-1">Sellers</span>
+            <span className="text-lg font-bold font-sans tracking-tight text-white flex items-center gap-1">
+              seyon
+              <span className="text-[10px] text-zinc-500 ml-1 font-sans tracking-normal">Sellers</span>
             </span>
           </div>
           

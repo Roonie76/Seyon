@@ -110,7 +110,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
               className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-white flex items-center gap-0.5 group"
             >
               <span>seyon</span>
-              <span className="inline-block w-1.5 h-1.5 bg-primary rounded-sm group-hover:scale-125 transition-transform duration-300"></span>
             </Link>
           </div>
 
@@ -264,7 +263,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 className="flex items-center gap-1 group"
               >
                 <span className="text-lg font-bold font-sans tracking-tight text-white">seyon</span>
-                <span className="inline-block w-1.5 h-1.5 bg-primary rounded-sm"></span>
               </Link>
               <button
                 onClick={() => setIsMenuOpen(false)}
