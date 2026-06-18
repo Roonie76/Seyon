@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Shop, Product, ProductImage } from '@prisma/client';
 import { logger } from '@/backend/lib/logger';
 import { LiveRefresh } from '@/components/dashboard/live-refresh';
+import { BackButton } from '@/components/shared/back-button';
 
 export default async function DashboardProductsPage() {
   const session = await auth();
@@ -69,11 +70,7 @@ export default async function DashboardProductsPage() {
     <div className="container mx-auto px-4 py-8 md:py-12 flex flex-col gap-6">
       {/* Back button */}
       <div>
-        <Link href="/dashboard">
-          <Button variant="ghost" className="gap-1.5 text-xs text-muted-foreground hover:text-foreground pl-0">
-            <ArrowLeft size={14} /> Back to Dashboard
-          </Button>
-        </Link>
+        <BackButton fallbackHref="/dashboard" label="Back to Dashboard" />
       </div>
 
       <div className="border-b border-border pb-4">

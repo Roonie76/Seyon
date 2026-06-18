@@ -14,6 +14,7 @@ import { ShareButton } from '@/components/shared/share-button';
 import { logger } from '@/backend/lib/logger';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
+import { BackButton } from '@/components/shared/back-button';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -107,6 +108,11 @@ export default async function StorePage({ params }: StorePageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbJsonLd) }}
       />
+
+      {/* Back button */}
+      <div className="container mx-auto px-4 sm:px-6 pt-4">
+        <BackButton fallbackHref="/marketplace" label="Back to Marketplace" />
+      </div>
 
       {/* Banner */}
       <div className="relative h-48 md:h-64 lg:h-80 w-full overflow-hidden bg-zinc-100 border-b border-zinc-200">

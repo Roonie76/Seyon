@@ -10,6 +10,7 @@ import { generateItemListJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify }
 import { logger } from '@/backend/lib/logger';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
+import { BackButton } from '@/components/shared/back-button';
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const resolvedParams = await params;
@@ -108,9 +109,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       />
       {/* Breadcrumbs & Back button */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
-        <Link href="/marketplace" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0">
-          <ArrowLeft className="h-4 w-4" /> Back to Marketplace
-        </Link>
+        <BackButton fallbackHref="/marketplace" label="Back to Marketplace" />
         <Breadcrumbs items={[{ label: categoryName }]} />
       </div>
 

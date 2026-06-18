@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, X, Heart, ChevronRight, User } from 'lucide-react';
+import { Menu, Search, X, Heart, ChevronRight, User, LogOut } from 'lucide-react';
 
 interface NavbarClientProps {
   user?: {
@@ -13,6 +13,7 @@ interface NavbarClientProps {
   };
   wishlistCount: number;
   buyerMarketUrl: string;
+  onSignOut: () => Promise<void>;
 }
 
 interface Suggestion {
@@ -21,7 +22,7 @@ interface Suggestion {
   products: { id: string; title: string; slug: string; price: number; shopSlug: string }[];
 }
 
-export function NavbarClient({ user, wishlistCount, buyerMarketUrl }: NavbarClientProps) {
+export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: NavbarClientProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
@@ -307,6 +308,30 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl }: NavbarClie
                   <ChevronRight className="h-4 w-4 text-zinc-500" />
                 </Link>
               </div>
+
+              {user && (
+                <div className="space-y-3">
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Account</span>
+                  <Link
+                    href="/account"
+                    onClick={closeAll}
+                    className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  >
+                    My Account Settings
+                    <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      closeAll();
+                      await onSignOut();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-800 hover:border-red-500/35 bg-zinc-900/40 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer mt-2"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Log Out
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Support</span>

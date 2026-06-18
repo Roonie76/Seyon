@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, ArrowLeft } from 'lucide-react';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
+import { BackButton } from '@/components/shared/back-button';
 
 export default async function WishlistPage() {
   const session = await auth();
@@ -26,12 +27,7 @@ export default async function WishlistPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 border-b border-zinc-200 pb-6">
         <div className="w-full">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-3">
-            <Link
-              href="/marketplace"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to Marketplace
-            </Link>
+            <BackButton fallbackHref="/marketplace" label="Back to Marketplace" />
             <Breadcrumbs items={[{ label: 'Wishlist' }]} />
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight flex items-center gap-2.5">

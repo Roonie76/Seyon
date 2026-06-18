@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Camera, Save, Loader2, User, Mail, Phone, Shield, CalendarDays, Check } from 'lucide-react';
 import { updateUserProfile } from '@/backend/actions/user-profile';
+import { BackButton } from '@/components/shared/back-button';
 
 interface ProfileEditorProps {
   user: {
@@ -92,6 +93,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      <BackButton fallbackHref={type === 'seller' ? '/dashboard' : '/marketplace'} />
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">

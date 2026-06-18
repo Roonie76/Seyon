@@ -1,11 +1,14 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
+import { BackButton } from '@/components/shared/back-button';
 
 export default function PrivacyPage() {
   return (
     <div className="flex-1 py-16 px-4 relative max-w-4xl mx-auto w-full">
       {/* Background glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+      <BackButton fallbackHref="/marketplace" label="Back to Marketplace" className="mb-6" />
 
       <div className="flex items-center gap-3 mb-8">
         <div className="h-10 w-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
