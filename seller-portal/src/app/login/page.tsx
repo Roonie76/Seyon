@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { auth, signIn } from '@/lib/auth';
+import { db } from '@/lib/db';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +26,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const error = params.error;
   const devLogin = isDevLoginEnabled();
 
-  // If already authenticated, redirect immediately
-  if (session && session.user) {
-    redirect(callbackUrl);
+  // If already authenticated, redirect immediately if user exists in DB
+  if (session && session.user?.id) {
+    const userExists = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    });
+    if (userExists) {
+      redirect(callbackUrl);
+    }
   }
+
 
   return (
     <div className="flex-1 flex items-center justify-center py-20 px-4 relative">
