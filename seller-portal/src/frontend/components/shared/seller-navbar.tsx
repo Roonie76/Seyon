@@ -57,19 +57,21 @@ export async function SellerNavbar() {
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-zinc-200">{user.name}</span>
-                <span className="text-[10px] text-zinc-400 capitalize">{user.role?.toLowerCase() || ''}</span>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-zinc-850 border border-zinc-750 overflow-hidden flex items-center justify-center">
-                {user.image ? (
-                  <Image src={user.image} alt={user.name || 'User'} width={32} height={32} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="text-xs font-bold text-primary">
-                    {user.name ? user.name[0].toUpperCase() : 'U'}
-                  </span>
-                )}
-              </div>
+              <Link href="/account" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="hidden sm:flex flex-col text-right">
+                  <span className="text-xs font-bold text-zinc-200">{user.name}</span>
+                  <span className="text-[10px] text-zinc-400 capitalize">{user.role?.toLowerCase() || ''}</span>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-zinc-850 border border-zinc-750 overflow-hidden flex items-center justify-center">
+                  {user.image ? (
+                    <Image src={user.image} alt={user.name || 'User'} width={32} height={32} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-bold text-primary">
+                      {user.name ? user.name[0].toUpperCase() : 'U'}
+                    </span>
+                  )}
+                </div>
+              </Link>
 
               {/* Sign Out Form (NextAuth Action) */}
               <form

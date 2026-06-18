@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, X, Heart, ChevronRight } from 'lucide-react';
+import { Menu, Search, X, Heart, ChevronRight, User } from 'lucide-react';
 
 interface NavbarClientProps {
   user?: {
@@ -113,21 +113,30 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
             </Link>
           </div>
 
-          {/* Right Side: Account, Wishlist, Bag */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Link
-              href={`${buyerMarketUrl}/wishlist`}
-              className="relative p-0.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center"
-              title="My Wishlist"
-            >
-              <Heart className="h-5 w-5 stroke-[1.5]" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-rose-500 text-[9px] text-white font-extrabold rounded-full flex items-center justify-center">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-          </div>
+           {/* Right Side: Account, Wishlist */}
+           <div className="flex items-center gap-4 sm:gap-6">
+             {user && (
+               <Link
+                 href="/account"
+                 className="p-0.5 text-zinc-300 hover:text-primary transition-colors flex items-center justify-center"
+                 title="My Account"
+               >
+                 <User className="h-5 w-5 stroke-[1.5]" />
+               </Link>
+             )}
+             <Link
+               href={`${buyerMarketUrl}/wishlist`}
+               className="relative p-0.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center"
+               title="My Wishlist"
+             >
+               <Heart className="h-5 w-5 stroke-[1.5]" />
+               {wishlistCount > 0 && (
+                 <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-rose-500 text-[9px] text-white font-extrabold rounded-full flex items-center justify-center">
+                   {wishlistCount}
+                 </span>
+               )}
+             </Link>
+           </div>
         </div>
 
         {/* Slide-Down Search Panel */}

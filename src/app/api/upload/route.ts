@@ -21,13 +21,13 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
-    const bucket = formData.get('bucket') as 'logos' | 'banners' | 'products' | null;
+    const bucket = formData.get('bucket') as 'logos' | 'banners' | 'products' | 'avatars' | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    if (!bucket || !['logos', 'banners', 'products'].includes(bucket)) {
+    if (!bucket || !['logos', 'banners', 'products', 'avatars'].includes(bucket)) {
       return NextResponse.json({ error: 'Invalid or missing upload bucket category' }, { status: 400 });
     }
 

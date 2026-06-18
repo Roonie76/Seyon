@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function uploadFile(
   file: File,
-  bucket: 'logos' | 'banners' | 'products'
+  bucket: 'logos' | 'banners' | 'products' | 'avatars'
 ): Promise<string> {
   // If we are in local testing or using mock keys, return a nice simulated Unsplash URL
   if (supabaseUrl.includes('mock-project') || !process.env.SUPABASE_URL) {
@@ -18,6 +18,8 @@ export async function uploadFile(
       return `https://images.unsplash.com/photo-1546054454-aa26e2b734c7?auto=format&fit=crop&w=150&h=150&q=80&mock=${randomId}`;
     } else if (bucket === 'banners') {
       return `https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=400&q=80&mock=${randomId}`;
+    } else if (bucket === 'avatars') {
+      return `https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&h=200&q=80&mock=${randomId}`;
     } else {
       return `https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&h=450&q=80&mock=${randomId}`;
     }
@@ -60,7 +62,7 @@ export async function uploadFile(
 
 export async function deleteFile(
   fileUrl: string,
-  bucket: 'logos' | 'banners' | 'products'
+  bucket: 'logos' | 'banners' | 'products' | 'avatars'
 ): Promise<void> {
   if (supabaseUrl.includes('mock-project') || !process.env.SUPABASE_URL) {
     console.log('Mock deleting file from Supabase:', fileUrl);
