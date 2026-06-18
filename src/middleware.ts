@@ -52,10 +52,30 @@ export function middleware(request: NextRequest) {
       url.pathname = '/sell';
       return NextResponse.redirect(url);
     }
+    // Rewrite clean /account route to the internal seller page
+    if (path === '/account') {
+      url.pathname = '/seller-account';
+      return NextResponse.rewrite(url);
+    }
+    // Block direct access to internal shopper-account route
+    if (path === '/shopper-account') {
+      url.pathname = '/404';
+      return NextResponse.rewrite(url);
+    }
   } else {
     // Shopper Platform Domain:
     // If accessing any seller-specific routes, block access by rewriting to /404 to return a 404 Not Found error page
     if (path.startsWith('/sell') || path.startsWith('/dashboard')) {
+      url.pathname = '/404';
+      return NextResponse.rewrite(url);
+    }
+    // Rewrite clean /account route to the internal shopper page
+    if (path === '/account') {
+      url.pathname = '/shopper-account';
+      return NextResponse.rewrite(url);
+    }
+    // Block direct access to internal seller-account route
+    if (path === '/seller-account') {
       url.pathname = '/404';
       return NextResponse.rewrite(url);
     }
