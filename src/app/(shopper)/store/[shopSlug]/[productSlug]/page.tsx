@@ -27,6 +27,7 @@ import { ShareButton } from '@/components/shared/share-button';
 import { StickyBuyBar } from '@/components/store/sticky-buy-bar';
 import { RecordRecentlyViewed, RecentlyViewedStrip } from '@/components/shared/recently-viewed';
 import { WishlistButton } from '@/components/shared/wishlist-button';
+import { ProductCard } from '@/components/shared/product-card';
 import { isProductWishlisted } from '@/actions/wishlist';
 import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info, MapPin, PauseCircle } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
@@ -358,41 +359,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h2 className="text-xl font-bold text-foreground mb-8">Other Products from this Store</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {relatedProducts.map((prod) => (
-              <Link key={prod.id} href={`/store/${shop.slug}/${prod.slug}`} className="group">
-                <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
-                  <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-                    {prod.images?.[0] ? (
-                      <Image
-                        src={prod.images[0].url}
-                        alt={prod.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <NoImagePlaceholder />
-                    )}
-                  </div>
-                  <div className="p-4 flex-grow flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-amber-700 mb-1 block">
-                        {prod.category}
-                      </span>
-                      <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
-                        {prod.title}
-                      </h3>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                      <span className="font-extrabold text-foreground text-base">
-                        ₹{prod.price.toFixed(2)}
-                      </span>
-                      <Badge variant="success" className="text-[10px] font-bold">
-                        Chat Buy
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+              <ProductCard
+                key={prod.id}
+                product={{ ...prod, shop }}
+                showWishlistButton={false}
+              />
             ))}
           </div>
         </div>

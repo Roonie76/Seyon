@@ -11,6 +11,7 @@ import { Heart, ArrowLeft } from 'lucide-react';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { BackButton } from '@/components/shared/back-button';
+import { ProductCard } from '@/components/shared/product-card';
 
 export default async function WishlistPage() {
   const session = await auth();
@@ -56,52 +57,11 @@ export default async function WishlistPage() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {products.map((prod) => (
-            <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
-              <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
-                <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-                  {prod.images?.[0] ? (
-                    <Image
-                      src={prod.images[0].url}
-                      alt={prod.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <NoImagePlaceholder />
-                  )}
-                  <div className="absolute top-2 right-2 z-10">
-                    <WishlistButton
-                      productId={prod.id}
-                      initialIsWishlisted={true}
-                    />
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col justify-between flex-grow">
-                  <div>
-                    <div className="flex justify-between items-start gap-2 mb-1.5">
-                      <span className="text-[10px] uppercase font-bold text-amber-700">
-                        {prod.category}
-                      </span>
-                      <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
-                        by {prod.shop.name}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
-                      {prod.title}
-                    </h3>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                    <span className="font-extrabold text-foreground text-base">
-                      ₹{prod.price.toFixed(2)}
-                    </span>
-                    <Badge variant="success" className="text-[10px] font-bold">
-                      WhatsApp Buy
-                    </Badge>
-                  </div>
-                </div>
-              </Card>
-            </Link>
+            <ProductCard
+              key={prod.id}
+              product={prod}
+              initialIsWishlisted={true}
+            />
           ))}
         </div>
       )}

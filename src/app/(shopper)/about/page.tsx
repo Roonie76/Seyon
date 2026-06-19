@@ -305,7 +305,7 @@ export default function AboutPage() {
                     </p>
                     <p className="flex items-start gap-4">
                       <span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mt-2 shrink-0" />
-                      Anonymous checkout loops dissociate buyers from the creator's real identity.
+                      Anonymous checkout loops dissociate buyers from the creator&apos;s real identity.
                     </p>
                     <p className="flex items-start gap-4">
                       <span className="w-1.5 h-1.5 rounded-full bg-zinc-800 mt-2 shrink-0" />

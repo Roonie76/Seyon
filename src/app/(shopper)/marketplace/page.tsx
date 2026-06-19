@@ -6,6 +6,7 @@ import { MarketplaceClient } from './marketplace-client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { auth } from '@/lib/auth';
+import { ProductCard } from '@/components/shared/product-card';
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import {
   ShoppingBag,
@@ -301,60 +302,11 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {products.map((prod) => (
-                <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`} className="group">
-                  <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-zinc-200 bg-card shadow-sm">
-                    <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-                      {prod.images?.[0] ? (
-                        <Image
-                          src={prod.images[0].url}
-                          alt={prod.title}
-                          fill
-                          className={`object-cover ${prod.inStock === false ? 'opacity-60 grayscale-[40%]' : ''}`}
-                          sizes="(max-width: 768px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <NoImagePlaceholder />
-                      )}
-                      {prod.inStock === false && (
-                        <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-zinc-900/80 text-white text-[10px] font-bold uppercase tracking-wide">
-                          Sold out
-                        </span>
-                      )}
-                      <div className="absolute top-2 right-2 z-10">
-                        <WishlistButton
-                          productId={prod.id}
-                          initialIsWishlisted={wishlistedProductIds.has(prod.id)}
-                        />
-                      </div>
-                    </div>
-                    <div className="p-4 flex flex-col justify-between flex-grow">
-                      <div>
-                        <div className="flex justify-between items-start gap-2 mb-1.5">
-                          <span className="text-[10px] uppercase font-bold text-amber-700">
-                            {prod.category}
-                          </span>
-                          <span className="text-xs text-muted-foreground text-right line-clamp-1 max-w-[120px]">
-                            by {prod.shop.name}
-                          </span>
-                        </div>
-                        <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">
-                          {prod.title}
-                        </h3>
-                      </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3">
-                        <span className="font-extrabold text-foreground text-base flex items-baseline gap-1.5">
-                          ₹{prod.price.toFixed(2)}
-                          {prod.compareAtPrice != null && prod.compareAtPrice > prod.price && (
-                            <span className="text-xs font-normal text-muted-foreground line-through">₹{prod.compareAtPrice.toFixed(2)}</span>
-                          )}
-                        </span>
-                        <Badge variant="success" className="text-[10px] font-bold">
-                          {prod.inStock === false ? 'Ask seller' : 'WhatsApp Buy'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  initialIsWishlisted={wishlistedProductIds.has(prod.id)}
+                />
               ))}
             </div>
           )}

@@ -84,7 +84,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
   return (
     <>
       {/* Header element */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-secondary text-secondary-foreground shadow-sm transition-colors duration-300">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-black text-secondary-foreground shadow-sm transition-colors duration-300">
         <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 relative">
           
           {/* Left Side: Menu & Search */}
@@ -159,7 +159,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
 
         {/* Slide-Down Search Panel */}
         {isSearchOpen && (
-          <div className="border-t border-zinc-800 bg-secondary animate-slide-down shadow-md">
+          <div className="border-t border-zinc-800 bg-black animate-slide-down shadow-md">
             <div className="container mx-auto px-4 py-4 sm:px-6">
               <form onSubmit={handleSearchSubmit} className="flex gap-3 items-center relative">
                 <Search className="h-5 w-5 text-zinc-400 shrink-0" />
@@ -284,7 +284,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
           />
 
           {/* Drawer Body */}
-          <div className="relative flex w-full max-w-xs flex-col bg-zinc-950 text-zinc-250 shadow-2xl border-r border-zinc-900 animate-slide-right py-6 px-6">
+          <div className="relative flex w-full max-w-xs flex-col bg-black text-zinc-250 shadow-2xl border-r border-zinc-900 animate-slide-right py-6 px-6">
             
             {/* Header / Close button */}
             <div className="flex items-center justify-between border-b border-zinc-900 pb-4 mb-6">

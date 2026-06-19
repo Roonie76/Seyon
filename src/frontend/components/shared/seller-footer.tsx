@@ -28,7 +28,7 @@ export async function SellerFooter() {
   const isLoggedIn = !!session?.user;
 
   return (
-    <footer className="border-t border-zinc-800 bg-zinc-950 py-8 md:py-12 mt-auto text-zinc-400">
+    <footer className="border-t border-zinc-800 bg-black py-8 md:py-12 mt-auto text-zinc-400">
       <div className="container mx-auto px-4 sm:px-6">
         {/* 3-column grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">

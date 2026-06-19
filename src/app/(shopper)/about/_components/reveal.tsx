@@ -26,8 +26,8 @@ export function Reveal({ children, className = '', delay = 0 }: RevealProps) {
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (reduce || typeof IntersectionObserver === 'undefined') {
-      setShown(true);
-      return;
+      const timer = setTimeout(() => setShown(true), 0);
+      return () => clearTimeout(timer);
     }
 
     const io = new IntersectionObserver(

@@ -11,6 +11,7 @@ import { logger } from '@/backend/lib/logger';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { BackButton } from '@/components/shared/back-button';
+import { ProductCard } from '@/components/shared/product-card';
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const resolvedParams = await params;
@@ -124,44 +125,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {products.map((prod) => (
-          <Link key={prod.id} href={`/store/${prod.shop.slug}/${prod.slug}`}>
-            <Card className="glass-hover overflow-hidden h-full flex flex-col justify-between cursor-pointer border-border bg-card">
-              <div className="relative aspect-video bg-neutral-100 overflow-hidden">
-                {prod.images?.[0] ? (
-                  <Image
-                    src={prod.images[0].url}
-                    alt={prod.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                  />
-                ) : (
-                  <NoImagePlaceholder />
-                )}
-              </div>
-              <div className="p-4 flex flex-col justify-between flex-grow">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-primary mb-1 block">
-                    {prod.category}
-                  </span>
-                  <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1">
-                    {prod.title}
-                  </h3>
-                  <span className="text-xs text-muted-foreground mt-1 block">
-                    Sold by {prod.shop.name}
-                  </span>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-                  <span className="font-extrabold text-foreground text-base">
-                    ₹{prod.price.toFixed(2)}
-                  </span>
-                  <Badge variant="success" className="text-[10px] font-bold">
-                    WhatsApp Buy
-                  </Badge>
-                </div>
-              </div>
-            </Card>
-          </Link>
+          <ProductCard
+            key={prod.id}
+            product={prod}
+            showWishlistButton={false}
+          />
         ))}
       </div>
     </div>
