@@ -2,7 +2,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { HelpCircle } from 'lucide-react';
 import { BackButton } from '@/components/shared/back-button';
 import { generateFAQJSONLD, safeJsonLdStringify } from '@/lib/seo';
-import { FAQAccordion, faqs } from './faq-accordion';
+import { FAQAccordion } from './faq-accordion';
+import { faqs } from './faqs-data';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

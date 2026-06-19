@@ -25,7 +25,7 @@ const LinkedInIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function Footer() {
   const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
   return (
-    <footer className="border-t border-zinc-800 bg-secondary py-8 md:py-12 mt-auto text-secondary-foreground">
+    <footer className="border-t border-zinc-800 bg-black py-8 md:py-12 mt-auto text-secondary-foreground">
       <div className="container mx-auto px-4 sm:px-6">
         {/* Department links: internal link equity for the SEO category pages */}
         <nav aria-label="Shop by category" className="mb-8 pb-6 border-b border-zinc-800">
