@@ -10,6 +10,8 @@ import { deleteFile } from '@/lib/supabase';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { revalidateShopSurface } from '@/shared/lib/cache';
+import { extractDominantColor } from '../lib/color/extractDominant';
+import { generateTheme } from '../lib/color/generateTheme';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
@@ -91,6 +93,23 @@ export async function createProduct(shopId: string, rawData: unknown) {
       finalSlug = `${slug}-${counter}`;
     }
 
+    // Process color extraction
+    let theme: ReturnType<typeof generateTheme> | null = null;
+    if (images && images.length > 0) {
+      try {
+        const response = await fetch(images[0].url);
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const dominantColor = await extractDominantColor(buffer);
+          if (dominantColor) {
+            theme = generateTheme(dominantColor);
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to extract color theme during product creation', err);
+      }
+    }
+
     const product = await db.product.create({
       data: {
         shopId: parsedShopId.data,
@@ -110,6 +129,13 @@ export async function createProduct(shopId: string, rawData: unknown) {
             isPrimary: img.isPrimary ?? (idx === 0),
           })),
         },
+        themeBg: theme?.bg || null,
+        themeSurface: theme?.surface || null,
+        themeAccent: theme?.accent || null,
+        themeAccentStrong: theme?.accentStrong || null,
+        themeText: theme?.text || null,
+        themeMuted: theme?.muted || null,
+        themeExtractedAt: theme ? new Date() : null,
       },
       include: {
         images: true,
@@ -181,6 +207,43 @@ export async function updateProduct(productId: string, rawData: unknown) {
       await deleteFile(url, 'products');
     }
 
+    // Determine if we need to re-extract theme
+    let themeUpdate: {
+      themeBg?: string | null;
+      themeSurface?: string | null;
+      themeAccent?: string | null;
+      themeAccentStrong?: string | null;
+      themeText?: string | null;
+      themeMuted?: string | null;
+      themeExtractedAt?: Date | null;
+    } = {};
+    const newPrimaryUrl = images.find((img: { isPrimary: boolean }) => img.isPrimary)?.url || images[0]?.url;
+    const oldPrimaryUrl = product.images.find((img: { isPrimary: boolean }) => img.isPrimary)?.url || product.images[0]?.url;
+
+    if (newPrimaryUrl && (newPrimaryUrl !== oldPrimaryUrl || !product.themeExtractedAt)) {
+      try {
+        const response = await fetch(newPrimaryUrl);
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const dominantColor = await extractDominantColor(buffer);
+          if (dominantColor) {
+            const lightTheme = generateTheme(dominantColor);
+            themeUpdate = {
+              themeBg: lightTheme.bg,
+              themeSurface: lightTheme.surface,
+              themeAccent: lightTheme.accent,
+              themeAccentStrong: lightTheme.accentStrong,
+              themeText: lightTheme.text,
+              themeMuted: lightTheme.muted,
+              themeExtractedAt: new Date(),
+            };
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to extract color theme during product update', err);
+      }
+    }
+
     // Update product inside a database transaction
     const updatedProduct = await db.$transaction(async (tx) => {
       // Clear current images mapping in DB
@@ -208,6 +271,7 @@ export async function updateProduct(productId: string, rawData: unknown) {
               isPrimary: img.isPrimary ?? (idx === 0),
             })),
           },
+          ...themeUpdate,
         },
         include: {
           images: true,
@@ -254,6 +318,21 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
     const created = [];
     for (const [idx, url] of validated.data.entries()) {
       const baseSlug = `untitled-product-${Date.now()}-${idx}`;
+      
+      let theme: ReturnType<typeof generateTheme> | null = null;
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const dominantColor = await extractDominantColor(buffer);
+          if (dominantColor) {
+            theme = generateTheme(dominantColor);
+          }
+        }
+      } catch (err) {
+        logger.error('Failed to extract color theme during quick add', err);
+      }
+
       const product = await db.product.create({
         data: {
           shopId: parsedShopId.data,
@@ -267,6 +346,13 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
           images: {
             create: [{ url, displayOrder: 0, isPrimary: true }],
           },
+          themeBg: theme?.bg || null,
+          themeSurface: theme?.surface || null,
+          themeAccent: theme?.accent || null,
+          themeAccentStrong: theme?.accentStrong || null,
+          themeText: theme?.text || null,
+          themeMuted: theme?.muted || null,
+          themeExtractedAt: theme ? new Date() : null,
         },
         select: { id: true },
       });

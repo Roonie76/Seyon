@@ -147,6 +147,13 @@ model Product {
   status      ProductStatus @default(ACTIVE)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  themeBg            String?
+  themeSurface       String?
+  themeAccent        String?
+  themeAccentStrong  String?
+  themeText          String?
+  themeMuted         String?
+  themeExtractedAt   DateTime?
 
   shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images      ProductImage[]

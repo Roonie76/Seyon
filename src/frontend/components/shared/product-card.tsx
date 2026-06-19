@@ -3,9 +3,55 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Heart } from 'lucide-react';
 import { WishlistButton } from './wishlist-button';
 import { NoImagePlaceholder } from './no-image-placeholder';
+
+// Helper to convert Hex to HSL for dark mode computation
+function hexToHSL(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    switch (max) {
+      case r: h = ((g - b) / d) % 6; break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h, s: s * 100, l: l * 100 };
+}
+
+// Helper to convert HSL to Hex
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100; l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = (x: number) => Math.round(255 * x).toString(16).padStart(2, '0');
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+}
+
+const DEFAULT_THEME = {
+  bg: '#F4F1EA',
+  border: '#E7E2D8',
+  tagBg: 'rgba(16, 185, 129, 0.05)',
+  accent: '#065f46',
+  glow: 'rgba(245, 158, 11, 0.05)',
+  bgDark: '#18181b',
+  borderDark: '#27272a',
+  tagBgDark: 'rgba(16, 185, 129, 0.1)',
+  accentDark: '#34d399',
+  glowDark: 'rgba(245, 158, 11, 0.1)',
+};
 
 interface ProductCardProps {
   product: {
@@ -22,6 +68,13 @@ interface ProductCardProps {
       slug: string;
       isVerified?: boolean;
     };
+    themeBg?: string | null;
+    themeSurface?: string | null;
+    themeAccent?: string | null;
+    themeAccentStrong?: string | null;
+    themeText?: string | null;
+    themeMuted?: string | null;
+    themeExtractedAt?: Date | string | null;
   };
   initialIsWishlisted?: boolean;
   showWishlistButton?: boolean;
@@ -53,17 +106,66 @@ export function ProductCard({
 
   const isSoldOut = product.inStock === false;
 
+  // Resolve palette values using useMemo to prevent unnecessary calculations
+  const theme = React.useMemo(() => {
+    if (!product.themeExtractedAt || !product.themeAccent) {
+      return DEFAULT_THEME;
+    }
+
+    const { h, s } = hexToHSL(product.themeAccent);
+    const sat = Math.max(s, 25);
+
+    // Compute dark mode colors on the fly from the hue
+    const bgDark = hslToHex(h, sat * 0.4, 10);
+    const borderDark = hslToHex(h, sat * 0.45, 16);
+    const tagBgDark = hslToHex(h, sat * 0.45, 14);
+    const accentDark = hslToHex(h, Math.max(s, 40), 65);
+
+    // Parse the stored accent to RGB for hover glow
+    const hex = product.themeAccent;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    return {
+      bg: product.themeBg || '#F4F1EA',
+      border: product.themeMuted || '#E7E2D8',
+      tagBg: product.themeSurface || 'rgba(16, 185, 129, 0.05)',
+      accent: product.themeAccentStrong || '#065f46',
+      glow: `rgba(${r}, ${g}, ${b}, 0.08)`,
+      bgDark,
+      borderDark,
+      tagBgDark,
+      accentDark,
+      glowDark: `rgba(${r}, ${g}, ${b}, 0.18)`,
+    };
+  }, [product]);
+
+  // CSS variables targeting theme or fallback defaults
+  const dynamicVars = {
+    '--card-bg': theme.bg,
+    '--card-border': theme.border,
+    '--card-tag-bg': theme.tagBg,
+    '--card-accent': theme.accent,
+    '--card-glow': theme.glow,
+    '--card-bg-dark': theme.bgDark,
+    '--card-border-dark': theme.borderDark,
+    '--card-tag-bg-dark': theme.tagBgDark,
+    '--card-accent-dark': theme.accentDark,
+    '--card-glow-dark': theme.glowDark,
+  } as React.CSSProperties;
+
   return (
-    <div className="relative group h-full">
+    <div className="relative group h-full transition-all duration-500" style={dynamicVars}>
       {/* Background soft glow animation on hover */}
-      <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500/10 to-yellow-600/10 rounded-[30px] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
+      <div className="absolute -inset-1 bg-gradient-to-tr from-[var(--card-glow)] to-[var(--card-glow)] rounded-[30px] blur-xl opacity-0 group-hover:opacity-100 dark:from-[var(--card-glow-dark)] dark:to-[var(--card-glow-dark)] transition-all duration-500 -z-10" />
 
       <Link
         href={productUrl}
-        className="block h-full bg-[#F4F1EA] dark:bg-zinc-900/90 border border-[#E7E2D8] dark:border-zinc-800/80 rounded-[28px] overflow-hidden flex flex-col justify-between cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 ease-out hover:-translate-y-1"
+        className="block h-full bg-[var(--card-bg)] dark:bg-[var(--card-bg-dark)] border border-[var(--card-border)] dark:border-[var(--card-border-dark)] rounded-[28px] overflow-hidden flex flex-col justify-between cursor-pointer shadow-sm hover:shadow-xl transition-all duration-500 ease-out hover:-translate-y-1"
       >
         {/* Top: Product Image with fade bottom */}
-        <div className="relative aspect-[3/4] bg-zinc-100 overflow-hidden shrink-0">
+        <div className="relative aspect-[3/4] bg-zinc-100 dark:bg-zinc-950/20 overflow-hidden shrink-0">
           {product.images?.[0] ? (
             <Image
               src={product.images[0].url}
@@ -77,7 +179,7 @@ export function ProductCard({
           )}
 
           {/* Premium Soft Gradient Bottom blending from image to card bg */}
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#F4F1EA] via-[#F4F1EA]/50 to-transparent dark:from-zinc-900 dark:via-zinc-900/50 pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--card-bg)] via-[var(--card-bg)]/50 to-transparent dark:from-[var(--card-bg-dark)] dark:via-[var(--card-bg-dark)]/50 transition-all duration-500 pointer-events-none" />
 
           {/* Wishlist Button Overlay */}
           {showWishlistButton && (
@@ -101,15 +203,15 @@ export function ProductCard({
         <div className="p-5 pt-2 flex flex-col justify-between flex-grow">
           <div>
             {/* Title & Brand */}
-            <h3 className="font-bold text-zinc-900 dark:text-white text-base md:text-lg line-clamp-1 group-hover:text-amber-700 dark:group-hover:text-amber-500 transition-colors">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-base md:text-lg line-clamp-1 group-hover:text-[var(--card-accent)] dark:group-hover:text-[var(--card-accent-dark)] transition-colors">
               {product.title}
             </h3>
             <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 block">
               by {product.shop.name}
             </span>
 
-            {/* Short divider line exactly like CalmLights candle screenshot */}
-            <div className="w-8 h-0.5 bg-zinc-350 dark:bg-zinc-700 mt-3 mb-2.5" />
+            {/* Short divider line matching the borders */}
+            <div className="w-8 h-0.5 bg-[var(--card-border)] dark:bg-[var(--card-border-dark)] transition-all duration-500 mt-3 mb-2.5" />
 
             {/* Price */}
             <div className="flex items-baseline gap-1.5">
@@ -125,9 +227,9 @@ export function ProductCard({
           </div>
 
           {/* Badges/Actions at bottom */}
-          <div className="mt-5 flex items-center justify-between border-t border-zinc-200/50 dark:border-zinc-800/50 pt-4 gap-2">
+          <div className="mt-5 flex items-center justify-between border-t border-[var(--card-border)] dark:border-[var(--card-border-dark)] transition-all duration-500 pt-4 gap-2">
             {/* Category pill */}
-            <span className="text-[10px] uppercase font-extrabold text-emerald-850 dark:text-emerald-400 border border-emerald-850/15 dark:border-emerald-500/25 bg-emerald-850/5 dark:bg-emerald-500/10 px-3 py-1 rounded-full truncate max-w-[100px] sm:max-w-[120px]">
+            <span className="text-[10px] uppercase font-extrabold text-[var(--card-accent)] dark:text-[var(--card-accent-dark)] border border-[var(--card-border)] dark:border-[var(--card-border-dark)] bg-[var(--card-tag-bg)] dark:bg-[var(--card-tag-bg-dark)] px-3 py-1 rounded-full truncate max-w-[100px] sm:max-w-[120px] transition-all duration-500">
               {product.category}
             </span>
 
