@@ -104,7 +104,7 @@ export async function SellerFooter() {
         {/* Copyright */}
         <div className="pt-6 border-t border-zinc-800">
           <p className="text-xs text-zinc-600 text-center">
-            &copy; {new Date().getFullYear()} Seyon Sellers. All rights reserved.
+            &copy; {new Date().getFullYear()} Seyon. All rights reserved.
           </p>
         </div>
       </div>

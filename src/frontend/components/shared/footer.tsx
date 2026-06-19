@@ -122,7 +122,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="pt-6 border-t border-zinc-800">
           <p className="text-xs text-zinc-500 text-center">
-            &copy; {new Date().getFullYear()} Seyon. Built with premium tech for instant storefronts.
+            &copy; {new Date().getFullYear()} Seyon. All rights reserved.
           </p>
         </div>
       </div>
