@@ -42,12 +42,17 @@ export function Footer() {
             ))}
           </div>
         </nav>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Logo — matches navbar style */}
-          <div className="flex items-center gap-4">
+
+        {/* 4-column grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          {/* Column 1: Brand */}
+          <div className="col-span-2 md:col-span-1 space-y-4">
             <Link href="/" className="text-xl font-bold font-sans tracking-tight text-white">
               seyon
             </Link>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Social-commerce storefronts for independent sellers. Discover, browse, and buy direct.
+            </p>
             {/* Social links */}
             <div className="flex items-center gap-3">
               <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-pink-500 transition-colors" aria-label="Instagram">
@@ -61,23 +66,62 @@ export function Footer() {
               </a>
             </div>
           </div>
-          
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-zinc-400">
-            <Link href="/" className="hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link href="/marketplace" className="hover:text-white transition-colors">
-              Marketplace
-            </Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
-              Terms of Service
-            </Link>
+
+          {/* Column 2: Explore */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Explore</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/marketplace" className="hover:text-white transition-colors">Marketplace</Link>
+              </li>
+              <li>
+                <Link href="/category" className="hover:text-white transition-colors">Categories</Link>
+              </li>
+              <li>
+                <Link href="/wishlist" className="hover:text-white transition-colors">Wishlist</Link>
+              </li>
+            </ul>
           </div>
-          
-          <p className="text-xs text-zinc-500">
+
+          {/* Column 3: Support */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Support</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/faqs" className="hover:text-white transition-colors">FAQs</Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Company */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Company</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              </li>
+              <li>
+                <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
+              </li>
+              <li>
+                <Link href="/address" className="hover:text-white transition-colors">Company Address</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="pt-6 border-t border-zinc-800">
+          <p className="text-xs text-zinc-500 text-center">
             &copy; {new Date().getFullYear()} Seyon. Built with premium tech for instant storefronts.
           </p>
         </div>

@@ -30,13 +30,17 @@ export async function SellerFooter() {
   return (
     <footer className="border-t border-zinc-800 bg-zinc-950 py-8 md:py-12 mt-auto text-zinc-400">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Logo — matches seller navbar style */}
-          <div className="flex items-center gap-4">
+        {/* 3-column grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+          {/* Column 1: Brand */}
+          <div className="col-span-2 md:col-span-1 space-y-4">
             <Link href="/sell" className="text-lg font-bold font-sans tracking-tight text-white flex items-center gap-1">
               seyon
               <span className="text-[10px] text-zinc-500 ml-1 font-sans tracking-normal">Sellers</span>
             </Link>
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              Your selling dashboard. Manage products, track performance, and grow your storefront.
+            </p>
             {/* Social links */}
             <div className="flex items-center gap-3">
               <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-pink-500 transition-colors" aria-label="Instagram">
@@ -50,30 +54,56 @@ export async function SellerFooter() {
               </a>
             </div>
           </div>
-          
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-zinc-400">
-            {!isLoggedIn && (
-              <Link href="/sell" className="hover:text-white transition-colors">
-                Seller Home
-              </Link>
-            )}
-            <Link href="/dashboard" className="hover:text-white transition-colors">
-              Dashboard
-            </Link>
-            {!isLoggedIn && (
-              <Link href="/login" className="hover:text-white transition-colors">
-                Login / Register
-              </Link>
-            )}
-            <Link href="/privacy" className="hover:text-white transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
-              Terms & Conditions
-            </Link>
+
+          {/* Column 2: Seller Tools */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider block">Seller Tools</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+              </li>
+              <li>
+                <Link href="/dashboard/products" className="hover:text-white transition-colors">My Products</Link>
+              </li>
+              {!isLoggedIn && (
+                <>
+                  <li>
+                    <Link href="/sell" className="hover:text-white transition-colors">Sell on Seyon</Link>
+                  </li>
+                  <li>
+                    <Link href="/login" className="hover:text-white transition-colors">Login / Register</Link>
+                  </li>
+                </>
+              )}
+            </ul>
           </div>
-          
-          <p className="text-xs text-zinc-600">
+
+          {/* Column 3: Support & Legal */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider block">Support & Legal</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/faqs" className="hover:text-white transition-colors">FAQs</Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors">About</Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <div className="pt-6 border-t border-zinc-800">
+          <p className="text-xs text-zinc-600 text-center">
             &copy; {new Date().getFullYear()} Seyon Sellers. All rights reserved.
           </p>
         </div>
