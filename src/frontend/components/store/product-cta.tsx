@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, PackageX } from 'lucide-react';
+import { MessageCircle, PackageX, ShoppingCart, Check } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
+import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget } from './store-cart';
 
 interface ProductCTAProps {
   shopId: string;
@@ -19,6 +20,7 @@ interface ProductCTAProps {
   inStock: boolean;
   /** Shop vacation mode: disables ordering entirely. */
   shopPaused?: boolean;
+  imageUrl?: string;
 }
 
 export function ProductCTA({
@@ -32,9 +34,48 @@ export function ProductCTA({
   options,
   inStock,
   shopPaused = false,
+  imageUrl,
 }: ProductCTAProps) {
   const groups = React.useMemo(() => (options ? parseOptions(options) : []), [options]);
   const [selections, setSelections] = React.useState<Record<string, string>>({});
+  const [added, setAdded] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleAddToCart = () => {
+    if (groups.length > 0) {
+      const missing = groups.filter((g) => !selections[g.label ?? '_']);
+      if (missing.length > 0) {
+        setError(`Please select: ${missing.map((m) => m.label).join(', ')}`);
+        setTimeout(() => setError(null), 3000);
+        return;
+      }
+    }
+
+    const selectionsKey = getSelectionsKey(selections);
+    const cart = getLocalCart(shopId);
+
+    const existingIndex = cart.findIndex(
+      (item) => item.productId === productId && item.selectionsKey === selectionsKey
+    );
+
+    if (existingIndex > -1) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push({
+        productId,
+        title: productName,
+        price,
+        image: imageUrl,
+        quantity: 1,
+        selections,
+        selectionsKey,
+      });
+    }
+
+    saveLocalCart(shopId, cart);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   const selectValue = (groupLabel: string | null, value: string) => {
     const key = groupLabel ?? '_';
@@ -108,10 +149,41 @@ export function ProductCTA({
         </div>
       )}
 
+      {error && (
+        <span className="text-xs font-bold text-red-500 animate-pulse block">
+          {error}
+        </span>
+      )}
+
       {inStock ? (
-        <Button onClick={handleClick} variant="whatsapp" size="lg" className="w-full sm:w-auto">
-          <MessageCircle className="h-5 w-5" /> Chat on WhatsApp
-        </Button>
+        <div className="flex flex-col gap-3 w-full">
+          <button
+            onClick={handleAddToCart}
+            className={`w-full h-12 rounded-lg text-sm font-extrabold uppercase tracking-wide border flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer shadow-sm ${
+              added
+                ? 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600'
+                : 'bg-amber-500 hover:bg-amber-400 text-black border-amber-600'
+            }`}
+          >
+            {added ? (
+              <>
+                <Check className="h-4 w-4" /> Added to Cart
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-4 w-4" /> Add to Cart
+              </>
+            )}
+          </button>
+          <Button
+            onClick={handleClick}
+            variant="whatsapp"
+            size="lg"
+            className="w-full justify-center gap-2 text-sm uppercase font-extrabold tracking-wide rounded-lg h-12"
+          >
+            <MessageCircle className="h-5 w-5" /> Chat on WhatsApp
+          </Button>
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-100 border border-zinc-200 text-zinc-600 text-sm font-bold w-fit">
@@ -122,6 +194,12 @@ export function ProductCTA({
           </Button>
         </div>
       )}
+
+      <StoreCartWidget
+        shopId={shopId}
+        shopName={shopName}
+        whatsappNumber={whatsappNumber}
+      />
     </div>
   );
 }
