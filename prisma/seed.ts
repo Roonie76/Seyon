@@ -12,6 +12,7 @@ async function main() {
   await prisma.productImage.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.shop.deleteMany({});
+  await prisma.blogPost.deleteMany({});
   await prisma.user.deleteMany({});
 
   // 2. Create Users
@@ -24,30 +25,12 @@ async function main() {
     },
   });
 
-  const seller1 = await prisma.user.create({
+  const perfumeSeller = await prisma.user.create({
     data: {
-      email: 'gadgets@seller.com',
-      name: 'John Doe (Gadgets)',
+      email: 'perfumeseller@seller.com',
+      name: 'Aroma Palace Seller',
       role: Role.SELLER,
-      phone: '+15550100200',
-    },
-  });
-
-  const seller2 = await prisma.user.create({
-    data: {
-      email: 'vogue@seller.com',
-      name: 'Jane Smith (Vogue)',
-      role: Role.SELLER,
-      phone: '+15550300400',
-    },
-  });
-
-  const seller3 = await prisma.user.create({
-    data: {
-      email: 'pasteldreams@seller.com',
-      name: 'Pastel Dreams Owner',
-      role: Role.SELLER,
-      phone: '+15550200300',
+      phone: '+919876543210',
     },
   });
 
@@ -62,76 +45,46 @@ async function main() {
 
   console.log('Users created successfully.');
 
-  // 3. Create Shops
-  const gadgetShop = await prisma.shop.create({
+  // 3. Create Shop — Aroma Palace
+  const aromaShop = await prisma.shop.create({
     data: {
-      ownerId: seller1.id,
-      name: 'Gadget Central',
-      slug: 'gadget-central',
-      description: 'Your premium hub for all things tech, from smartphones to vintage mechanical keyboards.',
-      logo: 'https://images.unsplash.com/photo-1546054454-aa26e2b734c7?auto=format&fit=crop&w=150&h=150&q=80',
-      banner: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=400&q=80',
-      whatsapp: '15550100200',
-      instagram: 'gadgetcentral_ig',
-      telegram: 'gadgetcentral_tg',
+      ownerId: perfumeSeller.id,
+      name: 'Aroma Palace',
+      slug: 'aroma-palace',
+      description: 'Premium hand-crafted perfumes and luxury room fragrances.',
+      logo: '/uploads/perfumes/mystic_oud.png',
+      banner: '/uploads/perfumes/sandalwood_noir.png',
+      whatsapp: '919876543210',
+      instagram: 'aroma_palace',
+      telegram: 'aroma_palace_tg',
+      city: 'Mumbai',
+      region: 'Maharashtra',
+      deliveryNote: 'Free shipping; Premium packaging; Ships in 48h',
       isVerified: true,
     },
   });
 
-  const fashionShop = await prisma.shop.create({
-    data: {
-      ownerId: seller2.id,
-      name: 'Vogue Boutique',
-      slug: 'vogue-boutique',
-      description: 'Handcrafted sustainable streetwear, tailored to express your authentic aesthetic.',
-      logo: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=150&h=150&q=80',
-      banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&h=400&q=80',
-      whatsapp: '15550300400',
-      instagram: 'vogue_boutique',
-      telegram: 'vogue_boutique_tg',
-      isVerified: true,
-    },
-  });
+  console.log('Shop created successfully.');
 
-  const pastelShop = await prisma.shop.create({
-    data: {
-      ownerId: seller3.id,
-      name: 'Pastel Dreams',
-      slug: 'pasteldreams',
-      description: 'A beautiful boutique of pastel crafts and jewelry.',
-      logo: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=150&h=150&q=80',
-      banner: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&h=400&q=80',
-      whatsapp: '15550200300',
-      instagram: 'pasteldreams_ig',
-      telegram: 'pasteldreams_tg',
-      isVerified: true,
-    },
-  });
-
-  console.log('Shops created successfully.');
-
-  // 4. Create Products and Product Images
-  // Gadget Central Products
+  // 4. Create Products — Aroma Palace Perfumes
   const p1 = await prisma.product.create({
     data: {
-      shopId: gadgetShop.id,
-      title: 'Mechanical Keychron K2 Keyboard',
-      slug: 'mechanical-keychron-k2-keyboard',
-      description: 'Tactile blue switches, elegant RGB backlit frame, double-shot keycaps, and full Mac/Windows support. Barely used.',
-      price: 89.99,
-      category: 'Electronics',
+      shopId: aromaShop.id,
+      title: 'Mystic Oud Eau de Parfum',
+      slug: 'mystic-oud-eau-de-parfum',
+      description: 'A deep oriental fragrance with agarwood, damask rose, and amber. Long-lasting sillage that commands attention in any room.',
+      price: 2499,
+      compareAtPrice: 2999,
+      options: 'Size: 50ml, 100ml',
+      category: 'Beauty',
       status: ProductStatus.ACTIVE,
+      inStock: true,
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&w=600&h=450&q=80',
+            url: '/uploads/perfumes/mystic_oud.png',
             isPrimary: true,
             displayOrder: 0,
-          },
-          {
-            url: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=600&h=450&q=80',
-            isPrimary: false,
-            displayOrder: 1,
           },
         ],
       },
@@ -140,17 +93,20 @@ async function main() {
 
   const p2 = await prisma.product.create({
     data: {
-      shopId: gadgetShop.id,
-      title: 'Sony WH-1000XM4 Noise Canceling Headphones',
-      slug: 'sony-wh1000xm4-headphones',
-      description: 'Industry-leading noise cancellation, 30 hours battery life, touch control sensors, and premium microphone quality.',
-      price: 249.50,
-      category: 'Electronics',
+      shopId: aromaShop.id,
+      title: 'Velvet Rose Eau de Parfum',
+      slug: 'velvet-rose-eau-de-parfum',
+      description: 'A delicate floral blend of damask rose, geranium, and velvet musk. Perfect for romantic evenings and special occasions.',
+      price: 1999,
+      compareAtPrice: 2499,
+      options: 'Size: 50ml, 100ml',
+      category: 'Beauty',
       status: ProductStatus.ACTIVE,
+      inStock: true,
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&h=450&q=80',
+            url: '/uploads/perfumes/velvet_rose.png',
             isPrimary: true,
             displayOrder: 0,
           },
@@ -159,19 +115,22 @@ async function main() {
     },
   });
 
-  await prisma.product.create({
+  const p3 = await prisma.product.create({
     data: {
-      shopId: gadgetShop.id,
-      title: 'Draft Item USB Hub',
-      slug: 'draft-item-usb-hub',
-      description: 'Not ready for listing yet.',
-      price: 15.00,
-      category: 'Electronics',
-      status: ProductStatus.DRAFT,
+      shopId: aromaShop.id,
+      title: 'Citrus Breeze Eau de Parfum',
+      slug: 'citrus-breeze-eau-de-parfum',
+      description: 'A fresh zesty scent of Sicilian lemon, bergamot, and cedarwood. Ideal for everyday wear and warm-weather outings.',
+      price: 1799,
+      compareAtPrice: 2199,
+      options: 'Size: 50ml, 100ml',
+      category: 'Beauty',
+      status: ProductStatus.ACTIVE,
+      inStock: true,
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?auto=format&fit=crop&w=600&h=450&q=80',
+            url: '/uploads/perfumes/citrus_breeze.png',
             isPrimary: true,
             displayOrder: 0,
           },
@@ -180,20 +139,22 @@ async function main() {
     },
   });
 
-  // Vogue Boutique Products
   const p4 = await prisma.product.create({
     data: {
-      shopId: fashionShop.id,
-      title: 'Oversized Vintage Leather Jacket',
-      slug: 'oversized-vintage-leather-jacket',
-      description: 'Thick genuine cowhide leather jacket, distressed edges, full lining, vintage heavy metal zippers. True unisex style.',
-      price: 135.00,
-      category: 'Fashion',
+      shopId: aromaShop.id,
+      title: 'Sandalwood Noir Eau de Parfum',
+      slug: 'sandalwood-noir-eau-de-parfum',
+      description: 'A warm woody fragrance of Mysore sandalwood, black pepper, and cardamom. A signature scent for the confident connoisseur.',
+      price: 2299,
+      compareAtPrice: 2799,
+      options: 'Size: 50ml, 100ml',
+      category: 'Beauty',
       status: ProductStatus.ACTIVE,
+      inStock: true,
       images: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&h=450&q=80',
+            url: '/uploads/perfumes/sandalwood_noir.png',
             isPrimary: true,
             displayOrder: 0,
           },
@@ -202,110 +163,37 @@ async function main() {
     },
   });
 
-  await prisma.product.create({
-    data: {
-      shopId: fashionShop.id,
-      title: 'Beige Canvas Totebag',
-      slug: 'beige-canvas-totebag',
-      description: 'Minimalist aesthetic canvas totebag with dual interior pockets. Perfectly fits a 15-inch laptop and your books.',
-      price: 19.99,
-      category: 'Fashion',
-      status: ProductStatus.ACTIVE,
-      images: {
-        create: [
-          {
-            url: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&h=450&q=80',
-            isPrimary: true,
-            displayOrder: 0,
-          },
-        ],
-      },
-    },
-  });
+  console.log('Products created successfully.');
 
-  // Pastel Dreams Products
-  await prisma.product.create({
-    data: {
-      shopId: pastelShop.id,
-      title: 'Pastel Rose Ring Box',
-      slug: 'ring-box',
-      description: 'An elegant, handmade velvet ring box in soft pastel shades.',
-      price: 25.00,
-      category: 'Art & Craft',
-      status: ProductStatus.ACTIVE,
-      images: {
-        create: [
-          {
-            url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&h=450&q=80',
-            isPrimary: true,
-            displayOrder: 0,
-          },
-        ],
-      },
-    },
-  });
-
-  console.log('Products and Product Images created successfully.');
-
-  // 5. Create Reviews
+  // 5. Create a Review
   await prisma.review.create({
     data: {
-      shopId: gadgetShop.id,
+      shopId: aromaShop.id,
       userId: buyer.id,
       rating: 5,
-      comment: 'Super fast communication and high-quality mechanical keyboard as described. A+ seller!',
-    },
-  });
-
-  await prisma.review.create({
-    data: {
-      shopId: fashionShop.id,
-      userId: buyer.id,
-      rating: 4,
-      comment: 'Excellent leather jacket, feels heavy and durable. Seller took 1 day to answer my WhatsApp though.',
+      comment: 'Absolutely love the Mystic Oud! The fragrance lasts all day and the packaging was premium. Will definitely order again.',
     },
   });
 
   console.log('Reviews created successfully.');
 
-  // 6. Create Reports
-  await prisma.report.create({
-    data: {
-      shopId: fashionShop.id,
-      userId: buyer.id,
-      reason: 'Seller has listed an item that is out of stock but listed as active.',
-      status: ReportStatus.OPEN,
-    },
-  });
-
-  console.log('Reports created successfully.');
-
-  // 7. Create Analytics (views & clicks)
-  // Gadget Central analytics
+  // 6. Create Analytics (views & clicks)
   await prisma.analytics.createMany({
     data: [
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p1.id, createdAt: new Date() },
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p2.id, createdAt: new Date() },
-      { shopId: gadgetShop.id, eventType: AnalyticsEventType.WHATSAPP_CLICK, productId: p1.id, createdAt: new Date() },
-    ],
-  });
-
-  // Vogue Boutique analytics
-  await prisma.analytics.createMany({
-    data: [
-      { shopId: fashionShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
-      { shopId: fashionShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p4.id, createdAt: new Date() },
-      { shopId: fashionShop.id, eventType: AnalyticsEventType.WHATSAPP_CLICK, productId: p4.id, createdAt: new Date() },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.SHOP_VIEW, createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p1.id, createdAt: new Date() },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p2.id, createdAt: new Date() },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p3.id, createdAt: new Date() },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.PRODUCT_VIEW, productId: p4.id, createdAt: new Date() },
+      { shopId: aromaShop.id, eventType: AnalyticsEventType.WHATSAPP_CLICK, productId: p1.id, createdAt: new Date() },
     ],
   });
 
   console.log('Analytics created successfully.');
 
-  // 8. Create Blog Posts
-  await prisma.blogPost.deleteMany({});
+  // 7. Create Blog Posts
   await prisma.blogPost.createMany({
     data: [
       {
@@ -318,7 +206,7 @@ async function main() {
         tags: ['STRATEGY', 'SOCIAL COMMERCE', 'BUSINESS'],
         readingTime: 3,
         featured: true,
-        featuredProduct: 'sony-wh1000xm4-headphones',
+        featuredProduct: 'mystic-oud-eau-de-parfum',
         seoTitle: 'Why Social Commerce is the Future — Seyon',
         seoDescription: 'The way people buy and sell is shifting. Social commerce — where discovery, trust, and transactions happen through messaging apps — is growing faster than traditional e-commerce in emerging markets.',
         seoKeywords: ['social commerce', 'strategy', 'future of sales', 'whatsapp storefront'],
@@ -328,7 +216,7 @@ This model works because it mirrors how commerce has always worked in India — 
 
 For sellers, social commerce means zero upfront costs. No website hosting fees, no payment gateway commissions, no inventory management software. Just a phone, a product, and a WhatsApp number.
 
-[shop-the-story:sony-wh1000xm4-headphones]
+[shop-the-story:mystic-oud-eau-de-parfum]
 
 Seyon bridges the gap by giving these sellers a discoverable storefront while preserving the simplicity of direct messaging. It's the best of both worlds — the reach of e-commerce with the intimacy of local bazaar shopping.`,
       },
@@ -342,17 +230,17 @@ Seyon bridges the gap by giving these sellers a discoverable storefront while pr
         tags: ['GUIDE', 'TUTORIAL', 'SELLER SETTINGS'],
         readingTime: 4,
         featured: false,
-        featuredProduct: 'beige-canvas-totebag',
+        featuredProduct: 'velvet-rose-eau-de-parfum',
         seoTitle: 'Set Up Your Store in 5 Minutes — Seyon',
         seoDescription: 'A step-by-step guide to creating your first storefront on Seyon — from sign-up to listing your first product.',
-        seoKeywords: ['setup store', 'selling guide', 'canvas totebag'],
+        seoKeywords: ['setup store', 'selling guide', 'perfume store'],
         content: `Getting started on Seyon is designed to be fast and painless. Here's a quick walkthrough:
 
 Step 1: Sign Up — Create a free seller account using your email or Google account. No approval process — your account is active immediately.
 
 Step 2: Set Up Your Store — Choose a store name, write a short description, and upload your logo. This becomes your public storefront that buyers can browse.
 
-[shop-the-story:beige-canvas-totebag]
+[shop-the-story:velvet-rose-eau-de-parfum]
 
 Step 3: Add Your WhatsApp Number — This is how buyers will reach you. When someone clicks "Chat to Buy", they'll be redirected to WhatsApp with a pre-filled message.
 
@@ -372,7 +260,7 @@ That's it. Five minutes, zero cost, and you have a professional storefront ready
         tags: ['TRUST', 'REPUTATION', 'TIPS'],
         readingTime: 4,
         featured: false,
-        featuredProduct: 'mechanical-keychron-k2-keyboard',
+        featuredProduct: 'sandalwood-noir-eau-de-parfum',
         seoTitle: 'Building Trust Online — Seyon',
         seoDescription: 'Trust is the currency of social commerce. Learn how to build credibility, earn positive reviews, and increase your Trust Score on Seyon.',
         seoKeywords: ['building trust', 'seller reputation', 'positive reviews'],
@@ -384,7 +272,7 @@ Use High-Quality Photos — Clear, well-lit product images are the single most i
 
 Write Honest Descriptions — Don't oversell. Accurate descriptions lead to satisfied buyers, which leads to positive reviews. Mention materials, dimensions, and any imperfections.
 
-[shop-the-story:mechanical-keychron-k2-keyboard]
+[shop-the-story:sandalwood-noir-eau-de-parfum]
 
 Respond Quickly — When a buyer messages you on WhatsApp, respond within minutes if possible. Fast replies signal professionalism and reliability.
 
@@ -398,7 +286,7 @@ Your Trust Score on Seyon reflects all of these factors. A higher score means be
   });
 
   console.log('Blog posts created successfully.');
-  console.log('Seeding complete! Ready for local development.');
+  console.log('Seeding complete! Only Aroma Palace perfume store seeded.');
 }
 
 main()
