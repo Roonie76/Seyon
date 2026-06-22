@@ -19,14 +19,19 @@ export function Dialog({ open: controlledOpen, onOpenChange, children }: DialogP
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
 
+  const onOpenChangeRef = React.useRef(onOpenChange);
+  React.useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
   const setOpen = React.useCallback(
     (value: boolean) => {
       if (controlledOpen === undefined) {
         setUncontrolledOpen(value);
       }
-      onOpenChange?.(value);
+      onOpenChangeRef.current?.(value);
     },
-    [controlledOpen, onOpenChange]
+    [controlledOpen]
   );
 
   return <DialogContext.Provider value={{ open, setOpen }}>{children}</DialogContext.Provider>;
@@ -49,13 +54,15 @@ export function DialogContent({ className, children }: { className?: string; chi
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
+  // 1. Manage keydown event listeners (Escape to close, Tab to cycle focus)
   React.useEffect(() => {
+    if (!open) return;
+
     const handleKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false);
         return;
       }
-      // Focus trap: keep Tab cycling inside the dialog
       if (e.key === 'Tab' && contentRef.current) {
         const focusables = Array.from(contentRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
         if (focusables.length === 0) return;
@@ -71,23 +78,35 @@ export function DialogContent({ className, children }: { className?: string; chi
       }
     };
 
-    if (open) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeydown);
-      // Move focus into the dialog
-      requestAnimationFrame(() => {
-        const target = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? contentRef.current;
-        target?.focus();
-      });
-    }
+    window.addEventListener('keydown', handleKeydown);
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeydown);
-      // Restore focus to the element that opened the dialog
-      previousFocusRef.current?.focus?.();
     };
   }, [open, setOpen]);
+
+  // 2. Manage focus-in on open, scroll lock, and restore focus on close
+  React.useEffect(() => {
+    if (!open) return;
+
+    // Record the element that had focus before opening the dialog
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    
+    // Disable body scrolling
+    document.body.style.overflow = 'hidden';
+
+    // Focus the first focusable element inside the dialog
+    requestAnimationFrame(() => {
+      const target = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? contentRef.current;
+      target?.focus();
+    });
+
+    return () => {
+      // Re-enable body scrolling
+      document.body.style.overflow = '';
+      // Restore focus
+      previousFocusRef.current?.focus?.();
+    };
+  }, [open]);
 
   if (!open) return null;
 
