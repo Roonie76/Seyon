@@ -93,8 +93,8 @@ export function parseDeliveryNote(note: string | null | undefined): ParsedOffer[
 
 const themeStyles = {
   emerald: {
-    bg: 'bg-emerald-50/80 border-emerald-200/80 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-800/30 dark:text-emerald-300',
-    iconBg: 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+    bg: 'bg-white border-emerald-200 text-emerald-950 dark:bg-emerald-950/20 dark:border-emerald-800/30 dark:text-emerald-300',
+    iconBg: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400',
   },
   amber: {
     bg: 'bg-amber-50/80 border-amber-200/80 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/30 dark:text-amber-300',
