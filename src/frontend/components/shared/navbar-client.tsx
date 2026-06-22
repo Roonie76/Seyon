@@ -18,9 +18,9 @@ interface NavbarClientProps {
 }
 
 interface Suggestion {
-  categories: { name: string; count: number }[];
+  categories: string[];
   shops: { name: string; slug: string; logo: string | null }[];
-  products: { id: string; title: string; slug: string; price: number; shopSlug: string }[];
+  products: { id: string; title: string; slug: string; price: number; shop: { slug: string } }[];
 }
 
 export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: NavbarClientProps) {
@@ -60,7 +60,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsSearchOpen(false);
       setSearchQuery('');
     }
@@ -190,12 +190,12 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         {suggestions.categories.map((cat) => (
                           <Link
-                            key={cat.name}
-                            href={`/marketplace?category=${encodeURIComponent(cat.name)}`}
+                            key={cat}
+                            href={`/?category=${encodeURIComponent(cat)}`}
                             onClick={closeAll}
                             className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full px-2.5 py-1 text-zinc-300 hover:text-primary transition-colors font-medium"
                           >
-                            {cat.name} ({cat.count})
+                            {cat}
                           </Link>
                         ))}
                       </div>
@@ -237,7 +237,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                         {suggestions.products.map((prod) => (
                           <Link
                             key={prod.id}
-                            href={`/store/${prod.shopSlug}/${prod.slug}`}
+                            href={`/?q=${encodeURIComponent(prod.title)}`}
                             onClick={closeAll}
                             className="flex items-center justify-between text-xs p-2 rounded-md hover:bg-zinc-850 text-zinc-200 hover:text-primary font-medium transition-colors"
                           >
@@ -293,7 +293,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
               <div className="space-y-3">
                 <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Browse</span>
                 <Link
-                  href="/marketplace"
+                  href="/"
                   onClick={closeAll}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
                 >

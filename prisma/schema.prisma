@@ -41,6 +41,12 @@ model User {
   sellerName    String?
   sellerPhone   String?
   sellerImage   String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  postalCode    String?
+  country       String?   @default("India")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -106,6 +112,8 @@ model Shop {
   isSuspended Boolean  @default(false)
   isPaused    Boolean  @default(false)
   whatsappVerifiedAt DateTime?
+  averageRating Float    @default(0.0)
+  reviewCount   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -154,6 +162,7 @@ model Product {
   themeText          String?
   themeMuted         String?
   themeExtractedAt   DateTime?
+  discountPercent    Float?
 
   shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images      ProductImage[]
@@ -165,6 +174,8 @@ model Product {
   @@index([shopId, status])
   @@index([createdAt])
   @@index([price])
+  @@index([status, discountPercent])
+  @@index([status, createdAt])
 }
 
 model ProductImage {
@@ -235,4 +246,28 @@ model Wishlist {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+}
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String
+  cover           String   // URL of high-end cover image
+  author          String   @default("Seyon Team")
+  date            DateTime @default(now())
+  category        String
+  tags            String[]
+  readingTime     Int      @default(1)
+  featured        Boolean  @default(false)
+  featuredProduct String?  // Slug of bound marketplace product
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String[]
+  content         String   @db.Text // Markdown text body
+  published       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([published, date])
 }

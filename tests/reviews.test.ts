@@ -10,11 +10,13 @@ vi.mock('@/lib/db', () => ({
   db: {
     shop: {
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
     review: {
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      findMany: vi.fn(),
     },
     analytics: {
       findFirst: vi.fn(),
@@ -44,6 +46,8 @@ describe('Reviews Server Actions - Submission and Spam Prevention', () => {
     vi.mocked(db.analytics.findFirst).mockResolvedValue({ id: 'evt_1' } as any);
     // Owner lookup used by the fire-and-forget review notification
     vi.mocked(db.user.findUnique).mockResolvedValue(null as any);
+    vi.mocked(db.review.findMany).mockResolvedValue([]);
+    vi.mocked(db.shop.update).mockResolvedValue({} as any);
   });
 
   describe('createReview Contact Gating', () => {

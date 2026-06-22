@@ -15,6 +15,7 @@ interface FilterState {
   sort: string;
   minPrice: string;
   maxPrice: string;
+  rating: string;
 }
 
 interface MarketplaceClientProps {
@@ -26,6 +27,7 @@ interface MarketplaceClientProps {
   sort: string;
   minPrice: string;
   maxPrice: string;
+  rating: string;
   query: string;
   children: React.ReactNode;
 }
@@ -39,6 +41,7 @@ export function MarketplaceClient({
   sort,
   minPrice,
   maxPrice,
+  rating,
   query,
   children,
 }: MarketplaceClientProps) {
@@ -57,6 +60,7 @@ export function MarketplaceClient({
     sort,
     minPrice: safeMinPrice,
     maxPrice: safeMaxPrice,
+    rating,
   };
 
   const getFilterUrl = (state: FilterState, newQuery: string = query) => {
@@ -68,7 +72,8 @@ export function MarketplaceClient({
     if (state.sort) params.set('sort', state.sort);
     if (state.minPrice) params.set('minPrice', state.minPrice);
     if (state.maxPrice) params.set('maxPrice', state.maxPrice);
-    return `/marketplace?${params.toString()}`;
+    if (state.rating) params.set('rating', state.rating);
+    return `/?${params.toString()}`;
   };
 
   const handleApplyFilters = (next: Partial<FilterState>) => {
@@ -136,26 +141,22 @@ export function MarketplaceClient({
       onClear: () => handleApplyFilters({ minPrice: '', maxPrice: '' }),
     });
   }
+  if (rating) {
+    activeChips.push({
+      label: `Rating: ${rating}★ & Up`,
+      onClear: () => handleApplyFilters({ rating: '' }),
+    });
+  }
 
   const handleClearAll = () => {
     startTransition(() => {
-      router.push('/marketplace');
+      router.push('/');
     });
   };
 
   return (
     <div className="flex flex-col w-full">
-      {/* Header Banner */}
-      <div className="relative rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/5 to-amber-600/10 p-8 md:p-12 mb-12 overflow-hidden flex flex-col items-center text-center bg-card shadow-sm w-full">
-        <div className="absolute top-0 left-0 w-60 h-60 bg-amber-500/5 rounded-full blur-[80px] pointer-events-none" />
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tight mb-4 animate-fade-in">
-          Discover Seyon Marketplace
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto mb-6">
-          Find products listed by independent creators globally. Buy securely by connecting with them directly on chat.
-        </p>
-        <MarketplaceSearchInput initialQuery={query} onSearch={handleSearch} />
-      </div>
+
 
       {/* Advanced Filters */}
       <MarketplaceFilters
@@ -167,6 +168,7 @@ export function MarketplaceClient({
         sort={sort}
         minPrice={safeMinPrice}
         maxPrice={safeMaxPrice}
+        rating={rating}
         query={query}
         applyFilters={handleApplyFilters}
       />

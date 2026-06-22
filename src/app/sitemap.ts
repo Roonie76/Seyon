@@ -77,5 +77,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  return [...routes, ...categoryUrls, ...shopUrls, ...productUrls];
+  let blogPostUrls: MetadataRoute.Sitemap = [];
+  try {
+    const dbPosts = await db.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+    });
+    blogPostUrls = dbPosts.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.updatedAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    logger.warn('Failed to query blog posts for sitemap', { error });
+  }
+
+  return [...routes, ...blogPostUrls, ...categoryUrls, ...shopUrls, ...productUrls];
 }

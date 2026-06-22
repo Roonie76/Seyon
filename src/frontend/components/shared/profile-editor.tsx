@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Camera, Save, Loader2, User, Mail, Phone, Shield, CalendarDays, Check } from 'lucide-react';
-import { updateUserProfile } from '@/backend/actions/user-profile';
+import { Camera, Save, Loader2, User, Mail, Phone, Shield, CalendarDays, Check, MapPin } from 'lucide-react';
+import { updateUserProfile, updateUserAddress } from '@/backend/actions/user-profile';
 import { BackButton } from '@/components/shared/back-button';
 
 interface ProfileEditorProps {
@@ -14,6 +14,12 @@ interface ProfileEditorProps {
     image: string | null;
     role: string;
     createdAt: Date;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
   };
   type: 'shopper' | 'seller';
 }
@@ -22,6 +28,12 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
   const [name, setName] = React.useState(user.name || '');
   const [phone, setPhone] = React.useState(user.phone || '');
   const [image, setImage] = React.useState(user.image || '');
+  const [addressLine1, setAddressLine1] = React.useState(user.addressLine1 || '');
+  const [addressLine2, setAddressLine2] = React.useState(user.addressLine2 || '');
+  const [city, setCity] = React.useState(user.city || '');
+  const [state, setState] = React.useState(user.state || '');
+  const [postalCode, setPostalCode] = React.useState(user.postalCode || '');
+  const [country, setCountry] = React.useState(user.country || 'India');
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -30,7 +42,13 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
   const hasChanges =
     name !== (user.name || '') ||
     phone !== (user.phone || '') ||
-    image !== (user.image || '');
+    image !== (user.image || '') ||
+    addressLine1 !== (user.addressLine1 || '') ||
+    addressLine2 !== (user.addressLine2 || '') ||
+    city !== (user.city || '') ||
+    state !== (user.state || '') ||
+    postalCode !== (user.postalCode || '') ||
+    country !== (user.country || 'India');
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -75,11 +93,23 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
     setMessage(null);
 
     const result = await updateUserProfile(type, { name, phone, image });
+    let addressResult: { success: boolean; error?: string } = { success: true };
 
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+    if (type === 'shopper') {
+      addressResult = await updateUserAddress({
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        postalCode,
+        country,
+      });
+    }
+
+    if (result.success && addressResult.success) {
+      setMessage({ type: 'success', text: 'Profile and shipping address updated successfully!' });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to save' });
+      setMessage({ type: 'error', text: result.error || addressResult.error || 'Failed to save changes' });
     }
 
     setSaving(false);
@@ -201,6 +231,106 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
               className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
             />
           </div>
+
+          {/* Shopper Address Details */}
+          {type === 'shopper' && (
+            <>
+              <div className="pt-4 border-t border-zinc-800">
+                <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-amber-500" /> Shipping Address (WhatsApp Pre-fill)
+                </h3>
+                <p className="text-[10px] text-zinc-500 leading-normal mb-4">
+                  This address will be automatically appended to WhatsApp inquiry messages.
+                </p>
+              </div>
+
+              {/* Address Line 1 */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Address Line 1
+                </label>
+                <input
+                  type="text"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="Flat, House no., Building, Company, Apartment"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                />
+              </div>
+
+              {/* Address Line 2 */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Address Line 2
+                </label>
+                <input
+                  type="text"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="Area, Street, Sector, Village"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                />
+              </div>
+
+              {/* City & State (two columns) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="City"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="State"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* ZIP & Country (two columns) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Postal / ZIP Code
+                  </label>
+                  <input
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    placeholder="600001"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="India"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Member Since (read-only) */}
           <div className="space-y-1.5">

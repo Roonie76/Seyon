@@ -209,7 +209,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
                 {suggestions.products.map((prod) => (
                   <button
                     key={prod.id}
-                    onClick={() => handleSuggestionClick(`/store/${prod.shop?.slug}/${prod.slug}`)}
+                    onClick={() => handleSuggestionClick(`/marketplace?q=${encodeURIComponent(prod.title || '')}`)}
                     className="w-full text-left px-3 py-2 text-sm text-zinc-800 hover:bg-amber-50/50 hover:text-amber-900 rounded-lg transition-colors font-medium flex items-center justify-between"
                   >
                     <span className="line-clamp-1">{prod.title}</span>

@@ -10,7 +10,7 @@
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(0 0% 9%);
   
-  --color-primary: hsl(38 92% 50%);
+  --color-primary: hsl(46 65% 52%);
   --color-primary-foreground: hsl(0 0% 3%);
   
   --color-secondary: hsl(218 22% 10%);
@@ -19,18 +19,31 @@
   --color-muted: hsl(0 0% 94%);
   --color-muted-foreground: hsl(0 0% 40%);
   
-  --color-accent: hsl(38 92% 94%);
-  --color-accent-foreground: hsl(38 92% 30%);
+  --color-accent: hsl(46 65% 94%);
+  --color-accent-foreground: hsl(46 65% 30%);
   
   --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(0 0% 98%);
   
   --color-border: hsl(0 0% 89%);
   --color-input: hsl(0 0% 89%);
-  --color-ring: hsl(38 92% 50%);
+  --color-ring: hsl(46 65% 52%);
   
   --color-whatsapp: hsl(142.1 76.2% 36.3%);
   --color-whatsapp-foreground: hsl(210 40% 98%);
+
+  /* Overriding default amber palette with luxury gold colors */
+  --color-amber-50: hsl(46 65% 95%);
+  --color-amber-100: hsl(46 65% 90%);
+  --color-amber-200: hsl(46 65% 80%);
+  --color-amber-300: hsl(46 65% 70%);
+  --color-amber-400: hsl(46 65% 60%);
+  --color-amber-500: hsl(46 65% 52%);
+  --color-amber-600: hsl(46 65% 42%);
+  --color-amber-700: hsl(46 65% 32%);
+  --color-amber-800: hsl(46 65% 22%);
+  --color-amber-900: hsl(46 65% 14%);
+  --color-amber-950: hsl(46 65% 8%);
 
   --radius-lg: 0.75rem;
   --radius-md: calc(0.75rem - 2px);
@@ -48,6 +61,29 @@
     color: var(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
+  }
+
+  button,
+  .button,
+  .btn,
+  a[role="button"],
+  input[type="submit"],
+  input[type="button"],
+  [type="button"],
+  /* Text Inputs & Placeholders */
+  input,
+  input::placeholder,
+  textarea,
+  textarea::placeholder,
+  /* Global Luxury Typography: All headings & uppercase elements */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .uppercase {
+    font-family: var(--font-serif-custom), Georgia, serif !important;
   }
 }
 

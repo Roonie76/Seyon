@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { getAdminDashboardStats } from '@/actions/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AdminModeration } from '@/components/admin/admin-moderation';
 import { Role, Report, Shop } from '@prisma/client';
-import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
 
 type AdminReport = Report & {
@@ -60,13 +62,20 @@ export default async function AdminPage() {
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 flex flex-col gap-8">
       {/* Header */}
-      <div className="border-b border-border pb-4">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground flex items-center gap-2">
-          <ShieldCheck size={28} className="text-primary" /> Admin Moderation Panel
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Review buyer abuse reports, moderate storefront verification badges, and suspend fraudulent shops.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground flex items-center gap-2">
+            <ShieldCheck size={28} className="text-primary" /> Admin Moderation Panel
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Review buyer abuse reports, moderate storefront verification badges, and suspend fraudulent shops.
+          </p>
+        </div>
+        <Link href="/admin/blog">
+          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <FileText size={16} /> Manage Blog Stories
+          </Button>
+        </Link>
       </div>
 
       {/* Metrics Row */}

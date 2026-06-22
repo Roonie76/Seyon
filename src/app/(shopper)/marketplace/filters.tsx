@@ -8,6 +8,7 @@ import {
   MapPin,
   Layers,
   ArrowUpDown,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +30,7 @@ interface MarketplaceFiltersProps {
   sort: string;
   minPrice: string;
   maxPrice: string;
+  rating: string;
   query: string;
   applyFilters: (next: Partial<FilterState>) => void;
 }
@@ -40,6 +42,7 @@ interface FilterState {
   sort: string;
   minPrice: string;
   maxPrice: string;
+  rating: string;
 }
 
 // Custom Select Component with beautiful styling and hover states
@@ -129,10 +132,12 @@ export function MarketplaceFilters({
   sort,
   minPrice,
   maxPrice,
+  rating,
+  query,
   applyFilters,
 }: MarketplaceFiltersProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [isDesktopOpen, setIsDesktopOpen] = React.useState(false);
+  const [isDesktopOpen, setIsDesktopOpen] = React.useState(true);
   const [isStuck, setIsStuck] = React.useState(false);
   const sentinelRef = React.useRef<HTMLDivElement>(null);
 
@@ -148,7 +153,7 @@ export function MarketplaceFilters({
     return () => observer.disconnect();
   }, []);
 
-  const isFilterActive = selectedCategory || selectedCity || inStockOnly || minPrice || maxPrice;
+  const isFilterActive = selectedCategory || selectedCity || inStockOnly || minPrice || maxPrice || rating;
 
   // Compute active filters count
   let activeFilterCount = 0;
@@ -156,6 +161,7 @@ export function MarketplaceFilters({
   if (selectedCity) activeFilterCount++;
   if (inStockOnly) activeFilterCount++;
   if (minPrice || maxPrice) activeFilterCount++;
+  if (rating) activeFilterCount++;
 
   // Options lists
   const categoryOptions = [
@@ -176,14 +182,22 @@ export function MarketplaceFilters({
   ];
 
   const sortOptions = [
+    ...(query ? [{ label: 'Best Match', value: 'relevance' }] : []),
     { label: 'Newest First', value: 'newest' },
     { label: 'Price: Low to High', value: 'price-asc' },
     { label: 'Price: High to Low', value: 'price-desc' },
   ];
 
+  const ratingOptions = [
+    { label: 'Any Rating', value: '' },
+    { label: '4★ & Up', value: '4' },
+    { label: '3★ & Up', value: '3' },
+    { label: '2★ & Up', value: '2' },
+  ];
+
   const renderFiltersList = (isMobile: boolean = false) => {
     return (
-      <div className={`grid gap-5 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4 items-end w-full'}`}>
+      <div className={`grid gap-5 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-5 items-end w-full'}`}>
         {/* Category Dropdown */}
         <CustomSelect
           id={isMobile ? 'mobile-filter-category' : 'filter-category'}
@@ -207,6 +221,17 @@ export function MarketplaceFilters({
             placeholder="All Locations"
           />
         ) : <div />}
+
+        {/* Rating Dropdown */}
+        <CustomSelect
+          id={isMobile ? 'mobile-filter-rating' : 'filter-rating'}
+          label="Min Rating"
+          value={rating}
+          options={ratingOptions}
+          onChange={(val) => applyFilters({ rating: val })}
+          icon={<Star className="h-3.5 w-3.5 fill-amber-500 stroke-amber-500" />}
+          placeholder="Any Rating"
+        />
 
         {/* Price Range Inputs */}
         <div className="flex flex-col gap-1.5">
@@ -233,7 +258,7 @@ export function MarketplaceFilters({
                 key={minPrice}
                 defaultValue={minPrice}
                 placeholder="Min"
-                className="w-20 h-10 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
+                className="w-16 h-10 pl-5 pr-1 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
               />
             </div>
             <span className="text-zinc-400 text-xs font-bold select-none">—</span>
@@ -246,10 +271,10 @@ export function MarketplaceFilters({
                 key={maxPrice}
                 defaultValue={maxPrice}
                 placeholder="Max"
-                className="w-20 h-10 pl-5 pr-1.5 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
+                className="w-16 h-10 pl-5 pr-1 border border-zinc-200 bg-white rounded-lg text-xs text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 hover:border-zinc-300 transition-all font-medium shadow-sm"
               />
             </div>
-            <Button type="submit" size="sm" variant="outline" className="h-10 text-xs rounded-lg px-3 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold cursor-pointer shadow-sm">
+            <Button type="submit" size="sm" variant="outline" className="h-10 text-xs rounded-lg px-2 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-semibold cursor-pointer shadow-sm">
               Apply
             </Button>
           </form>
@@ -317,6 +342,7 @@ export function MarketplaceFilters({
                     inStock: false,
                     minPrice: '',
                     maxPrice: '',
+                    rating: '',
                   });
                 }}
                 className="text-xs font-semibold text-zinc-500 hover:text-red-600 px-2.5 py-1.5 hover:bg-zinc-50 rounded-lg transition-colors cursor-pointer"
@@ -410,6 +436,7 @@ export function MarketplaceFilters({
                         inStock: false,
                         minPrice: '',
                         maxPrice: '',
+                        rating: '',
                       });
                       setMobileOpen(false);
                     }}

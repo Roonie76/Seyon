@@ -13,6 +13,7 @@ import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star, MapPin, PauseCircle 
 import { ShareButton } from '@/components/shared/share-button';
 import { logger } from '@/backend/lib/logger';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
+import { DeliveryOffersRow } from '@/components/shared/delivery-offers';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { BackButton } from '@/components/shared/back-button';
 import { ProductCard } from '@/components/shared/product-card';
@@ -163,16 +164,14 @@ export default async function StorePage({ params }: StorePageProps) {
               <p className="text-sm text-muted-foreground max-w-xl line-clamp-2 md:line-clamp-none">
                 {shop.description || 'Welcome to our catalog storefront! Click Chat to Buy on any product to chat.'}
               </p>
-              {(shop.city || shop.region || shop.deliveryNote) && (
+              {(shop.city || shop.region) && (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 font-semibold">
                   <MapPin className="h-3.5 w-3.5 text-amber-600" />
                   {[shop.city, shop.region].filter(Boolean).join(', ')}
-                  {shop.deliveryNote && (
-                    <span className="font-normal">
-                      {(shop.city || shop.region) ? ' · ' : ''}{shop.deliveryNote}
-                    </span>
-                  )}
                 </p>
+              )}
+              {shop.deliveryNote && (
+                <DeliveryOffersRow deliveryNote={shop.deliveryNote} className="mt-2.5" />
               )}
 
               {/* Social Channels and reviews */}
@@ -235,7 +234,7 @@ export default async function StorePage({ params }: StorePageProps) {
                   <p className="text-xs text-muted-foreground">Check back later for new products from this store.</p>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 gap-6">
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                   {activeProducts.map((prod) => (
                     <ProductCard
                       key={prod.id}

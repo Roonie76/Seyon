@@ -98,6 +98,25 @@ export async function createReview(shopId: string, rawData: unknown) {
         });
     const isUpdate = Boolean(existingReview);
 
+    // Recalculate and cache averageRating and reviewCount for the Shop
+    try {
+      const shopReviews = await db.review.findMany({
+        where: { shopId },
+        select: { rating: true },
+      });
+      const count = shopReviews.length;
+      const avg = count > 0 ? shopReviews.reduce((sum, r) => sum + r.rating, 0) / count : 0.0;
+      await db.shop.update({
+        where: { id: shopId },
+        data: {
+          averageRating: avg,
+          reviewCount: count,
+        },
+      });
+    } catch (err) {
+      logger.error('Failed to update cached shop review aggregates', err, { shopId });
+    }
+
     // Notify the seller (fire-and-forget; never blocks the response)
     db.user
       .findUnique({ where: { id: shop.ownerId }, select: { email: true } })

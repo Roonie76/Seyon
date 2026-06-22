@@ -17,9 +17,9 @@ interface SellerNavbarClientProps {
 }
 
 interface Suggestion {
-  categories: { name: string; count: number }[];
+  categories: string[];
   shops: { name: string; slug: string; logo: string | null }[];
-  products: { id: string; title: string; slug: string; price: number; shopSlug: string }[];
+  products: { id: string; title: string; slug: string; price: number; shop: { slug: string } }[];
 }
 
 export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: SellerNavbarClientProps) {
@@ -205,12 +205,12 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         {suggestions.categories.map((cat) => (
                           <a
-                            key={cat.name}
-                            href={`${buyerMarketUrl}/marketplace?category=${encodeURIComponent(cat.name)}`}
+                            key={cat}
+                            href={`${buyerMarketUrl}/marketplace?category=${encodeURIComponent(cat)}`}
                             onClick={closeAll}
                             className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full px-2.5 py-1 text-zinc-300 hover:text-primary transition-colors font-medium"
                           >
-                            {cat.name} ({cat.count})
+                            {cat}
                           </a>
                         ))}
                       </div>
@@ -252,7 +252,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                         {suggestions.products.map((prod) => (
                           <a
                             key={prod.id}
-                            href={`${buyerMarketUrl}/store/${prod.shopSlug}/${prod.slug}`}
+                            href={`${buyerMarketUrl}/marketplace?q=${encodeURIComponent(prod.title)}`}
                             onClick={closeAll}
                             className="flex items-center justify-between text-xs p-2 rounded-md hover:bg-zinc-850 text-zinc-200 hover:text-primary font-medium transition-colors"
                           >

@@ -29,8 +29,10 @@ import { RecordRecentlyViewed, RecentlyViewedStrip } from '@/components/shared/r
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import { ProductCard } from '@/components/shared/product-card';
 import { isProductWishlisted } from '@/actions/wishlist';
+import { RatingsHistogram } from '@/components/shared/ratings-histogram';
 import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info, MapPin, PauseCircle } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
+import { DeliveryOffersList } from '@/components/shared/delivery-offers';
 
 interface ProductPageProps {
   params: Promise<{
@@ -233,18 +235,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
               />
             </div>
 
-            {(shop.city || shop.region || shop.deliveryNote) && (
-              <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 mb-6 flex gap-2.5 items-start text-xs text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                <div className="leading-relaxed">
-                  {(shop.city || shop.region) && (
-                    <p className="font-semibold text-foreground">
-                      Ships from {[shop.city, shop.region].filter(Boolean).join(', ')}
-                    </p>
-                  )}
-                  {shop.deliveryNote && <p className="mt-0.5">{shop.deliveryNote}</p>}
-                </div>
+            {(shop.city || shop.region) && (
+              <div className="rounded-lg bg-zinc-50 border border-zinc-200 p-3 mb-4 flex gap-2.5 items-center text-xs text-muted-foreground">
+                <MapPin className="h-4 w-4 shrink-0 text-amber-600" />
+                <span className="font-semibold text-foreground">
+                  Ships from {[shop.city, shop.region].filter(Boolean).join(', ')}
+                </span>
               </div>
+            )}
+
+            {shop.deliveryNote && (
+              <DeliveryOffersList deliveryNote={shop.deliveryNote} />
             )}
 
             {/* Order execution details helper — collapsible */}
@@ -272,6 +273,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 options={product.options}
                 inStock={product.inStock}
                 shopPaused={shop.isPaused}
+                imageUrl={product.images?.[0]?.url}
               />
               <WishlistButton
                 productId={product.id}
@@ -307,6 +309,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
               </div>
             </div>
+
+            {reviewCount > 0 && (
+              <div className="my-4 pt-3 border-t border-zinc-150 dark:border-zinc-800">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Seller Feedback</span>
+                <RatingsHistogram reviews={shop.reviews} />
+              </div>
+            )}
 
             <Link href={`/store/${shop.slug}`}>
               <button className="w-full py-2.5 text-xs bg-zinc-100 border border-zinc-200 hover:bg-zinc-200 text-foreground rounded-md font-semibold transition-colors cursor-pointer">

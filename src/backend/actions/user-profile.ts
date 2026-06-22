@@ -12,6 +12,12 @@ export interface UserProfile {
   image: string | null;
   role: string;
   createdAt: Date;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
 }
 
 /**
@@ -34,6 +40,12 @@ export async function getUserProfile(type: 'shopper' | 'seller' = 'shopper'): Pr
       sellerPhone: true,
       sellerImage: true,
       createdAt: true,
+      addressLine1: true,
+      addressLine2: true,
+      city: true,
+      state: true,
+      postalCode: true,
+      country: true,
     },
   });
 
@@ -59,6 +71,12 @@ export async function getUserProfile(type: 'shopper' | 'seller' = 'shopper'): Pr
     image: user.image,
     role: user.role,
     createdAt: user.createdAt,
+    addressLine1: user.addressLine1,
+    addressLine2: user.addressLine2,
+    city: user.city,
+    state: user.state,
+    postalCode: user.postalCode,
+    country: user.country,
   };
 }
 
@@ -120,5 +138,39 @@ export async function updateUserProfile(
   } catch (error) {
     console.error('Failed to update user profile:', error);
     return { success: false, error: 'Failed to save changes. Please try again.' };
+  }
+}
+
+export async function updateUserAddress(data: {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  try {
+    await db.user.update({
+      where: { id: session.user.id },
+      data: {
+        addressLine1: data.addressLine1?.trim() || null,
+        addressLine2: data.addressLine2?.trim() || null,
+        city: data.city?.trim() || null,
+        state: data.state?.trim() || null,
+        postalCode: data.postalCode?.trim() || null,
+        country: data.country?.trim() || 'India',
+      },
+    });
+
+    revalidatePath('/shopper-account');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to update user address:', error);
+    return { success: false, error: 'Failed to save address. Please try again.' };
   }
 }

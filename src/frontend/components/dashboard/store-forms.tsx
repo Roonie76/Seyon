@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { createShop, updateShop, toggleShopPause, deleteShop } from '@/actions/shops';
 import { confirmWhatsappVerification, requestWhatsappVerification } from '@/backend/actions/whatsapp';
 import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound, Trash2 } from 'lucide-react';
+import { DeliveryOffersRow } from '@/components/shared/delivery-offers';
 
 export function StoreOnboardingForm() {
   const [formData, setFormData] = React.useState({
@@ -204,11 +205,19 @@ export function StoreOnboardingForm() {
               <Input
                 type="text"
                 maxLength={200}
-                placeholder='e.g. "Ships across India" or "Pickup only, T. Nagar"'
+                placeholder="e.g. Free shipping > ₹499; Ships in 24h; COD Available"
                 value={formData.deliveryNote}
                 onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
               />
-              <span className="text-[10px] text-muted-foreground">Shown to buyers next to the order button so they know if you deliver to them.</span>
+              <span className="text-[10px] text-muted-foreground font-normal normal-case">
+                {"Separate multiple offers with a semicolon (e.g. 'Free shipping; Ships in 24h; 10% Off'). These will render as beautiful colored badges on your products."}
+              </span>
+              {formData.deliveryNote && (
+                <div className="mt-2 p-2.5 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+                  <span className="text-[9px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
+                  <DeliveryOffersRow deliveryNote={formData.deliveryNote} isPreview />
+                </div>
+              )}
             </div>
           </div>
 
@@ -572,7 +581,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
           {/* Location & Delivery */}
           <div className="border-t border-zinc-200 pt-6 space-y-4">
             <h3 className="text-sm font-bold text-foreground/90 flex items-center gap-1.5"><MapPin size={14} className="text-amber-600" /> Location & Delivery</h3>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">City</label>
                 <Input
@@ -591,16 +600,25 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
                   onChange={(e) => setFormData((prev) => ({ ...prev, region: e.target.value }))}
                 />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Delivery Note</label>
-                <Input
-                  type="text"
-                  maxLength={200}
-                  placeholder='e.g. "Ships across India"'
-                  value={formData.deliveryNote}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
-                />
-              </div>
+            </div>
+            <div className="flex flex-col gap-1.5 mt-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase">Delivery Note</label>
+              <Input
+                type="text"
+                maxLength={200}
+                placeholder="e.g. Free shipping > ₹499; Ships in 24h; COD Available"
+                value={formData.deliveryNote}
+                onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
+              />
+              <span className="text-[10px] text-muted-foreground font-normal normal-case">
+                {"Separate multiple offers with a semicolon (e.g. 'Free shipping; Ships in 24h; 10% Off'). These will render as beautiful colored badges on your products."}
+              </span>
+              {formData.deliveryNote && (
+                <div className="mt-2 p-2.5 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+                  <span className="text-[9px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
+                  <DeliveryOffersRow deliveryNote={formData.deliveryNote} isPreview />
+                </div>
+              )}
             </div>
           </div>
 

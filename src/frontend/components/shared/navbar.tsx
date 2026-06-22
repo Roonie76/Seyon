@@ -18,7 +18,7 @@ export async function Navbar() {
 
   const handleSignOut = async () => {
     'use server';
-    await signOut({ redirectTo: '/marketplace' });
+    await signOut({ redirectTo: '/' });
   };
 
   const displayUser = dbUser

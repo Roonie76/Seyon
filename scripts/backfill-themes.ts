@@ -6,9 +6,6 @@ async function backfill() {
   console.log('Starting product theme backfill...');
   try {
     const products = await db.product.findMany({
-      where: {
-        themeExtractedAt: null
-      },
       include: {
         images: {
           orderBy: { displayOrder: 'asc' }

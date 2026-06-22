@@ -23,6 +23,7 @@ export interface ProductSearchParams {
   sort?: ProductSearchSort;
   page?: number;
   perPage?: number;
+  rating?: number;
 }
 
 export interface ProductSearchResult {
@@ -34,7 +35,7 @@ export interface ProductSearchResult {
 const TSV = Prisma.sql`to_tsvector('english', coalesce(p."title", '') || ' ' || coalesce(p."description", '') || ' ' || coalesce(p."category", ''))`;
 
 export async function searchProductIds(params: ProductSearchParams): Promise<ProductSearchResult> {
-  const { query, category, city, inStockOnly, minPrice, maxPrice, sort = 'relevance', page = 1, perPage = 8 } = params;
+  const { query, category, city, inStockOnly, minPrice, maxPrice, sort = 'relevance', page = 1, perPage = 8, rating } = params;
 
   const tsQuery = Prisma.sql`websearch_to_tsquery('english', ${query})`;
 
@@ -50,6 +51,7 @@ export async function searchProductIds(params: ProductSearchParams): Promise<Pro
   if (inStockOnly) conditions.push(Prisma.sql`p."inStock" = true`);
   if (minPrice !== undefined && !Number.isNaN(minPrice)) conditions.push(Prisma.sql`p."price" >= ${Math.max(0, minPrice)}`);
   if (maxPrice !== undefined && !Number.isNaN(maxPrice)) conditions.push(Prisma.sql`p."price" <= ${Math.max(0, maxPrice)}`);
+  if (rating !== undefined && !Number.isNaN(rating)) conditions.push(Prisma.sql`s."averageRating" >= ${rating}`);
 
   // Sold-out products always sort after in-stock ones.
   let orderBy: Prisma.Sql;

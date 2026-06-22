@@ -110,6 +110,11 @@ export async function createProduct(shopId: string, rawData: unknown) {
       }
     }
 
+    const discountPercent =
+      compareAtPrice && compareAtPrice > price
+        ? (compareAtPrice - price) / compareAtPrice
+        : null;
+
     const product = await db.product.create({
       data: {
         shopId: parsedShopId.data,
@@ -118,6 +123,7 @@ export async function createProduct(shopId: string, rawData: unknown) {
         description,
         price,
         compareAtPrice: compareAtPrice ?? null,
+        discountPercent,
         category,
         options: options || null,
         inStock,
@@ -244,6 +250,11 @@ export async function updateProduct(productId: string, rawData: unknown) {
       }
     }
 
+    const discountPercent =
+      compareAtPrice && compareAtPrice > price
+        ? (compareAtPrice - price) / compareAtPrice
+        : null;
+
     // Update product inside a database transaction
     const updatedProduct = await db.$transaction(async (tx) => {
       // Clear current images mapping in DB
@@ -260,6 +271,7 @@ export async function updateProduct(productId: string, rawData: unknown) {
           description,
           price,
           compareAtPrice: compareAtPrice ?? null,
+          discountPercent,
           category,
           options: options || null,
           inStock,
@@ -340,6 +352,7 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
           slug: baseSlug,
           description: null,
           price: 0,
+          discountPercent: null,
           category: 'Other',
           status: 'DRAFT',
           inStock: true,

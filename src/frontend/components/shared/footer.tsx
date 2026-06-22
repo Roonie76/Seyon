@@ -72,7 +72,7 @@ export function Footer() {
             <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Explore</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
-                <Link href="/marketplace" className="hover:text-white transition-colors">Marketplace</Link>
+                <Link href="/" className="hover:text-white transition-colors">Marketplace</Link>
               </li>
               <li>
                 <Link href="/category" className="hover:text-white transition-colors">Categories</Link>

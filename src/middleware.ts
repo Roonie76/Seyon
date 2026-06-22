@@ -11,7 +11,7 @@ import type { NextRequest } from 'next/server';
  * containing "sell" anywhere in it.
  */
 function getSellerHosts(): Set<string> {
-  const configured = process.env.SELLER_HOSTS || 'seyon-seller.vercel.app,localhost:3001';
+  const configured = process.env.SELLER_HOSTS || 'seyon-seller.vercel.app,localhost:3001,127.0.0.1:3000';
   return new Set(
     configured
       .split(',')

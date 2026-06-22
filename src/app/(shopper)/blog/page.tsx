@@ -1,121 +1,195 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { PenLine, Calendar, ArrowRight } from 'lucide-react';
-import { BackButton } from '@/components/shared/back-button';
+import { db } from '@/lib/db';
 import Link from 'next/link';
+import { HeroBanner } from '@/components/blog/HeroBanner/HeroBanner';
+import { FeaturedStory } from '@/components/blog/FeaturedStory/FeaturedStory';
+import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
+import { Sidebar } from '@/components/blog/Sidebar/Sidebar';
+import { Pagination } from '@/components/blog/Pagination/Pagination';
+import { BlogPost } from '@/types/blog';
 import type { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
-  title: 'Blog',
+  title: 'Seyon Blog — Luxury Stories & Craftsmanship Guides',
   description:
-    'Insights, guides, and stories from Seyon — learn about social commerce, setting up your store, and building buyer trust.',
+    'Discover editorial stories, design craftsmanship insights, and guides to direct selling and buyer trust on Seyon.',
+  alternates: { canonical: '/blog' },
 };
 
-const posts = [
-  {
-    slug: 'why-social-commerce-is-the-future',
-    title: 'Why Social Commerce is the Future',
-    date: 'June 15, 2026',
-    excerpt:
-      'The way people buy and sell is shifting. Social commerce — where discovery, trust, and transactions happen through messaging apps — is growing faster than traditional e-commerce in emerging markets.',
-    content: `Social commerce removes the friction of traditional online shopping. Instead of navigating checkout flows, entering card details, and waiting for confirmation emails, buyers simply message a seller directly on WhatsApp.
+interface PageProps {
+  searchParams: Promise<{ q?: string; tag?: string; page?: string }>;
+}
 
-This model works because it mirrors how commerce has always worked in India — through relationships, conversation, and trust. A buyer asks questions, negotiates, and confirms an order in a single chat thread.
+export default async function BlogPage({ searchParams }: PageProps) {
+  const { q, tag, page } = await searchParams;
+  const currentPage = Number(page || '1');
+  const postsPerPage = 6;
 
-For sellers, social commerce means zero upfront costs. No website hosting fees, no payment gateway commissions, no inventory management software. Just a phone, a product, and a WhatsApp number.
+  // Build DB queries
+  const queryFilter = q
+    ? {
+        OR: [
+          { title: { contains: q, mode: 'insensitive' as const } },
+          { excerpt: { contains: q, mode: 'insensitive' as const } },
+          { content: { contains: q, mode: 'insensitive' as const } },
+          { category: { contains: q, mode: 'insensitive' as const } },
+        ],
+      }
+    : {};
 
-Seyon bridges the gap by giving these sellers a discoverable storefront while preserving the simplicity of direct messaging. It's the best of both worlds — the reach of e-commerce with the intimacy of local bazaar shopping.`,
-  },
-  {
-    slug: 'setup-your-seyon-store-in-5-minutes',
-    title: 'How to Set Up Your Seyon Store in 5 Minutes',
-    date: 'June 10, 2026',
-    excerpt:
-      'A step-by-step guide to creating your first storefront on Seyon — from sign-up to listing your first product.',
-    content: `Getting started on Seyon is designed to be fast and painless. Here's a quick walkthrough:
+  const tagFilter = tag
+    ? {
+        tags: { has: tag.toUpperCase() },
+      }
+    : {};
 
-Step 1: Sign Up — Create a free seller account using your email or Google account. No approval process — your account is active immediately.
+  // Fetch blogs in parallel
+  const [postsRaw, totalCount, tagPosts, recentPostsRaw] = await Promise.all([
+    db.blogPost.findMany({
+      where: {
+        published: true,
+        ...queryFilter,
+        ...tagFilter,
+      },
+      orderBy: [
+        { featured: 'desc' },
+        { date: 'desc' },
+      ],
+      skip: (currentPage - 1) * postsPerPage,
+      take: postsPerPage,
+    }),
+    db.blogPost.count({
+      where: {
+        published: true,
+        ...queryFilter,
+        ...tagFilter,
+      },
+    }),
+    db.blogPost.findMany({
+      where: { published: true },
+      select: { tags: true },
+      take: 100,
+    }),
+    db.blogPost.findMany({
+      where: { published: true },
+      orderBy: { date: 'desc' },
+      take: 3,
+    }),
+  ]);
 
-Step 2: Set Up Your Store — Choose a store name, write a short description, and upload your logo. This becomes your public storefront that buyers can browse.
+  // Cast type definitions
+  const posts = postsRaw as unknown as BlogPost[];
+  const recentPosts = recentPostsRaw as unknown as BlogPost[];
 
-Step 3: Add Your WhatsApp Number — This is how buyers will reach you. When someone clicks "Chat to Buy", they'll be redirected to WhatsApp with a pre-filled message.
+  // Flatten and filter unique tags
+  const tagsList = Array.from(new Set(tagPosts.flatMap((p) => p.tags)));
 
-Step 4: List Your First Product — Add a title, description, price, category, and photos. Your product goes live instantly and becomes searchable on the Seyon marketplace.
+  const totalPages = Math.ceil(totalCount / postsPerPage);
 
-Step 5: Share Your Store Link — Copy your unique store URL and share it on Instagram, WhatsApp Status, or any social platform. Every view is a potential customer.
+  // Isolate featured post for the top banner (Only show on page 1, when no search/tag filter is active)
+  const isFiltering = !!(q || tag);
+  const featuredPost = !isFiltering && currentPage === 1 ? posts.find((p) => p.featured) || posts[0] : null;
 
-That's it. Five minutes, zero cost, and you have a professional storefront ready to receive orders.`,
-  },
-  {
-    slug: 'building-trust-with-buyers-online',
-    title: 'Building Trust with Buyers Online',
-    date: 'June 5, 2026',
-    excerpt:
-      'Trust is the currency of social commerce. Learn how to build credibility, earn positive reviews, and increase your Trust Score on Seyon.',
-    content: `When you're selling through messaging apps, trust is everything. Buyers can't physically examine your product, so they rely on signals — your store's reputation, product photos, reviews, and responsiveness.
+  // Filter out the featured post from the grid if displayed
+  const gridPosts = featuredPost
+    ? posts.filter((p) => p.id !== featuredPost.id)
+    : posts;
 
-Here's how to build trust on Seyon:
+  // Fetch product for sidebar from the featured post or the first post
+  let sidebarProduct = null;
+  const productSourcePost = featuredPost || posts[0];
+  if (productSourcePost && productSourcePost.featuredProduct) {
+    const dbProduct = await db.product.findFirst({
+      where: {
+        slug: productSourcePost.featuredProduct,
+        status: 'ACTIVE',
+      },
+      include: {
+        images: { orderBy: { displayOrder: 'asc' }, take: 1 },
+        shop: { select: { slug: true } },
+      },
+    });
 
-Use High-Quality Photos — Clear, well-lit product images are the single most important factor in earning buyer confidence. Show multiple angles and include size references.
+    if (dbProduct) {
+      sidebarProduct = {
+        title: dbProduct.title,
+        price: dbProduct.price,
+        imageUrl: dbProduct.images[0]?.url || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400',
+        slug: dbProduct.slug,
+        shopSlug: dbProduct.shop.slug,
+        rating: 5,
+      };
+    }
+  }
 
-Write Honest Descriptions — Don't oversell. Accurate descriptions lead to satisfied buyers, which leads to positive reviews. Mention materials, dimensions, and any imperfections.
-
-Respond Quickly — When a buyer messages you on WhatsApp, respond within minutes if possible. Fast replies signal professionalism and reliability.
-
-Encourage Reviews — After a successful sale, ask your buyer to leave a review on Seyon. Reviews directly impact your Trust Score and search ranking.
-
-Be Transparent About Shipping — Set clear expectations about delivery timelines, shipping costs, and return policies upfront. Surprises erode trust.
-
-Your Trust Score on Seyon reflects all of these factors. A higher score means better visibility in search results and more buyers reaching out to you.`,
-  },
-];
-
-export default function BlogPage() {
   return (
-    <div className="flex-1 py-16 px-4 relative max-w-4xl mx-auto w-full">
-      {/* Background glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-350 min-h-screen">
+      {/* Background Styling: Double grid lines + Radial centered gold glow */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .luxury-bg {
+          background-color: #050505;
+          background-image: 
+            radial-gradient(circle at top, rgba(212, 175, 55, 0.07), transparent 45%),
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+          background-size: 100% 100%, 120px 120px, 120px 120px;
+        }
+      `}} />
 
-      <BackButton fallbackHref="/marketplace" label="Back to Marketplace" className="mb-6" />
+      <div className="luxury-bg absolute inset-0 pointer-events-none z-0" />
 
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-10 w-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-          <PenLine className="h-5 w-5 text-amber-600" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black text-foreground">Blog</h1>
-          <p className="text-xs text-muted-foreground">Insights, guides, and stories from Seyon</p>
-        </div>
-      </div>
+      {/* Hero Banner Title (Mouse Parallax) */}
+      <HeroBanner />
 
-      <div className="space-y-6">
-        {posts.map((post) => (
-          <Card key={post.slug} className="glass border-border shadow-2xl relative z-10 overflow-hidden group">
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center gap-2 text-xs text-zinc-500">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>{post.date}</span>
+      {/* Main Grid Wrapper */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 sm:py-24">
+        <div className="flex flex-col lg:flex-row gap-12 items-start">
+          
+          {/* Left Main Article Column (70%) */}
+          <div className="flex-grow w-full lg:max-w-[calc(100%-420px)] space-y-12">
+            
+            {/* Featured Post (Only show on page 1 without search/filter) */}
+            {featuredPost && (
+              <FeaturedStory post={featuredPost} />
+            )}
+
+            {/* Grid Title */}
+            {isFiltering && (
+              <div className="border-b border-zinc-900 pb-4">
+                <h3 className="text-lg font-light text-white font-serif uppercase tracking-wider">
+                  Search Results {q && `for "${q}"`} {tag && `tagged "${tag}"`} ({totalCount})
+                </h3>
               </div>
+            )}
 
-              <h2 className="text-xl font-bold text-white group-hover:text-amber-400 transition-colors">
-                {post.title}
-              </h2>
+            {/* Articles Grid */}
+            {gridPosts.length === 0 ? (
+              <div className="text-center py-20 border border-zinc-900 bg-[#0f0f0f] rounded-3xl space-y-4">
+                <p className="text-sm text-zinc-500 font-light">No articles match your search criteria.</p>
+                <Link href="/blog" className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline">
+                  Clear Filters
+                </Link>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-8">
+                {gridPosts.map((post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))}
+              </div>
+            )}
 
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                {post.excerpt}
-              </p>
+            {/* Pagination Controls */}
+            <Pagination totalPages={totalPages} />
+          </div>
 
-              <details className="group/details">
-                <summary className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-500 hover:text-amber-400 cursor-pointer transition-colors list-none">
-                  Read full article
-                  <ArrowRight className="h-3 w-3 group-open/details:rotate-90 transition-transform" />
-                </summary>
-                <div className="mt-4 pt-4 border-t border-zinc-800 text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                  {post.content}
-                </div>
-              </details>
-            </CardContent>
-          </Card>
-        ))}
+          {/* Right Sidebar Column (30%) */}
+          <Sidebar
+            recentPosts={recentPosts}
+            tags={tagsList}
+            featuredProduct={sidebarProduct}
+          />
+        </div>
       </div>
     </div>
   );
