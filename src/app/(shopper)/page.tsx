@@ -39,7 +39,7 @@ const getTopOffers = unstable_cache(
     });
   },
   ['homepage-top-offers'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ['homepage-top-offers'] }
 );
 
 // 2. Cached Query: New Arrivals (2 min TTL, Carousel)
@@ -59,7 +59,7 @@ const getNewArrivals = unstable_cache(
     });
   },
   ['homepage-new-arrivals-v2'],
-  { revalidate: 120 }
+  { revalidate: 120, tags: ['homepage-new-arrivals-v2'] }
 );
 
 // 3. Cached Query: Category Spotlight (15 min TTL, 2x2 box)
@@ -96,7 +96,7 @@ const getCategorySpotlight = unstable_cache(
     return { category: spotlightCategory, products };
   },
   ['homepage-category-spotlight'],
-  { revalidate: 900 }
+  { revalidate: 900, tags: ['homepage-category-spotlight'] }
 );
 
 // 4. Cached Query: Popular Categories (15 min TTL, 2x2 box)
@@ -127,7 +127,7 @@ const getPopularCategories = unstable_cache(
     return categoriesWithImages;
   },
   ['homepage-popular-categories'],
-  { revalidate: 900 }
+  { revalidate: 900, tags: ['homepage-popular-categories'] }
 );
 
 // 5. Cached Query: Verified Shops (10 min TTL, 2x2 box)
@@ -140,7 +140,7 @@ const getVerifiedShops = unstable_cache(
     });
   },
   ['homepage-verified-shops'],
-  { revalidate: 600 }
+  { revalidate: 600, tags: ['homepage-verified-shops'] }
 );
 
 // 6. Cached Query: Verified Picks (10 min TTL, Random order, Carousel)
@@ -169,7 +169,7 @@ const getVerifiedPicks = unstable_cache(
     });
   },
   ['homepage-verified-picks-v2'],
-  { revalidate: 600 }
+  { revalidate: 600, tags: ['homepage-verified-picks-v2'] }
 );
 
 type SearchProduct = Prisma.ProductGetPayload<{
