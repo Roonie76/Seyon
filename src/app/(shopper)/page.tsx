@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { ProductCard } from '@/components/shared/product-card';
+import { ProductCarousel } from '@/components/shared/product-carousel';
 import { HomepageSearch } from '@/components/shared/homepage-search';
 import { ArrowRight } from 'lucide-react';
 
@@ -812,13 +813,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 Browse latest <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5" />
               </Link>
             </div>
-            <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
+            <ProductCarousel>
               {newArrivals.map((prod) => (
                 <div key={prod.id} className="w-[260px] shrink-0">
                   <ProductCard product={prod} showWishlistButton={false} />
                 </div>
               ))}
-            </div>
+            </ProductCarousel>
           </section>
         )}
 
@@ -839,13 +840,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 Explore shops <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5" />
               </Link>
             </div>
-            <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
+            <ProductCarousel>
               {verifiedPicks.map((prod) => (
                 <div key={prod.id} className="w-[260px] shrink-0">
                   <ProductCard product={prod} showWishlistButton={false} />
                 </div>
               ))}
-            </div>
+            </ProductCarousel>
           </section>
         )}
 
