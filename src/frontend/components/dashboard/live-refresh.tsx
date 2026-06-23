@@ -50,12 +50,10 @@ export function LiveRefresh({ intervalSeconds = 60, isPaused = false }: LiveRefr
   if (isPaused) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-full px-2.5 py-1 select-none"
+        className="inline-flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 bg-zinc-50 border border-zinc-200/80 rounded-full px-2.5 py-1 select-none tracking-wider uppercase"
         title="Store is paused (vacation mode)"
       >
-        <span className="relative flex h-2 w-2" aria-hidden="true">
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-zinc-400" />
-        </span>
+        <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 shrink-0" />
         Offline
       </span>
     );
@@ -63,13 +61,10 @@ export function LiveRefresh({ intervalSeconds = 60, isPaused = false }: LiveRefr
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1 select-none"
+      className="inline-flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 bg-zinc-50 border border-zinc-200/80 rounded-full px-2.5 py-1 select-none tracking-wider uppercase"
       title={lastUpdated ? `Auto-updates every ${intervalSeconds}s · last updated ${lastUpdated.toLocaleTimeString()}` : 'Auto-updating'}
     >
-      <span className="relative flex h-2 w-2" aria-hidden="true">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-      </span>
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
       Live
     </span>
   );
