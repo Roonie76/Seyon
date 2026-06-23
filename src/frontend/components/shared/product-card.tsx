@@ -122,16 +122,27 @@ export function ProductCard({
 
   // Resolve palette values using useMemo to prevent unnecessary calculations
   const theme = React.useMemo(() => {
+    // Light/Dark mode backgrounds & borders are static beige / neutral gray for card uniformity
+    const bg = '#F4F1EA';
+    const border = '#E7E2D8';
+    const bgDark = '#18181b';
+    const borderDark = '#27272a';
+
     if (!product.themeExtractedAt || !product.themeAccent) {
-      return DEFAULT_THEME;
+      return {
+        ...DEFAULT_THEME,
+        bg,
+        border,
+        bgDark,
+        borderDark,
+      };
     }
 
     const { h, s } = hexToHSL(product.themeAccent);
     const sat = Math.max(s, 25);
 
-    // Compute dark mode colors on the fly from the hue
-    const bgDark = hslToHex(h, sat * 0.4, 10);
-    const borderDark = hslToHex(h, sat * 0.45, 16);
+    const tagBg = product.themeSurface || 'rgba(16, 185, 129, 0.05)';
+    const accent = product.themeAccentStrong || '#065f46';
     const tagBgDark = hslToHex(h, sat * 0.45, 14);
     const accentDark = hslToHex(h, Math.max(s, 40), 65);
 
@@ -142,10 +153,10 @@ export function ProductCard({
     const b = parseInt(hex.slice(5, 7), 16);
 
     return {
-      bg: product.themeBg || '#F4F1EA',
-      border: product.themeMuted || '#E7E2D8',
-      tagBg: product.themeSurface || 'rgba(16, 185, 129, 0.05)',
-      accent: product.themeAccentStrong || '#065f46',
+      bg,
+      border,
+      tagBg,
+      accent,
       glow: `rgba(${r}, ${g}, ${b}, 0.08)`,
       bgDark,
       borderDark,
