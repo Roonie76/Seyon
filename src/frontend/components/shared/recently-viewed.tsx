@@ -53,13 +53,31 @@ export function RecentlyViewedStrip({ excludeId }: { excludeId?: string }) {
     });
   }, [excludeId]);
 
+  const handleClear = (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      setItems([]);
+    } catch {
+      // Degrades silently
+    }
+  };
+
   if (items.length === 0) return null;
 
   return (
     <section aria-label="Recently viewed products" className="mt-12">
-      <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5 mb-4">
-        <History className="h-4 w-4 text-amber-600" /> Recently viewed
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+          <History className="h-4 w-4 text-amber-600" /> Recently viewed
+        </h2>
+        <button
+          onClick={handleClear}
+          className="text-xs font-semibold text-amber-650 hover:text-amber-700 transition-colors uppercase tracking-wider cursor-pointer"
+        >
+          Clear All
+        </button>
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
         {items.map((item) => (
           <Link
