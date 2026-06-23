@@ -48,9 +48,18 @@ export function TrustBadge({
           )}
           <span className="font-semibold text-foreground">Trust Rating</span>
         </div>
-        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${color.split(' ')[0] || ''} ${color.split(' ')[1] || ''}`}>
-          {badge}
-        </span>
+        {badge === 'Excellent' ? (
+          <span 
+            className="italic text-[15px] font-medium text-[#004225]"
+            style={{ fontFamily: 'var(--font-serif-custom), Georgia, serif' }}
+          >
+            Excellent
+          </span>
+        ) : (
+          <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${color.split(' ')[0] || ''} ${color.split(' ')[1] || ''}`}>
+            {badge}
+          </span>
+        )}
       </div>
 
       {showScore && (
