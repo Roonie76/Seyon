@@ -122,7 +122,7 @@ export default async function AdminPage() {
               <span className="text-xs font-semibold text-muted-foreground uppercase">Reports</span>
               <span className="text-3xl font-black text-foreground block mt-1">{stats.reportsCount}</span>
             </div>
-            <div className="h-10 w-10 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center text-red-650">
+            <div className="h-10 w-10 bg-crimson/10 border border-crimson/20 rounded-lg flex items-center justify-center text-crimson">
               <AlertTriangle size={20} />
             </div>
           </CardContent>

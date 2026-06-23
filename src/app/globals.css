@@ -32,6 +32,8 @@
   --color-whatsapp: hsl(142.1 76.2% 36.3%);
   --color-whatsapp-foreground: hsl(210 40% 98%);
 
+  --color-crimson: hsl(348 83% 47%);
+
   /* Overriding default amber palette with luxury gold colors */
   --color-amber-50: hsl(46 65% 95%);
   --color-amber-100: hsl(46 65% 90%);

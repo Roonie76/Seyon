@@ -198,7 +198,7 @@ export function MarketplaceClient({
             variant="ghost"
             size="sm"
             onClick={handleClearAll}
-            className="text-xs font-bold text-muted-foreground hover:text-red-650 h-8 px-2.5 rounded-lg"
+            className="text-xs font-bold text-muted-foreground hover:text-crimson h-8 px-2.5 rounded-lg"
           >
             Clear All
           </Button>

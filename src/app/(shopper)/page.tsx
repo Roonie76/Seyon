@@ -622,7 +622,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                             <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">No Image</div>
                           )}
                           {discount > 0 && (
-                            <span className="absolute top-1.5 left-1.5 z-10 bg-red-650 text-white text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md leading-none">
+                            <span className="absolute top-1.5 left-1.5 z-10 bg-crimson text-white text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md leading-none">
                               {discount}% OFF
                             </span>
                           )}

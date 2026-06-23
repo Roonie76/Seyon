@@ -592,7 +592,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                         <button
                           type="button"
                           onClick={() => removeImage(idx)}
-                          className="p-1.5 bg-red-650 text-white rounded hover:scale-105"
+                          className="p-1.5 bg-crimson text-white rounded hover:scale-105"
                           title="Remove Image"
                         >
                           <Trash2 size={12} />
