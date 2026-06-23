@@ -182,7 +182,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.compareAtPrice != null && product.compareAtPrice > product.price && (
                 <>
                   <span className="text-sm text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
-                  <Badge variant="crimson" className="text-[10px] font-bold">
+                  <Badge variant="gold-pill" className="text-[10px]">
                     {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
                   </Badge>
                 </>
@@ -221,7 +221,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.compareAtPrice != null && product.compareAtPrice > product.price && (
                   <>
                     <span className="text-base text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
-                    <Badge variant="crimson" className="text-[10px] font-bold">
+                    <Badge variant="gold-pill" className="text-[10px]">
                       {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
                     </Badge>
                   </>
