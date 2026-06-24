@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/shared/product-card';
 import { ProductCarousel } from '@/components/shared/product-carousel';
 import { HomepageSearch } from '@/components/shared/homepage-search';
 import { ArrowRight, Heart, Check, CheckCircle, Sparkles, Users, Award, Shield, ShoppingBag, MessageSquare, Play } from 'lucide-react';
+import { getCreatorPresentation, getProductBadges, getHeroReelStats } from '@/lib/demo';
 
 import { auth } from '@/lib/auth';
 import { MarketplaceClient } from './marketplace/marketplace-client';
@@ -171,6 +172,26 @@ const getTrendingCategories = unstable_cache(
   },
   ['homepage-trending-categories'],
   { revalidate: 600, tags: ['homepage-trending-categories'] }
+);
+
+// 12. Cached Query: Just Discovered (Unexpected mixed feed, 5 min TTL)
+const getJustDiscovered = unstable_cache(
+  async () => {
+    return db.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        shop: { isSuspended: false, isPaused: false },
+      },
+      include: {
+        images: { orderBy: { displayOrder: 'asc' }, take: 1 },
+        shop: { select: { id: true, name: true, slug: true, city: true, isVerified: true, averageRating: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+  },
+  ['homepage-just-discovered-v2'],
+  { revalidate: 300, tags: ['homepage-just-discovered-v2'] }
 );
 
 type SearchProduct = Prisma.ProductGetPayload<{
@@ -505,7 +526,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     );
   }
 
-  // --- CASE B: Editorial Luxury Landing View ---
+  // --- CASE B: Refined Luxury Storytelling Homepage ---
   // Execute database fetches in parallel
   const [
     heroProduct,
@@ -513,13 +534,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     trendingProducts,
     recentlyAddedStores,
     trendingCategories,
+    justDiscoveredRaw,
   ] = await Promise.all([
     getHeroFeaturedProduct(),
     getFeaturedCreators(),
     getTrendingProducts(),
     getRecentlyAddedStores(),
     getTrendingCategories(),
+    getJustDiscovered(),
   ]);
+
+  // Extract exactly 5 items for the "Just Discovered" feed
+  const justDiscovered = justDiscoveredRaw.slice(0, 5);
 
   // Safe fallback values for featured Hero product
   const heroImage = heroProduct?.images?.[0]?.url || '';
@@ -527,6 +553,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const heroPrice = heroProduct?.price || 2499;
   const heroShopName = heroProduct?.shop?.name || 'Aura Scents';
   const heroProductUrl = heroProduct ? `/store/${heroProduct.shop.slug}/${heroProduct.slug}` : '#';
+
+  // Get Hero reel stats from the Demo Data Service
+  const heroStats = getHeroReelStats();
 
   const suggestionTags = [
     { name: 'Oud Perfume', query: 'Oud' },
@@ -547,11 +576,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           {/* Left Column: Text, Search, Popular searches */}
           <div className="lg:col-span-7 flex flex-col text-left">
             <h1 className="font-serif text-4xl sm:text-5xl md:text-[56px] font-bold tracking-tight text-[#1A1A18] leading-[1.1] mb-6">
-              Found on Instagram.<br />
-              Organized on Seyon.
+              Your favorite Instagram stores.<br />
+              Finally searchable.
             </h1>
             <p className="text-zinc-550 text-sm md:text-base font-medium max-w-lg mb-8 leading-relaxed">
-              Search products from independent sellers, creators and small businesses — all in one place.
+              Seyon is the catalog layer for social commerce. Stop digging through comments, highlights, and DMs. We organize independent creators, designers, and small businesses in one beautiful, searchable catalog.
             </p>
 
             <div className="w-full mb-6">
@@ -559,7 +588,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
 
             {/* Quick Suggestions tags */}
-            <div className="flex flex-wrap items-center gap-2.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2.5 text-xs mb-6">
               <span className="font-semibold text-zinc-400">Popular right now:</span>
               {suggestionTags.map((tag) => (
                 <Link
@@ -571,73 +600,83 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </Link>
               ))}
             </div>
+
+            {/* Premium tagline clarifying platform purpose */}
+            <div className="pt-5 border-t border-zinc-200/70 max-w-xl">
+              <p className="text-zinc-700 text-xs sm:text-sm font-semibold tracking-wide flex items-center gap-2.5">
+                <Sparkles className="h-4.5 w-4.5 text-[#A77F3A] shrink-0" />
+                Browse beautifully organized catalogs from creators who sell on Instagram, WhatsApp, Telegram & YouTube.
+              </p>
+            </div>
           </div>
 
-          {/* Right Column: Layered Premium CSS Phone Mockups & Gold Arrow */}
+          {/* Right Column: Layered Premium Reels-to-Seyon CSS Phone Flow */}
           <div className="lg:col-span-5 relative flex justify-center items-center h-[520px] lg:h-[550px] w-full mt-8 lg:mt-0">
-            {/* Layer 1: Instagram Reel Smartphone Container */}
-            <div className="relative w-[270px] h-[500px] bg-black rounded-[3.2rem] border-[8px] border-zinc-900 shadow-2xl overflow-hidden shrink-0 transform -translate-x-12 -rotate-3 hover:rotate-0 transition-transform duration-500 z-0 select-none">
-              {/* Phone Camera Notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-4 bg-zinc-900 rounded-b-xl z-20" />
+            {/* Phone 1: Instagram Reel Mockup (The Social Layer) */}
+            <div className="relative w-[240px] h-[450px] bg-black rounded-[2.8rem] border-[7px] border-zinc-900 shadow-2xl overflow-hidden shrink-0 transform -translate-x-14 -rotate-4 hover:-rotate-1 transition-transform duration-500 z-0 select-none">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-3.5 bg-zinc-900 rounded-b-xl z-20" />
               
-              {/* Instagram Reel Content image */}
               {heroImage ? (
                 <Image
                   src={heroImage}
                   alt="Social Media Reel content"
                   fill
-                  className="object-cover brightness-95"
-                  sizes="270px"
+                  className="object-cover brightness-[90%]"
+                  sizes="240px"
                   priority
                 />
               ) : (
-                <div className="w-full h-full bg-zinc-950 flex items-center justify-center text-zinc-600">Reel Video</div>
+                <div className="w-full h-full bg-zinc-950 flex items-center justify-center text-zinc-650">Reel Video</div>
               )}
               
               {/* Instagram Reel UI overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 flex flex-col justify-between p-4 z-10 text-white font-sans">
-                {/* Reel Header */}
-                <div className="flex items-center justify-between mt-3 text-xs font-bold tracking-wide">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 flex flex-col justify-between p-3.5 z-10 text-white font-sans">
+                <div className="flex items-center justify-between mt-2.5 text-[9px] font-bold tracking-wide">
                   <span className="bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md">Reels</span>
-                  <Play className="h-4 w-4 fill-white text-white opacity-80" />
+                  <Play className="h-3.5 w-3.5 fill-white text-white opacity-80" />
                 </div>
 
-                {/* Reel Footer & Actions */}
-                <div className="flex justify-between items-end gap-2 w-full">
-                  <div className="flex flex-col text-left max-w-[80%]">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <div className="h-6 w-6 rounded-full bg-amber-100 border border-white/20 flex items-center justify-center text-[10px] font-bold text-amber-700 overflow-hidden">
-                        {heroShopName[0].toUpperCase()}
-                      </div>
-                      <span className="text-[11px] font-bold truncate">{heroShopName.toLowerCase()}</span>
-                    </div>
-                    <p className="text-[10px] text-zinc-200 line-clamp-2 leading-tight font-medium">
-                      Oud that stays with you ✨ Discover the essence of luxury room fragrances and pure perfumes. #socialcommerce
-                    </p>
+                <div className="flex flex-col w-full gap-3">
+                  {/* Floating "DM to Order" / Link Tag */}
+                  <div className="self-center bg-[#A77F3A] border border-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-lg animate-bounce flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3 fill-white" /> DM to Order
                   </div>
 
-                  {/* Reel floating actions */}
-                  <div className="flex flex-col gap-3.5 items-center mb-1 text-white">
-                    <div className="flex flex-col items-center">
-                      <Heart className="h-4.5 w-4.5 text-white fill-white cursor-pointer" />
-                      <span className="text-[9px] font-bold mt-0.5">1.2K</span>
+                  <div className="flex justify-between items-end gap-1 w-full">
+                    <div className="flex flex-col text-left max-w-[75%]">
+                      <div className="flex items-center gap-1 mb-1">
+                        <div className="h-5 w-5 rounded-full bg-amber-100 border border-white/20 flex items-center justify-center text-[8px] font-bold text-amber-700 overflow-hidden">
+                          {heroShopName[0].toUpperCase()}
+                        </div>
+                        <span className="text-[10px] font-bold truncate">{heroShopName.toLowerCase()}</span>
+                      </div>
+                      <p className="text-[9px] text-zinc-200 line-clamp-2 leading-snug font-medium">
+                        Oud that stays with you ✨ Comment &ldquo;LINK&rdquo; to get catalog. #socialcommerce
+                      </p>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <MessageSquare className="h-4.5 w-4.5 text-white fill-white cursor-pointer" />
-                      <span className="text-[9px] font-bold mt-0.5">89</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <ArrowRight className="h-4.5 w-4.5 text-white rotate-45 cursor-pointer" />
-                      <span className="text-[9px] font-bold mt-0.5">124</span>
+
+                    <div className="flex flex-col gap-2.5 items-center text-white pb-1">
+                      <div className="flex flex-col items-center">
+                        <Heart className="h-4 w-4 text-white fill-white" />
+                        <span className="text-[8px] font-bold mt-0.5">{heroStats.likes}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <MessageSquare className="h-4 w-4 text-white fill-white" />
+                        <span className="text-[8px] font-bold mt-0.5">{heroStats.comments}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <ArrowRight className="h-4 w-4 text-white rotate-45" />
+                        <span className="text-[8px] font-bold mt-0.5">{heroStats.shares}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Hand-drawn Gold SVG Arrow connecting the two layers */}
+            {/* Connective Arrow */}
             <svg
-              className="absolute top-1/4 right-[110px] w-24 h-24 pointer-events-none z-15 hidden sm:block"
+              className="absolute top-[28%] right-[125px] w-24 h-24 pointer-events-none z-15 hidden sm:block"
               viewBox="0 0 100 100"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -649,7 +688,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 strokeDasharray="5 5"
                 strokeLinecap="round"
               />
-              {/* Arrow Head */}
               <path
                 d="M 90 40 L 80 34 M 90 40 L 85 50"
                 stroke="#A77F3A"
@@ -658,12 +696,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               />
             </svg>
 
-            {/* Layer 2: Overlapping Premium Seyon Product Card */}
+            {/* Phone 2: Overlapping Seyon Catalog Listing (The Organized Layer) */}
             <Link
               href={heroProductUrl}
-              className="absolute top-1/3 right-4 sm:-right-4 w-[205px] bg-white/90 backdrop-blur-md rounded-[24px] p-3.5 shadow-2xl border border-zinc-100/50 z-20 hover:scale-105 hover:-translate-y-1 transition-all duration-300 group flex flex-col cursor-pointer select-none"
+              className="absolute top-1/4 right-2 sm:-right-6 w-[205px] bg-white/95 backdrop-blur-md rounded-[2.5rem] p-4 shadow-2xl border border-zinc-200/50 z-20 hover:scale-103 hover:-translate-y-0.5 transition-all duration-300 group flex flex-col cursor-pointer select-none"
             >
-              <div className="relative aspect-square w-full rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden mb-3">
+              <div className="relative aspect-square w-full rounded-2xl bg-zinc-50 border border-zinc-150 overflow-hidden mb-3">
                 {heroImage ? (
                   <Image
                     src={heroImage}
@@ -675,34 +713,135 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">No Image</div>
                 )}
-                <span className="absolute top-2 left-2 z-10 gold-pill-badge text-[8px] px-1.5 py-0.5 rounded-md leading-none">
-                  Instagram Pick
+                <span className="absolute top-2.5 left-2.5 z-10 gold-pill-badge text-[8px] px-2 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider shadow-sm">
+                  Seyon Catalog
                 </span>
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-xs font-bold text-zinc-900 leading-tight truncate group-hover:text-[#A77F3A] transition-colors">
+                {/* Rating element */}
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                    ⭐ 4.9 <span className="text-zinc-400 font-medium normal-case">(124)</span>
+                  </span>
+                </div>
+                
+                <span className="text-xs font-bold text-zinc-950 leading-snug truncate group-hover:text-[#A77F3A] transition-colors">
                   {heroTitle}
                 </span>
                 <span className="text-[10px] text-zinc-400 font-semibold mt-0.5">
                   by {heroShopName}
                 </span>
-                <span className="text-xs font-black text-[#1A1A18] mt-2">
+                
+                {/* Variants dots */}
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider mr-1">Variants:</span>
+                  <span className="h-2 w-2 rounded-full bg-[#1A1A18] border border-white" />
+                  <span className="h-2 w-2 rounded-full bg-[#A77F3A] border border-white" />
+                  <span className="h-2 w-2 rounded-full bg-[#E7E2D8] border border-white" />
+                </div>
+
+                <span className="text-sm font-black text-[#1A1A18] mt-2.5 flex items-baseline gap-1">
                   ₹{heroPrice.toFixed(0)}
+                  <span className="text-[9px] text-zinc-400 font-semibold line-through">₹{(heroPrice * 1.3).toFixed(0)}</span>
                 </span>
               </div>
-              <button className="w-full mt-3.5 py-2.5 bg-[#1A1A18] hover:bg-[#A77F3A] text-white text-[10px] font-extrabold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1">
-                View Product
+              
+              {/* WhatsApp direct buy button */}
+              <button className="w-full mt-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-extrabold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1 border-none cursor-pointer select-none">
+                <span className="h-2 w-2 rounded-full bg-white animate-ping mr-0.5" />
+                Connect on WhatsApp
               </button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 2. Benefits Bar */}
+      {/* 2. "Why Seyon?" Comparison Block (Repositioned immediately below Hero) */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
+        <div className="bg-white border border-[#F0ECE3] rounded-[40px] p-8 md:p-12 shadow-xs">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            {/* Left Column */}
+            <div className="lg:col-span-4 flex flex-col text-left">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-[#A77F3A] flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-[#A77F3A] fill-[#A77F3A]" /> Why Seyon?
+              </span>
+              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 mt-2.5 mb-6 leading-tight">
+                Because finding the<br className="hidden md:block" />
+                right product shouldn&apos;t<br className="hidden md:block" />
+                be this hard.
+              </h2>
+              <Link href="/">
+                <button className="px-7 py-3 bg-[#1A1A18] hover:bg-[#A77F3A] text-white text-xs font-extrabold uppercase tracking-wider rounded-full shadow-md transition-all inline-block text-center cursor-pointer select-none active:scale-95 shrink-0 border-none">
+                  Learn More
+                </button>
+              </Link>
+            </div>
+
+            {/* Right Column: Side-by-side comparison panels */}
+            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-11 gap-4 items-center">
+              {/* Buying on Social Media (pain points) */}
+              <div className="sm:col-span-5 bg-[#FAF8F5] border border-[#E7E2D8]/40 rounded-[28px] p-6 shadow-2xs text-left h-full">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Buying via</span>
+                <h3 className="text-base font-black text-zinc-900 mt-0.5 mb-4">Social Media</h3>
+                
+                <ul className="flex flex-col gap-3 text-xs text-zinc-600 font-medium">
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5 leading-none">✕</span>
+                    <span>Scroll through hundreds of reels to find products</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5 leading-none">✕</span>
+                    <span>Hunt captions and highlights for basic sizing & pricing</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5 leading-none">✕</span>
+                    <span>DM to order and wait hours or days for responses</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5 leading-none">✕</span>
+                    <span>Lose the creator profile and never find them again</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Gold Separator Arrow */}
+              <div className="sm:col-span-1 flex items-center justify-center w-10 h-10 rounded-full bg-[#A77F3A]/10 border border-[#A77F3A]/20 text-[#A77F3A] shrink-0 mx-auto lg:my-0 lg:rotate-0 rotate-90 my-2 shadow-2xs">
+                <ArrowRight className="h-4.5 w-4.5" />
+              </div>
+
+              {/* Buying on Seyon (clean catalog) */}
+              <div className="sm:col-span-5 bg-white border border-[#A77F3A]/15 rounded-[28px] p-6 shadow-xs text-left ring-2 ring-[#A77F3A]/5 h-full">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A77F3A]">Buying via</span>
+                <h3 className="text-base font-black text-[#A77F3A] mt-0.5 mb-4">Seyon Catalog</h3>
+                
+                <ul className="flex flex-col gap-3 text-xs text-zinc-700 font-medium">
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none"><Check className="h-3 w-3 stroke-[3]" /></span>
+                    <span className="font-semibold text-zinc-900">Search exactly what you want across multiple platforms</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none"><Check className="h-3 w-3 stroke-[3]" /></span>
+                    <span className="font-semibold text-zinc-900">Instantly find verified, trustworthy creator storefronts</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none"><Check className="h-3 w-3 stroke-[3]" /></span>
+                    <span className="font-semibold text-zinc-900">View complete specifications, details & pricing in one view</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none"><Check className="h-3 w-3 stroke-[3]" /></span>
+                    <span className="font-semibold text-zinc-900">Click to DM and place order instantly via WhatsApp</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Benefits Bar */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
         <div className="bg-[#FCFBF9] border border-[#F0ECE3] rounded-3xl p-6 shadow-2xs">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-6 gap-x-4 justify-items-center text-center">
-            {/* Benefit 1 */}
             <div className="flex flex-col items-center max-w-[180px]">
               <div className="flex items-center gap-1.5 mb-2.5 shrink-0">
                 <span className="h-6 w-6 rounded-md bg-pink-500/10 text-pink-600 flex items-center justify-center font-bold text-[10px]">IG</span>
@@ -710,64 +849,59 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <span className="h-6 w-6 rounded-md bg-sky-500/10 text-sky-600 flex items-center justify-center font-bold text-[10px]">TG</span>
               </div>
               <h4 className="text-xs font-extrabold text-zinc-900 leading-tight">Products Sourced From</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">Instagram, WhatsApp, Telegram & YouTube socials</p>
+              <p className="text-[10px] text-zinc-450 mt-1 leading-normal font-semibold">Instagram, WhatsApp, Telegram & YouTube socials</p>
             </div>
             
-            {/* Benefit 2 */}
             <div className="flex flex-col items-center max-w-[180px]">
               <div className="h-8 w-8 rounded-full bg-[#A77F3A]/10 text-[#A77F3A] flex items-center justify-center mb-2.5 shrink-0">
                 <MessageSquare className="h-4.5 w-4.5" />
               </div>
               <h4 className="text-xs font-extrabold text-zinc-900 leading-tight">DM to Order</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">Connect & chat directly with creators on WhatsApp</p>
+              <p className="text-[10px] text-zinc-450 mt-1 leading-normal font-semibold">Connect & chat directly with creators on WhatsApp</p>
             </div>
 
-            {/* Benefit 3 */}
             <div className="flex flex-col items-center max-w-[180px]">
               <div className="h-8 w-8 rounded-full bg-[#A77F3A]/10 text-[#A77F3A] flex items-center justify-center mb-2.5 shrink-0">
                 <ArrowRight className="h-4.5 w-4.5 rotate-45" />
               </div>
               <h4 className="text-xs font-extrabold text-zinc-900 leading-tight">No Middlemen</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">Buy straight from source with zero transaction fees</p>
+              <p className="text-[10px] text-zinc-450 mt-1 leading-normal font-semibold">Buy straight from source with zero transaction fees</p>
             </div>
 
-            {/* Benefit 4 */}
             <div className="flex flex-col items-center max-w-[180px]">
               <div className="h-8 w-8 rounded-full bg-[#A77F3A]/10 text-[#A77F3A] flex items-center justify-center mb-2.5 shrink-0">
                 <Users className="h-4.5 w-4.5" />
               </div>
               <h4 className="text-xs font-extrabold text-zinc-900 leading-tight">Support Small</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">Empower independent creators & small businesses</p>
+              <p className="text-[10px] text-zinc-450 mt-1 leading-normal font-semibold">Empower independent creators & small businesses</p>
             </div>
 
-            {/* Benefit 5 */}
             <div className="flex flex-col items-center max-w-[180px]">
               <div className="h-8 w-8 rounded-full bg-[#A77F3A]/10 text-[#A77F3A] flex items-center justify-center mb-2.5 shrink-0">
                 <CheckCircle className="h-4.5 w-4.5" />
               </div>
               <h4 className="text-xs font-extrabold text-zinc-900 leading-tight">Trusted Listings</h4>
-              <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">100% verified merchant profiles & genuine creations</p>
+              <p className="text-[10px] text-zinc-450 mt-1 leading-normal font-semibold">100% verified merchant profiles & genuine creations</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. Trending Searches */}
+      {/* 4. Trending Across Creators (Circle Category Cards) */}
       {trendingCategories.length > 0 && (
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
             <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 flex items-center gap-2">
-              Trending Searches
+              Trending Across Creators
             </h2>
             <Link
               href="/"
               className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
             >
-              View all searches &rarr;
+              View all categories &rarr;
             </Link>
           </div>
           
-          {/* Horizontal scroll of category circles */}
           <div className="flex items-start overflow-x-auto gap-6 no-scrollbar py-3 scroll-smooth">
             {trendingCategories.map((cat) => (
               <Link
@@ -787,7 +921,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400 font-semibold bg-zinc-100 text-zinc-500 uppercase">{cat.name[0]}</div>
                   )}
-                  {/* Verified badge check */}
                   <div className="absolute bottom-1.5 right-1.5 bg-[#A77F3A] text-white rounded-full p-1 border border-white flex items-center justify-center shadow-md leading-none">
                     <Check className="h-3 w-3 text-white stroke-[3.5]" />
                   </div>
@@ -801,97 +934,72 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </section>
       )}
 
-      {/* 4. "Why Seyon?" Comparison Block */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
-        <div className="bg-[#FAF8F5] border border-[#F0ECE3] rounded-[40px] p-8 md:p-12 shadow-2xs">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column */}
-            <div className="lg:col-span-4 flex flex-col text-left">
-              <span className="text-xs font-extrabold uppercase tracking-widest text-[#A77F3A] flex items-center gap-1">
-                <Sparkles className="h-3 w-3 text-[#A77F3A] fill-[#A77F3A]" /> Why Seyon?
-              </span>
-              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 mt-2 mb-6 leading-tight">
-                Because finding the<br className="hidden md:block" />
-                right product shouldn&apos;t<br className="hidden md:block" />
-                be this hard.
-              </h2>
-              <Link href="/">
-                <button className="px-7 py-3 bg-[#1A1A18] hover:bg-[#A77F3A] text-white text-xs font-extrabold uppercase tracking-wider rounded-full shadow-md transition-all inline-block text-center cursor-pointer select-none active:scale-95 shrink-0">
-                  Learn More
-                </button>
-              </Link>
-            </div>
-
-            {/* Right Column: Comparison columns */}
-            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-11 gap-4 items-center">
-              {/* Social Media column (red/warning) */}
-              <div className="sm:col-span-5 bg-white border border-[#E7E2D8]/50 rounded-[28px] p-6 shadow-2xs text-left">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">Buying via</span>
-                <h3 className="text-base font-black text-zinc-900 mt-0.5 mb-4">On Social Media</h3>
-                
-                <ul className="flex flex-col gap-3.5 text-xs text-zinc-650 font-medium">
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 leading-none">✕</span>
-                    <span>Scroll through hundreds of reels to find products</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 leading-none">✕</span>
-                    <span>Hunt captions and highlights for sizing & materials</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 leading-none">✕</span>
-                    <span>Direct message (DM) for basic pricing & shipping details</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 leading-none">✕</span>
-                    <span>Wait hours or days for replies to finalize order</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5 leading-none">✕</span>
-                    <span>Lose the creator profile and never find them again</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Gold Separator Arrow */}
-              <div className="sm:col-span-1 flex items-center justify-center w-11 h-11 rounded-full bg-[#A77F3A]/10 border border-[#A77F3A]/20 text-[#A77F3A] shrink-0 mx-auto lg:my-0 lg:rotate-0 rotate-90 my-2 shadow-2xs">
-                <ArrowRight className="h-4.5 w-4.5" />
-              </div>
-
-              {/* Seyon column (green/success) */}
-              <div className="sm:col-span-5 bg-white border border-[#A77F3A]/15 rounded-[28px] p-6 shadow-2xs text-left ring-2 ring-[#A77F3A]/10">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#A77F3A]">Buying via</span>
-                <h3 className="text-base font-black text-[#A77F3A] mt-0.5 mb-4">On Seyon</h3>
-                
-                <ul className="flex flex-col gap-3.5 text-xs text-zinc-650 font-medium">
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none shadow-2xs"><Check className="h-3 w-3 stroke-[3]" /></span>
-                    <span className="font-semibold text-zinc-900">Search exactly what you want across multiple platforms</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none shadow-2xs"><Check className="h-3 w-3 stroke-[3]" /></span>
-                    <span className="font-semibold text-zinc-900">Instantly find verified, trustworthy creator storefronts</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none shadow-2xs"><Check className="h-3 w-3 stroke-[3]" /></span>
-                    <span className="font-semibold text-zinc-900">View complete product specs, details & pricing in one view</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none shadow-2xs"><Check className="h-3 w-3 stroke-[3]" /></span>
-                    <span className="font-semibold text-zinc-900">Click to DM and place order instantly via structured chats</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="h-4.5 w-4.5 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 leading-none shadow-2xs"><Check className="h-3 w-3 stroke-[3]" /></span>
-                    <span className="font-semibold text-zinc-900">Easy, fast, and reliable discovery with zero frustration</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
+      {/* 5. ✨ Just Discovered (Discovery Feed of Mixed Category Gems) */}
+      {justDiscovered.length > 0 && (
+        <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
+          <div className="flex flex-col text-left mb-6 pb-2 border-b border-zinc-200">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-[#A77F3A] mb-1">Addictive Finds</span>
+            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
+              ✨ Just Discovered
+            </h2>
+            <p className="text-xs text-zinc-400 font-semibold mt-0.5">Uncover independent designers, creators, and hidden gems across India.</p>
           </div>
-        </div>
-      </section>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {justDiscovered.map((prod) => {
+              const presentation = getCreatorPresentation(prod.shop);
+              const bgImg = prod.images?.[0]?.url || '';
+              return (
+                <Link
+                  key={prod.id}
+                  href={`/store/${prod.shop.slug}/${prod.slug}`}
+                  className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-2xs hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group flex flex-col h-full cursor-pointer select-none text-left"
+                >
+                  <div className="relative aspect-[4/3] w-full bg-zinc-50 border-b border-zinc-100 overflow-hidden">
+                    {bgImg ? (
+                      <Image
+                        src={bgImg}
+                        alt={prod.title}
+                        fill
+                        className="object-cover group-hover:scale-103 transition-transform duration-300"
+                        sizes="240px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">No Image</div>
+                    )}
+                    <span className="absolute top-2.5 left-2.5 bg-black/60 text-white text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md backdrop-blur-xs">
+                      {prod.category}
+                    </span>
+                  </div>
+                  <div className="p-4 flex flex-col flex-1 justify-between">
+                    <div>
+                      <span className="text-[10px] text-[#A77F3A] font-bold uppercase tracking-wide">
+                        {presentation.location}
+                      </span>
+                      <h3 className="font-serif text-sm font-bold text-zinc-900 mt-0.5 leading-tight line-clamp-2 group-hover:text-[#A77F3A] transition-colors">
+                        {prod.title}
+                      </h3>
+                      <p className="text-[10px] text-zinc-400 font-semibold mt-1">
+                        by {prod.shop.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-zinc-100">
+                      <span className="text-xs font-black text-zinc-900">
+                        ₹{prod.price.toFixed(0)}
+                      </span>
+                      <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 uppercase tracking-wider">
+                        ⭐ {presentation.rating.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
-      {/* 5. Featured Creators */}
+      {/* 6. Featured Creators (Enriched with ratings, locations, and stable order counts) */}
       {featuredCreators.length > 0 && (
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
@@ -906,40 +1014,48 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </Link>
           </div>
           
-          {/* Creator card grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {featuredCreators.map((shop) => {
               const bgProdImg = shop.products?.[0]?.images?.[0]?.url || '';
+              const presentation = getCreatorPresentation(shop);
               return (
                 <div
                   key={shop.slug}
                   className="relative aspect-[3/4] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group select-none flex flex-col justify-between p-5 text-left"
                 >
-                  {/* Background Image */}
                   {bgProdImg ? (
                     <Image
                       src={bgProdImg}
                       alt={`${shop.name} background`}
                       fill
-                      className="object-cover brightness-[65%] group-hover:scale-105 transition-transform duration-500 -z-10"
+                      className="object-cover brightness-[60%] group-hover:scale-105 transition-transform duration-500 -z-10"
                       sizes="240px"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-[#E7E2D8] -z-10" />
                   )}
                   
-                  {/* Overlay shadow */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent -z-5" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent -z-5" />
                   
-                  {/* Top: Product Count Badge */}
-                  <div className="self-start">
-                    <span className="text-[9px] font-extrabold text-zinc-300 uppercase tracking-wider bg-black/40 border border-white/10 px-2.5 py-1 rounded-full backdrop-blur-md">
-                      {shop._count.products} Products
+                  {/* Top: Location Badge */}
+                  <div className="self-start flex flex-col gap-1">
+                    <span className="text-[8px] font-extrabold text-zinc-300 uppercase tracking-wider bg-black/40 border border-white/10 px-2.5 py-1 rounded-full backdrop-blur-md">
+                      {presentation.location}
                     </span>
                   </div>
 
                   {/* Bottom: Details & Button */}
                   <div className="flex flex-col text-left text-white mt-auto">
+                    {/* Rating and orders */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5 text-[9px] font-extrabold">
+                      <span className="bg-emerald-600/90 border border-emerald-500/30 px-1.5 py-0.5 rounded flex items-center gap-0.5 leading-none">
+                        ⭐ {presentation.rating.toFixed(1)}
+                      </span>
+                      <span className="bg-white/15 px-2 py-0.5 rounded tracking-wide font-bold uppercase backdrop-blur-xs text-zinc-200">
+                        {presentation.trustTag}
+                      </span>
+                    </div>
+
                     <h3 className="font-serif text-lg font-bold flex items-center gap-1 leading-tight group-hover:text-amber-400 transition-colors">
                       {shop.name}
                       {shop.isVerified && (
@@ -948,8 +1064,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         </span>
                       )}
                     </h3>
-                    <span className="text-[11px] text-zinc-300 mt-0.5 truncate uppercase tracking-wide font-semibold">
-                      Luxury Fragrances
+                    
+                    <span className="text-[10px] text-zinc-300 mt-1 uppercase tracking-wide font-semibold truncate max-w-full">
+                      {shop._count.products} Products in catalog
                     </span>
 
                     <Link
@@ -966,7 +1083,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </section>
       )}
 
-      {/* 6. Trending This Week */}
+      {/* 7. Trending This Week (Enriched with viral and social proof tags) */}
       {trendingProducts.length > 0 && (
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
           <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
@@ -982,22 +1099,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center w-full">
-            {trendingProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                showWishlistButton={false}
-              />
-            ))}
+            {trendingProducts.map((prod) => {
+              const badges = getProductBadges(prod.id);
+              const primaryBadge = badges[0] || 'Trending';
+              return (
+                <div key={prod.id} className="relative group flex flex-col text-left w-full">
+                  <ProductCard
+                    key={prod.id}
+                    product={prod}
+                    showWishlistButton={false}
+                  />
+                  {/* Elegant Social Proof Badge under product card */}
+                  <div className="mt-2.5 self-start">
+                    <span className="text-[8px] font-extrabold text-[#A77F3A] bg-[#A77F3A]/5 px-2.5 py-1 rounded-md border border-[#A77F3A]/15 uppercase tracking-wider leading-none">
+                      ✔ {primaryBadge}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* 7. Shop by Collections */}
+      {/* 8. Curated Editorial Collections */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
           <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900">
-            Shop by Collections
+            Curated Collections
           </h2>
           <Link
             href="/"
@@ -1007,25 +1136,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </Link>
         </div>
         
-        {/* Collection banner grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Collection 1: Luxury Fragrances */}
+          {/* Collection 1: Wedding Gifts */}
           <Link
-            href="/?q=Perfume"
+            href="/?q=Gift"
             className="relative h-[245px] rounded-[30px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 group cursor-pointer select-none"
           >
             <Image
               src="/images/cat-oud.jpg"
-              alt="Luxury Fragrances Collection"
+              alt="Wedding Gifts Collection"
               fill
               className="object-cover brightness-70 group-hover:scale-105 transition-transform duration-500 -z-10"
               sizes="300px"
             />
-            {/* Fallback solid background and overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#A77F3A]/20 to-[#1A1A18]/90 -z-9" />
             <div className="absolute inset-0 p-6 flex flex-col justify-between text-left text-white h-full">
               <h3 className="font-serif text-2xl font-bold leading-tight max-w-[160px] tracking-tight">
-                Luxury<br />Fragrances
+                Wedding<br />Gifts
               </h3>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -1033,14 +1160,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           </Link>
 
-          {/* Collection 2: Handmade With Love */}
+          {/* Collection 2: Minimal Homes */}
           <Link
-            href="/?q=Bag"
+            href="/?q=Decor"
             className="relative h-[245px] rounded-[30px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 group cursor-pointer select-none"
           >
             <Image
               src="/images/cat-crochet.jpg"
-              alt="Handmade Crafts Collection"
+              alt="Minimal Homes Collection"
               fill
               className="object-cover brightness-70 group-hover:scale-105 transition-transform duration-500 -z-10"
               sizes="300px"
@@ -1048,7 +1175,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="absolute inset-0 bg-gradient-to-b from-zinc-700/20 to-zinc-950/95 -z-9" />
             <div className="absolute inset-0 p-6 flex flex-col justify-between text-left text-white h-full">
               <h3 className="font-serif text-2xl font-bold leading-tight max-w-[160px] tracking-tight">
-                Handmade<br />With Love
+                Minimal<br />Homes
               </h3>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -1056,14 +1183,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           </Link>
 
-          {/* Collection 3: Home Aesthetic */}
+          {/* Collection 3: Trending on Instagram */}
           <Link
-            href="/?q=Decor"
+            href="/?q=Viral"
             className="relative h-[245px] rounded-[30px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 group cursor-pointer select-none"
           >
             <Image
               src="/images/cat-art.jpg"
-              alt="Home Aesthetic Collection"
+              alt="Trending on Instagram Collection"
               fill
               className="object-cover brightness-70 group-hover:scale-105 transition-transform duration-500 -z-10"
               sizes="300px"
@@ -1071,7 +1198,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="absolute inset-0 bg-gradient-to-b from-stone-600/20 to-stone-950/95 -z-9" />
             <div className="absolute inset-0 p-6 flex flex-col justify-between text-left text-white h-full">
               <h3 className="font-serif text-2xl font-bold leading-tight max-w-[160px] tracking-tight">
-                Home<br />Aesthetic
+                Trending on<br />Instagram
               </h3>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -1079,14 +1206,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </div>
           </Link>
 
-          {/* Collection 4: Everyday Essentials */}
+          {/* Collection 4: Made in India */}
           <Link
-            href="/?q=Candle"
+            href="/?q=Handmade"
             className="relative h-[245px] rounded-[30px] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-500 group cursor-pointer select-none"
           >
             <Image
               src="/images/cat-candles.jpg"
-              alt="Everyday Essentials Collection"
+              alt="Made in India Collection"
               fill
               className="object-cover brightness-70 group-hover:scale-105 transition-transform duration-500 -z-10"
               sizes="300px"
@@ -1094,7 +1221,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div className="absolute inset-0 bg-gradient-to-b from-[#9B702B]/20 to-neutral-950/95 -z-9" />
             <div className="absolute inset-0 p-6 flex flex-col justify-between text-left text-white h-full">
               <h3 className="font-serif text-2xl font-bold leading-tight max-w-[160px] tracking-tight">
-                Everyday<br />Essentials
+                Made in<br />India
               </h3>
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -1104,7 +1231,138 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      {/* 8. Trust Features Banner */}
+      {/* 9. New Creators This Week (Formerly Recently Added Stores, humanized) */}
+      {recentlyAddedStores.length > 0 && (
+        <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
+          <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 flex items-center gap-2">
+              New Creators This Week
+            </h2>
+            <Link
+              href="/"
+              className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
+            >
+              View all stores &rarr;
+            </Link>
+          </div>
+
+          <ProductCarousel>
+            {recentlyAddedStores.map((shop) => {
+              const presentation = getCreatorPresentation(shop);
+              return (
+                <div key={shop.slug} className="px-1 py-2">
+                  <div className="flex flex-col items-center bg-white border border-zinc-150 rounded-[2rem] p-6 w-[210px] shrink-0 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-350 text-center select-none group h-[265px] justify-between">
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden bg-zinc-50 border border-zinc-150 flex items-center justify-center mb-3 group-hover:scale-103 transition-transform">
+                      {shop.logo ? (
+                        <Image
+                          src={shop.logo}
+                          alt={shop.name}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      ) : (
+                        <div className="h-14 w-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-lg font-bold text-amber-700 uppercase">
+                          {shop.name[0]}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-center w-full min-w-0">
+                      <h3 className="font-serif text-base font-bold text-zinc-950 truncate max-w-full leading-tight group-hover:text-[#A77F3A] transition-colors">
+                        {shop.name}
+                      </h3>
+                      <span className="text-[9px] text-[#A77F3A] mt-1 uppercase tracking-wider font-extrabold flex items-center gap-0.5">
+                        ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-300 font-medium font-sans">|</span> {presentation.location}
+                      </span>
+                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-2.5 bg-zinc-50 border border-zinc-100 px-2.5 py-0.5 rounded-full">
+                        {shop._count.products} Listings
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/store/${shop.slug}`}
+                      className="mt-4 px-5 py-2 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all w-full text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
+                    >
+                      Visit Store
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </ProductCarousel>
+        </section>
+      )}
+
+      {/* 10. From Reels to Reality (Explain Seyon value in 3 concrete flows) */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
+        <div className="bg-[#FAF6F0]/60 border border-[#F0ECE3] rounded-[40px] p-8 md:p-12 text-center">
+          <div className="max-w-xl mx-auto mb-10">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-[#A77F3A]">Platform Flow</span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 mt-2 mb-3">
+              From Reels to Reality
+            </h2>
+            <p className="text-sm text-zinc-450 font-semibold leading-relaxed">
+              &ldquo;I saw it on social. Now I can actually search, filter, and buy it in seconds.&rdquo;
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Flow 1 */}
+            <div className="flex flex-col items-center bg-white rounded-3xl p-6 border border-zinc-150 shadow-2xs">
+              <div className="flex items-center gap-3 w-full justify-center">
+                <div className="w-14 h-18 bg-zinc-100 rounded-lg relative overflow-hidden shrink-0 border border-zinc-200">
+                  <span className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-[9px] font-bold">📱 IG Reel</span>
+                </div>
+                <div className="text-zinc-400 font-bold">&rarr;</div>
+                <div className="w-14 h-18 bg-amber-50 rounded-lg relative overflow-hidden shrink-0 border border-amber-100 flex items-center justify-center text-[9px] font-extrabold text-[#A77F3A]">
+                  🛒 Seyon
+                </div>
+              </div>
+              <h3 className="font-serif text-sm font-bold text-zinc-900 mt-5">Pastel Crochet Bags</h3>
+              <p className="text-[10px] text-zinc-450 mt-1.5 leading-relaxed font-semibold">
+                Saw a dynamic reel of pastel bags but couldn&apos;t find the link in comments? Found the exact cotton tote catalog listing on Seyon, shipped directly from a Kerala creator.
+              </p>
+            </div>
+
+            {/* Flow 2 */}
+            <div className="flex flex-col items-center bg-white rounded-3xl p-6 border border-zinc-150 shadow-2xs">
+              <div className="flex items-center gap-3 w-full justify-center">
+                <div className="w-14 h-18 bg-zinc-100 rounded-lg relative overflow-hidden shrink-0 border border-zinc-200">
+                  <span className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-[9px] font-bold">📱 YouTube</span>
+                </div>
+                <div className="text-zinc-400 font-bold">&rarr;</div>
+                <div className="w-14 h-18 bg-amber-50 rounded-lg relative overflow-hidden shrink-0 border border-amber-100 flex items-center justify-center text-[9px] font-extrabold text-[#A77F3A]">
+                  🛒 Seyon
+                </div>
+              </div>
+              <h3 className="font-serif text-sm font-bold text-zinc-900 mt-5">Amber Oud Fragrance</h3>
+              <p className="text-[10px] text-zinc-450 mt-1.5 leading-relaxed font-semibold">
+                Heard a perfume recommendation in an aesthetic shorts vlog? Found their storefront in one click, compared variant concentrations, and placed a direct WhatsApp order.
+              </p>
+            </div>
+
+            {/* Flow 3 */}
+            <div className="flex flex-col items-center bg-white rounded-3xl p-6 border border-zinc-150 shadow-2xs">
+              <div className="flex items-center gap-3 w-full justify-center">
+                <div className="w-14 h-18 bg-zinc-100 rounded-lg relative overflow-hidden shrink-0 border border-zinc-200">
+                  <span className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-[9px] font-bold">📱 Telegram</span>
+                </div>
+                <div className="text-zinc-400 font-bold">&rarr;</div>
+                <div className="w-14 h-18 bg-amber-50 rounded-lg relative overflow-hidden shrink-0 border border-amber-100 flex items-center justify-center text-[9px] font-extrabold text-[#A77F3A]">
+                  🛒 Seyon
+                </div>
+              </div>
+              <h3 className="font-serif text-sm font-bold text-zinc-900 mt-5">Aesthetic Soy Candles</h3>
+              <p className="text-[10px] text-zinc-450 mt-1.5 leading-relaxed font-semibold">
+                Saved a channel photo of hand-poured geometric wax candles? Search &ldquo;Candle&rdquo; on Seyon to discover verified boutique makers across Jaipur and Bangalore.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 11. Trust Features Banner */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
         <div className="bg-[#FAF6F0] rounded-[32px] p-6 shadow-2xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-4 justify-items-center text-center py-2">
@@ -1151,72 +1409,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      {/* 9. Recently Added Stores */}
-      {recentlyAddedStores.length > 0 && (
-        <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
-          <div className="flex items-center justify-between mb-6 pb-2 border-b border-zinc-200">
-            <h2 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 flex items-center gap-2">
-              Recently Added Stores
-            </h2>
-            <Link
-              href="/"
-              className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
-            >
-              View all stores &rarr;
-            </Link>
-          </div>
-
-          <ProductCarousel>
-            {recentlyAddedStores.map((shop) => (
-              <div key={shop.slug} className="px-1 py-2">
-                <div className="flex flex-col items-center bg-white border border-zinc-150 rounded-[2rem] p-6 w-[210px] shrink-0 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-350 text-center select-none group h-[260px] justify-between">
-                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-zinc-50 border border-zinc-150 flex items-center justify-center mb-3 group-hover:scale-103 transition-transform">
-                    {shop.logo ? (
-                      <Image
-                        src={shop.logo}
-                        alt={shop.name}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
-                    ) : (
-                      <div className="h-14 w-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-lg font-bold text-amber-700 uppercase">
-                        {shop.name[0]}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center w-full min-w-0">
-                    <h3 className="font-serif text-base font-bold text-zinc-950 truncate max-w-full leading-tight group-hover:text-[#A77F3A] transition-colors">
-                      {shop.name}
-                    </h3>
-                    <span className="text-[10px] text-zinc-400 mt-1 uppercase tracking-wide font-semibold truncate max-w-full">
-                      Creator Storefront
-                    </span>
-                    <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-2.5 bg-zinc-50 border border-zinc-100 px-2.5 py-0.5 rounded-full">
-                      {shop._count.products} Listings
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/store/${shop.slug}`}
-                    className="mt-4 px-5 py-2 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all w-full text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
-                  >
-                    Visit Store
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </ProductCarousel>
-        </section>
-      )}
-
-      {/* 10. Footer Seller Sign-up CTA Banner */}
+      {/* 12. Footer Seller Sign-up CTA Banner */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <div className="bg-[#1A1A18] text-white rounded-[2rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden text-center md:text-left shadow-xl">
-          {/* Subtle gold glow overlay */}
           <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#A77F3A]/20 blur-[90px] pointer-events-none" />
           
           <div className="flex flex-col z-10 text-left max-w-xl">
+            <span className="text-xs font-extrabold text-[#A77F3A] uppercase tracking-widest mb-1.5">The Catalog Layer for Social Commerce</span>
             <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 leading-tight">
               Selling on Instagram or WhatsApp?
             </h2>
@@ -1229,7 +1428,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             href="/seller-dashboard"
             className="z-10 mt-6 md:mt-0 shrink-0 select-none cursor-pointer"
           >
-            <button className="px-8 py-4 bg-[#A77F3A] hover:bg-[#916b2f] active:scale-95 text-white font-extrabold text-xs md:text-sm uppercase tracking-wider rounded-full shadow-lg transition-all duration-300 flex items-center gap-1.5 justify-center">
+            <button className="px-8 py-4 bg-[#A77F3A] hover:bg-[#916b2f] active:scale-95 text-white font-extrabold text-xs md:text-sm uppercase tracking-wider rounded-full shadow-lg transition-all duration-300 flex items-center gap-1.5 justify-center border-none">
               Become a Seller <ArrowRight className="h-4 w-4 stroke-[2.5]" />
             </button>
           </Link>
