@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { calculateTrustScore } from '@/lib/utils';
 import { ShieldCheck, ShieldAlert, Award } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export function TrustBadge({
   openReportsCount,
   showScore = true,
 }: TrustBadgeProps) {
-  const { score, badge, color } = calculateTrustScore({
+  const { score, badge } = calculateTrustScore({
     isVerified,
     emailVerified,
     hasPhone,
@@ -34,6 +35,17 @@ export function TrustBadge({
     createdAt,
     openReportsCount,
   });
+
+  const badgeStyle = React.useMemo(() => {
+    const styles: Record<string, { color: string; label: string }> = {
+      Excellent: { color: '#004225', label: 'Excellent' },   // Deep Jaguar Green
+      Good: { color: '#125c42', label: 'Good' },             // Elegant Jade/Teal
+      New: { color: '#1f4e79', label: 'New' },               // Sophisticated Slate/Royal Blue
+      Average: { color: '#8c6212', label: 'Average' },       // Antique Gold/Bronze
+      Suspicious: { color: '#941a1a', label: 'Suspicious' }   // Premium Burgundy/Crimson
+    };
+    return styles[badge] || styles.Average;
+  }, [badge]);
 
   return (
     <div className="flex flex-col gap-2 p-4 rounded-lg border border-border bg-card text-card-foreground shadow-sm">
@@ -48,18 +60,15 @@ export function TrustBadge({
           )}
           <span className="font-semibold text-foreground">Trust Rating</span>
         </div>
-        {badge === 'Excellent' ? (
-          <span 
-            className="italic text-[15px] font-medium text-[#004225]"
-            style={{ fontFamily: 'var(--font-serif-custom), Georgia, serif' }}
-          >
-            Excellent
-          </span>
-        ) : (
-          <span className={`text-xs px-2.5 py-0.5 rounded-full border font-bold ${color.split(' ')[0] || ''} ${color.split(' ')[1] || ''}`}>
-            {badge}
-          </span>
-        )}
+        <span 
+          className="italic text-[15px] font-medium"
+          style={{ 
+            color: badgeStyle.color,
+            fontFamily: 'var(--font-serif-custom), Georgia, serif' 
+          }}
+        >
+          {badgeStyle.label}
+        </span>
       </div>
 
       {showScore && (
