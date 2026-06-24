@@ -183,7 +183,7 @@
   animation: fade-in 0.2s ease-out forwards;
 }
 
-/* Premium Gold Pill Badge */
+/* Premium Gold Pill Badge with sweeping shine animation */
 .gold-pill-badge {
   background: linear-gradient(135deg, #F5D373 0%, #D4AF37 50%, #A67C1E 100%) !important;
   color: #080808 !important;
@@ -193,4 +193,32 @@
   letter-spacing: 0.05em !important;
   border: none !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.gold-pill-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg) translateX(-150%);
+  animation: goldShineSweep 4s infinite ease-in-out;
+}
+
+@keyframes goldShineSweep {
+  0% {
+    transform: skewX(-20deg) translateX(-150%);
+  }
+  35%, 100% {
+    transform: skewX(-20deg) translateX(150%);
+  }
 }
