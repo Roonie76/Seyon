@@ -30,7 +30,7 @@ import { WishlistButton } from '@/components/shared/wishlist-button';
 import { ProductCard } from '@/components/shared/product-card';
 import { isProductWishlisted } from '@/actions/wishlist';
 import { RatingsHistogram } from '@/components/shared/ratings-histogram';
-import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, Info, MapPin, PauseCircle } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, ShieldCheck, Tag, MapPin, PauseCircle } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
 import { DeliveryOffersList } from '@/components/shared/delivery-offers';
 
@@ -244,21 +244,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             )}
 
-            {shop.deliveryNote && (
-              <DeliveryOffersList deliveryNote={shop.deliveryNote} />
-            )}
-
-            {/* Order execution details helper — collapsible */}
-            <details className="rounded-lg bg-amber-500/5 border border-amber-500/10 mb-6 group/info">
-              <summary className="p-4 flex gap-3 text-xs leading-relaxed text-amber-800 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <Info className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                <span className="font-bold text-foreground">How purchasing works</span>
-                <svg className="h-4 w-4 shrink-0 ml-auto text-amber-600 transition-transform group-open/info:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </summary>
-              <div className="px-4 pb-4 text-xs leading-relaxed text-amber-800 ml-7">
-                Seyon connects you directly to the seller. Clicking the button below opens WhatsApp with a prefilled purchase inquiry message.
-              </div>
-            </details>
+            <DeliveryOffersList deliveryNote={shop.deliveryNote} />
 
             {/* Order CTA */}
             <div className="flex flex-col gap-3">

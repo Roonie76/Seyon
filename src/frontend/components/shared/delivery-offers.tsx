@@ -7,7 +7,9 @@ import {
   ShieldCheck, 
   Gift, 
   Tag, 
-  Package 
+  Package,
+  ChevronDown,
+  Info
 } from 'lucide-react';
 
 export interface ParsedOffer {
@@ -18,6 +20,29 @@ export interface ParsedOffer {
   colorTheme: 'emerald' | 'amber' | 'sky' | 'indigo' | 'teal' | 'rose' | 'zinc';
 }
 
+const defaultDescriptions: Record<string, string> = {
+  'free shipping': 'We deliver to all pin codes across India at no extra cost.',
+  'free delivery': 'We deliver to all pin codes across India at no extra cost.',
+  'premium packaging': 'Every order is packaged with care in our signature luxury presentation box, perfect for gifting.',
+  'ships in 48h': 'Your order will be dispatched from our studio within 48 hours, with live tracking provided.',
+  'ships in 24h': 'Your order will be dispatched from our studio within 24 hours, with live tracking provided.',
+  'same day delivery': 'Orders placed before 12 PM are dispatched the same day for ultra-fast delivery.',
+  'cash on delivery': 'Pay securely at your doorstep when your order arrives. No advance payment required.',
+  'cod': 'Pay securely at your doorstep when your order arrives. No advance payment required.',
+  'easy returns': 'Enjoy peace of mind with our hassle-free 7-day exchange and return policy.',
+  '10% off': 'Apply this offer during checkout to save on your order total direct with the seller.'
+};
+
+function getDescriptionForOffer(cleanText: string): string {
+  const lower = cleanText.toLowerCase();
+  for (const [key, desc] of Object.entries(defaultDescriptions)) {
+    if (lower.includes(key)) {
+      return desc;
+    }
+  }
+  return 'Direct storefront guarantee. Order straight on WhatsApp with no middleman transaction fees.';
+}
+
 function extractEmoji(text: string): { emoji?: string; text: string } {
   const trimmed = text.trim();
   try {
@@ -25,7 +50,7 @@ function extractEmoji(text: string): { emoji?: string; text: string } {
     if (match) {
       return { emoji: match[1], text: match[2].trim() };
     }
-  } catch (e) {
+  } catch {
     // Fallback regex for environments where unicode property escape isn't supported
     const fallbackMatch = trimmed.match(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF])\s*(.*)$/);
     if (fallbackMatch) {
@@ -147,31 +172,48 @@ export function DeliveryOffersList({
   className?: string;
 }) {
   const offers = parseDeliveryNote(deliveryNote);
-  if (offers.length === 0) return null;
 
   return (
-    <div className={`flex flex-col gap-2.5 mb-6 ${className}`}>
-      <span className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase">Store Offers & Delivery Notes</span>
-      <div className="flex flex-col gap-2">
-        {offers.map((offer, idx) => {
-          const style = themeStyles[offer.colorTheme];
-          return (
-            <div 
-              key={idx}
-              className={`flex items-center gap-3 p-3 rounded-lg border text-xs font-semibold leading-snug transition-transform duration-200 hover:scale-[1.01] ${style.bg}`}
-            >
-              <div className={`h-8 w-8 flex items-center justify-center rounded-full shrink-0 ${style.iconBg}`}>
+    <div className={`flex flex-col gap-3 mb-6 ${className}`}>
+      {/* 1. Custom Store Offers Accordion items */}
+      {offers.map((offer, idx) => {
+        const description = getDescriptionForOffer(offer.cleanText);
+        return (
+          <details 
+            key={idx} 
+            className="group border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-500/[0.01]"
+          >
+            <summary className="flex items-center gap-3 p-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+              <div className="h-8 w-8 rounded-full border border-amber-500/15 bg-amber-500/5 flex items-center justify-center text-amber-600 shrink-0">
                 {offer.emoji ? (
                   <span className="text-base select-none leading-none mt-0.5">{offer.emoji}</span>
                 ) : (
                   getIconComponent(offer.iconType, 'h-4 w-4')
                 )}
               </div>
-              <span className="flex-1">{offer.cleanText}</span>
+              <span className="font-bold text-foreground text-sm flex-1 leading-snug">{offer.cleanText}</span>
+              <ChevronDown className="h-4 w-4 text-amber-500 transition-transform duration-300 group-open:rotate-180 shrink-0" />
+            </summary>
+            <div className="px-4 pb-4 pl-[52px] text-xs text-muted-foreground leading-relaxed animate-slide-down">
+              {description}
             </div>
-          );
-        })}
-      </div>
+          </details>
+        );
+      })}
+
+      {/* 2. Standard "How purchasing works" Accordion item at the bottom */}
+      <details className="group border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-500/[0.01]">
+        <summary className="flex items-center gap-3 p-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+          <div className="h-8 w-8 rounded-full border border-amber-500/15 bg-amber-500/5 flex items-center justify-center text-amber-600 shrink-0">
+            <Info className="h-4 w-4" />
+          </div>
+          <span className="font-bold text-foreground text-sm flex-1 leading-snug">How purchasing works</span>
+          <ChevronDown className="h-4 w-4 text-amber-500 transition-transform duration-300 group-open:rotate-180 shrink-0" />
+        </summary>
+        <div className="px-4 pb-4 pl-[52px] text-xs text-muted-foreground leading-relaxed animate-slide-down">
+          Seyon connects you directly to the seller. Clicking the button below opens WhatsApp with a prefilled purchase inquiry message.
+        </div>
+      </details>
     </div>
   );
 }
