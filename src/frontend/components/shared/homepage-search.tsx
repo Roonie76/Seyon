@@ -110,21 +110,31 @@ export function HomepageSearch() {
         <button
           type="button"
           onClick={() => goToSearch(query)}
-          className="ml-3 px-5 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:brightness-105 active:scale-95 text-black font-extrabold text-xs md:text-sm rounded-full shadow-md transition-all uppercase tracking-wider shrink-0"
+          aria-label="Search"
+          className="ml-3 p-2.5 bg-[#A77F3A] hover:bg-[#916b2f] active:scale-95 text-white rounded-full shadow-md transition-all shrink-0 flex items-center justify-center cursor-pointer"
         >
-          Go
+          <Search className="h-5 w-5 text-white" />
         </button>
       </div>
 
       {/* Autocomplete Dropdown List */}
       {isOpen && suggestions.length > 0 && (
-        <ul className="absolute left-0 right-0 mt-2.5 border border-zinc-200 rounded-2xl bg-white/95 backdrop-blur-md shadow-xl overflow-hidden divide-y divide-zinc-100 animate-fade-in p-1">
+        <ul role="listbox" className="absolute left-0 right-0 mt-2.5 border border-zinc-200 rounded-2xl bg-white/95 backdrop-blur-md shadow-xl overflow-hidden divide-y divide-zinc-100 animate-fade-in p-1">
           {suggestions.map((s, idx) => (
             <li
               key={s}
+              role="option"
+              aria-selected={activeIndex === idx}
+              tabIndex={0}
               onClick={() => goToSearch(s)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  goToSearch(s);
+                }
+              }}
               onMouseEnter={() => setActiveIndex(idx)}
-              className={`flex items-center px-5 py-3 text-xs md:text-sm cursor-pointer transition-colors font-medium rounded-xl ${
+              className={`flex items-center px-5 py-3 text-xs md:text-sm cursor-pointer transition-colors font-medium rounded-xl outline-none ${
                 activeIndex === idx
                   ? 'bg-zinc-50 text-amber-700 font-semibold'
                   : 'text-zinc-700'
