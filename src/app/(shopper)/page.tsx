@@ -1315,9 +1315,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <ProductCarousel>
             {trendingProducts.map((prod, idx) => {
               const badge = worthDiscoveringBadges[idx % worthDiscoveringBadges.length];
+              const productUrl = `/store/${prod.shop.slug}/${prod.slug}`;
               return (
                 <div key={prod.id} className="px-1 py-2">
-                  <div className="relative group flex flex-col text-left w-[200px] shrink-0 bg-white border border-[#F0ECE3] rounded-[2rem] p-3 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 h-[280px] justify-between">
+                  <Link
+                    href={productUrl}
+                    className="relative group flex flex-col text-left w-[200px] shrink-0 bg-white border border-[#F0ECE3] rounded-[2rem] p-3 shadow-2xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 h-[280px] justify-between cursor-pointer no-underline"
+                  >
                     <div className="relative aspect-square w-full rounded-2xl bg-zinc-50 border border-zinc-150 overflow-hidden mb-3">
                       {prod.images?.[0]?.url ? (
                         <Image
@@ -1349,13 +1353,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         <span className="text-xs font-black text-zinc-950">
                           ₹{prod.price.toFixed(0)}
                         </span>
-                        {/* Heart Wishlist icon */}
-                        <button className="text-zinc-400 hover:text-red-500 p-1 transition-colors bg-transparent border-none cursor-pointer">
-                          <Heart className="h-3.5 w-3.5 fill-none" />
-                        </button>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               );
             })}
