@@ -594,10 +594,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         {/* Background decorative glow */}
         <div className="absolute top-12 left-1/4 w-[300px] h-[300px] rounded-full bg-[#A77F3A]/5 blur-[100px] -z-10" />
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center w-full">
           {/* Left Column: Text, Search, Popular searches */}
-          <div className="lg:col-span-7 flex flex-col text-left">
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-[56px] font-bold tracking-tight text-[#1A1A18] leading-[1.1] mb-6">
+          <div className="md:col-span-7 flex flex-col text-left">
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold tracking-tight text-[#1A1A18] leading-[1.1] mb-6">
               Your favorite Instagram stores.<br />
               Finally searchable.
             </h1>
@@ -674,7 +674,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           {/* Right Column: Layered Premium Reels-to-Seyon CSS Phone Flow */}
-          <div className="lg:col-span-5 relative flex justify-center items-center h-[520px] lg:h-[550px] w-full mt-8 lg:mt-0">
+          <div className="md:col-span-5 relative flex justify-center items-center h-[420px] sm:h-[480px] md:h-[450px] lg:h-[550px] w-full mt-8 md:mt-0 scale-75 sm:scale-90 md:scale-95 lg:scale-100 origin-center select-none">
             {/* Phone 1: Instagram Reel Mockup (The Social Layer) */}
             <div className="relative w-[240px] h-[450px] bg-black rounded-[2.8rem] border-[7px] border-zinc-900 shadow-2xl overflow-hidden shrink-0 transform -translate-x-14 -rotate-4 hover:-rotate-1 transition-transform duration-500 z-0 select-none">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-3.5 bg-zinc-900 rounded-b-xl z-20" />
@@ -739,7 +739,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
             {/* Connective Arrow */}
             <svg
-              className="absolute top-[28%] right-[125px] w-24 h-24 pointer-events-none z-15 hidden sm:block"
+              className="absolute top-[28%] right-[125px] w-24 h-24 pointer-events-none z-15 hidden lg:block"
               viewBox="0 0 100 100"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -953,7 +953,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
 
           {/* Right Card: Benefits Bar — Shorter, rounded only on right, layered behind */}
-          <div className="lg:col-span-7 bg-[#FCFAF7] border-y border-r border-[#E9DED0] rounded-r-[24px] rounded-l-none px-6 py-6 sm:px-8 lg:px-10 lg:py-8 shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
+          <div className="lg:col-span-7 bg-[#FCFAF7] border border-[#E9DED0] lg:border-l-0 rounded-[32px] lg:rounded-l-none lg:rounded-r-[24px] px-6 py-6 sm:px-8 lg:px-10 lg:py-8 shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-y-8 sm:gap-x-6 lg:gap-x-0 lg:gap-y-0 w-full items-start h-full">
               {/* Benefit 1: From Social Platforms */}
               <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8] h-full justify-start select-none min-h-[210px]">
@@ -1147,7 +1147,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {justDiscovered.map((prod, idx) => {
               const presentation = getCreatorPresentation(prod.shop);
               const bgImg = prod.images?.[0]?.url || '';
@@ -1228,7 +1228,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {featuredCreators.map((shop) => {
               const bgProdImg = shop.products?.[0]?.images?.[0]?.url || '';
               const presentation = getCreatorPresentation(shop);
@@ -1377,7 +1377,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {/* Collection 1: Wedding Gifts */}
           <Link
             href="/?q=Gift"

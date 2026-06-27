@@ -81,7 +81,7 @@ export function HomepageSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-xl mx-auto z-30">
+    <div ref={containerRef} className="relative w-full max-w-xl mx-auto md:mx-0 z-30">
       {/* Search Input Container */}
       <div className="flex items-center bg-white border border-zinc-200 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20 rounded-full px-5 py-3 transition-all duration-300 shadow-sm">
         <Search className="h-5 w-5 text-zinc-500 shrink-0 mr-3" />
