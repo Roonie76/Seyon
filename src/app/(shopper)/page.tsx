@@ -8,6 +8,7 @@ import { ProductCarousel } from '@/components/shared/product-carousel';
 import { HomepageSearch } from '@/components/shared/homepage-search';
 import { ArrowRight, Heart, Check, CheckCircle, Sparkles, Users, Award, Shield, ShoppingBag, MessageSquare, Play, Search, Menu } from 'lucide-react';
 import { getCreatorPresentation, getProductBadges, getHeroReelStats } from '@/lib/demo';
+import { WhySeyonTabs } from '@/components/shared/why-seyon-tabs';
 
 import { auth } from '@/lib/auth';
 import { MarketplaceClient } from './marketplace/marketplace-client';
@@ -851,112 +852,119 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <div className="lg:col-span-5 bg-white border border-[#E9DED0] rounded-[32px] p-6 sm:p-8 lg:px-10 lg:py-12 shadow-[0_14px_36px_rgba(37,28,18,0.10)] flex flex-col justify-between text-center lg:text-left h-full min-h-[340px] relative z-20">
             <h3 className="font-serif text-xl sm:text-2xl font-bold text-zinc-950 text-center lg:text-left mb-7 tracking-tight">Why Seyon?</h3>
 
-            {/* Comparison Side-by-Side Table */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 sm:gap-9 relative flex-1">
-              {/* Social Media column */}
-              <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pr-5">
-                <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Social Media</span>
-                <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-full">
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
-                    <span>Scroll through hundreds of reels</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
-                    <span>Check highlights & captions</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
-                    <span>DM for price & details</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
-                    <span>Wait for replies</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <line x1="9" y1="9" x2="15" y2="15" />
-                      <line x1="15" y1="9" x2="9" y2="15" />
-                    </svg>
-                    <span>Lose it forever</span>
-                  </li>
-                </ul>
-              </div>
+            {/* Desktop Only Side-by-Side Table */}
+            <div className="hidden lg:block w-full flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 sm:gap-9 relative h-full">
+                {/* Social Media column */}
+                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pr-5">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Social Media</span>
+                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-full">
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Scroll through hundreds of reels</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Check highlights & captions</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>DM for price & details</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Wait for replies</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Lose it forever</span>
+                    </li>
+                  </ul>
+                </div>
 
-              {/* Vertical Divider Line */}
-              <div className="hidden sm:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E7E2D8] -translate-x-1/2" />
+                {/* Vertical Divider Line */}
+                <div className="hidden sm:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E7E2D8] -translate-x-1/2" />
 
-              {/* VS Badge */}
-              <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
-              </div>
+                {/* VS Badge */}
+                <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
+                </div>
 
-              {/* Seyon column */}
-              <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pl-7">
-                <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Seyon</span>
-                <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-full">
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Search what you want</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Find verified creators</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>View all products in one place</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>DM to order instantly</span>
-                  </li>
-                  <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
-                    <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <circle cx="12" cy="12" r="9"/>
-                      <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span>Easy, Fast, Reliable.</span>
-                  </li>
-                </ul>
+                {/* Seyon column */}
+                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pl-7">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Seyon</span>
+                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-full">
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Search what you want</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Find verified creators</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>View all products in one place</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>DM to order instantly</span>
+                    </li>
+                    <li className="flex items-start justify-center lg:justify-start gap-2 leading-snug">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Easy, Fast, Reliable.</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
+            </div>
+
+            {/* Mobile/Tablet Only Tab Toggle */}
+            <div className="block lg:hidden w-full">
+              <WhySeyonTabs />
             </div>
           </div>
 
           {/* Right Card: Benefits Bar — Shorter, rounded only on right, layered behind */}
-          <div className="lg:col-span-7 bg-[#FCFAF7] border border-[#E9DED0] lg:border-l-0 rounded-[32px] lg:rounded-l-none lg:rounded-r-[24px] px-6 py-6 sm:px-8 lg:px-10 lg:py-8 shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-y-8 sm:gap-x-6 lg:gap-x-0 lg:gap-y-0 w-full items-start h-full">
+          <div className="lg:col-span-7 bg-[#FCFAF7]/40 lg:bg-[#FCFAF7] border border-[#E9DED0]/50 lg:border-[#E9DED0] lg:border-l-0 rounded-[28px] lg:rounded-l-none lg:rounded-r-[24px] px-4 py-6 lg:px-10 lg:py-8 shadow-3xs lg:shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[200px] lg:min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
+            <div className="flex lg:grid flex-row lg:grid-cols-5 overflow-x-auto lg:overflow-x-visible no-scrollbar gap-4 lg:gap-0 pb-4 lg:pb-0 w-full items-start h-full snap-x snap-mandatory">
               {/* Benefit 1: From Social Platforms */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8] h-full justify-start select-none min-h-[210px]">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
                 <div className="h-10 w-10 flex items-center justify-center mb-4">
                   <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Elegant Bear Face Outline */}
@@ -967,7 +975,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
                 <div className="flex flex-col items-center">
                   <h4 className="text-xs font-bold text-zinc-900 leading-snug max-w-[120px]">From Social Platforms</h4>
-                  <p className="text-[11px] text-zinc-700 mt-3 font-semibold leading-relaxed max-w-[124px]">
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
                     Instagram, WhatsApp, Telegram & YouTube
                   </p>
                 </div>
@@ -1013,7 +1021,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
 
               {/* Benefit 2: DM to Order */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8] h-full justify-start select-none min-h-[210px]">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
                 <div className="h-10 w-10 flex items-center justify-center mb-4">
                   <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     {/* Two overlapping chat bubbles */}
@@ -1024,14 +1032,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
                 <div className="flex flex-col items-center">
                   <h4 className="text-xs font-bold text-zinc-900 leading-snug">DM to Order</h4>
-                  <p className="text-[11px] text-zinc-700 mt-3 font-semibold leading-relaxed max-w-[124px]">
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
                     Chat directly with creators
                   </p>
                 </div>
               </div>
 
               {/* Benefit 3: No Middlemen */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8] h-full justify-start select-none min-h-[210px]">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
                 <div className="h-10 w-10 flex items-center justify-center mb-4">
                   <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     {/* Person with X – no middlemen */}
@@ -1043,14 +1051,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
                 <div className="flex flex-col items-center">
                   <h4 className="text-xs font-bold text-zinc-900 leading-snug">No Middlemen</h4>
-                  <p className="text-[11px] text-zinc-700 mt-3 font-semibold leading-relaxed max-w-[124px]">
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
                     Buy directly from independent creators
                   </p>
                 </div>
               </div>
 
               {/* Benefit 4: Support Small */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8] h-full justify-start select-none min-h-[210px]">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
                 <div className="h-10 w-10 flex items-center justify-center mb-4">
                   <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     {/* Group of people – community */}
@@ -1062,14 +1070,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
                 <div className="flex flex-col items-center">
                   <h4 className="text-xs font-bold text-zinc-900 leading-snug">Support Small</h4>
-                  <p className="text-[11px] text-zinc-700 mt-3 font-semibold leading-relaxed max-w-[124px]">
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
                     Empower independent businesses
                   </p>
                 </div>
               </div>
 
               {/* Benefit 5: Trusted Listings */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[210px]">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
                 <div className="h-10 w-10 flex items-center justify-center mb-4">
                   <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     {/* Person with checkmark – verified user */}
@@ -1080,7 +1088,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 </div>
                 <div className="flex flex-col items-center">
                   <h4 className="text-xs font-bold text-zinc-900 leading-snug">Trusted Listings</h4>
-                  <p className="text-[11px] text-zinc-700 mt-3 font-semibold leading-relaxed max-w-[124px]">
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
                     Verified creators & real products
                   </p>
                 </div>
