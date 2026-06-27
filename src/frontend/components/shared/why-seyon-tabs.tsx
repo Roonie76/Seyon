@@ -66,23 +66,23 @@ export function WhySeyonTabs() {
           )}
         </h4>
 
-        <ul className="flex flex-col gap-3 text-xs text-zinc-700 font-medium w-full">
+        <ul className="flex flex-col gap-3 text-xs text-zinc-700 font-medium w-fit mx-auto">
           {activeTab === 'social'
             ? socialItems.map((item, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center justify-center gap-2.5 py-1 text-center animate-fade-in"
+                  className="flex items-start gap-2.5 py-1 text-left animate-fade-in"
                 >
-                  <XCircle className="h-4.5 w-4.5 text-rose-500 shrink-0" strokeWidth={2.5} />
+                  <XCircle className="h-4.5 w-4.5 text-rose-500 shrink-0 mt-0.5" strokeWidth={2.5} />
                   <span className="text-zinc-750">{item}</span>
                 </li>
               ))
             : seyonItems.map((item, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center justify-center gap-2.5 py-1 text-center animate-fade-in"
+                  className="flex items-start gap-2.5 py-1 text-left animate-fade-in"
                 >
-                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" strokeWidth={2.5} />
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" strokeWidth={2.5} />
                   <span className="text-zinc-750">{item}</span>
                 </li>
               ))}
