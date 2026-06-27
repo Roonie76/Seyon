@@ -10,7 +10,7 @@ interface WishlistButtonProps {
   productId: string;
   initialIsWishlisted: boolean;
   className?: string;
-  variant?: 'icon' | 'default';
+  variant?: 'icon' | 'default' | 'minimal';
 }
 
 export function WishlistButton({
@@ -62,6 +62,23 @@ export function WishlistButton({
         <Heart className={cn("h-5 w-5", isWishlisted && "fill-rose-500 text-rose-500")} />
         {isWishlisted ? 'Saved to Wishlist' : 'Add to Wishlist'}
       </Button>
+    );
+  }
+
+  if (variant === 'minimal') {
+    return (
+      <button
+        onClick={handleToggle}
+        disabled={loading}
+        className={cn(
+          "transition-all duration-300 text-zinc-400 hover:text-rose-500 focus:outline-none",
+          isWishlisted && "text-rose-500",
+          className
+        )}
+        title={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+      >
+        <Heart className={cn("h-[18px] w-[18px] transition-transform duration-300 active:scale-125", isWishlisted && "fill-rose-500 text-rose-500")} strokeWidth={1.5} />
+      </button>
     );
   }
 

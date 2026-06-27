@@ -1,6 +1,27 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+function htmlRedirect(url: string): NextResponse {
+  const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="0; url=${url}" />
+    <script>window.location.replace("${url}");</script>
+    <title>Redirecting...</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href="${url}">${url}</a>...</p>
+  </body>
+</html>`;
+  return new NextResponse(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    },
+  });
+}
+
 /**
  * Seller hosts are configured explicitly via the SELLER_HOSTS env var
  * (comma-separated hostnames, no protocol, no port), e.g.:
@@ -45,7 +66,7 @@ export function middleware(request: NextRequest) {
     ) {
       const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
       const redirectUrl = new URL(path + request.nextUrl.search, buyerMarketUrl);
-      return NextResponse.redirect(redirectUrl);
+      return htmlRedirect(redirectUrl.toString());
     }
     // If accessing the root path on the seller domain, redirect to the seller homepage `/sell`
     if (path === '/') {
@@ -64,19 +85,17 @@ export function middleware(request: NextRequest) {
     }
   } else {
     // Shopper Platform Domain:
-    // If accessing any seller-specific routes, block access by rewriting to /404 to return a 404 Not Found error page
-    if (path.startsWith('/sell') || path.startsWith('/dashboard')) {
-      url.pathname = '/404';
-      return NextResponse.rewrite(url);
+    // If accessing any seller-specific routes, redirect them to the seller domain
+    if (path.startsWith('/sell') || path.startsWith('/dashboard') || path.startsWith('/seller-account')) {
+      const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+      const sellerHost = isLocal ? '127.0.0.1:3000' : 'seyon-seller.vercel.app';
+      const protocol = isLocal ? 'http' : 'https';
+      const redirectUrl = new URL(path + request.nextUrl.search, `${protocol}://${sellerHost}`);
+      return htmlRedirect(redirectUrl.toString());
     }
     // Rewrite clean /account route to the internal shopper page
     if (path === '/account') {
       url.pathname = '/shopper-account';
-      return NextResponse.rewrite(url);
-    }
-    // Block direct access to internal seller-account route
-    if (path === '/seller-account') {
-      url.pathname = '/404';
       return NextResponse.rewrite(url);
     }
   }

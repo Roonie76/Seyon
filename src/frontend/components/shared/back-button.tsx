@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useJourney } from './journey-context';
 
@@ -15,16 +16,15 @@ const cleanLabel = (text: string) => {
   return text.replace(/^Back to\s+/i, '');
 };
 
-export function BackButton({ fallbackHref, label = 'Storefront', className = '' }: BackButtonProps) {
+// The actual interactive button that uses client-side hooks and browser history/sessionStorage
+function BackButtonInner({ fallbackHref, label = 'Storefront', className = '' }: BackButtonProps) {
   const { stack, truncateJourneyStack } = useJourney();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Resolve target directly in render body to prevent SSR hydration mismatch and ESLint warning.
   const queryString = searchParams ? searchParams.toString() : '';
   const currentPath = pathname + (queryString ? `?${queryString}` : '');
   
-  // Resolve previous browsing context using the journey stack position
   const isCurrentAtTop = stack.length > 0 && stack[stack.length - 1].path === currentPath;
   
   const target = isCurrentAtTop
@@ -36,7 +36,6 @@ export function BackButton({ fallbackHref, label = 'Storefront', className = '' 
 
   const handleClick = () => {
     if (target) {
-      // Set the back navigation flag synchronously
       try {
         sessionStorage.setItem('seyon_is_navigating_back', 'true');
       } catch (err) {
@@ -57,15 +56,37 @@ export function BackButton({ fallbackHref, label = 'Storefront', className = '' 
         fontSize: '18px',
         fontWeight: 600,
         letterSpacing: '0.02em',
-        textTransform: 'none', // Overrides global button/link uppercase rules
+        textTransform: 'none',
       }}
     >
-      {/* Mobile/Tablet Format: e.g. ← Aroma Palace */}
       <span className="md:hidden">← {resolvedLabel}</span>
-      {/* Desktop Format: e.g. ← Return to Aroma Palace */}
       <span className="hidden md:inline">← Return to {resolvedLabel}</span>
     </Link>
   );
+}
+
+// Dynamically import the inner component with ssr: false to exclude useSearchParams from the static pre-rendering phase.
+// This resolves the Next.js prerender error on static pages like /faqs, /terms, /privacy, /contact, etc.
+const BackButtonClient = dynamic(() => Promise.resolve(BackButtonInner), {
+  ssr: false,
+  loading: () => (
+    <span
+      className="inline-flex items-center bg-transparent text-zinc-800/65 dark:text-zinc-250/65 select-none"
+      style={{
+        fontFamily: 'var(--font-serif-custom), Georgia, serif',
+        fontSize: '18px',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        textTransform: 'none',
+      }}
+    >
+      ← Return
+    </span>
+  )
+});
+
+export function BackButton(props: BackButtonProps) {
+  return <BackButtonClient {...props} />;
 }
 
 export default BackButton;

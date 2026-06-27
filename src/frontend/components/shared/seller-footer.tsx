@@ -30,34 +30,90 @@ export async function SellerFooter() {
   return (
     <footer className="border-t border-zinc-800 bg-black py-8 md:py-12 mt-auto text-zinc-400">
       <div className="container mx-auto px-4 sm:px-6">
+        
+        {/* Top resources navigation bar - matching shopper's category strip */}
+        <nav aria-label="Seller resources" className="mb-8 pb-6 border-b border-zinc-800">
+          <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">
+            SELLER RESOURCES
+          </span>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400">
+            <Link href="/dashboard" className="hover:text-white transition-colors">
+              Seller Dashboard
+            </Link>
+            <Link href="/dashboard/products" className="hover:text-white transition-colors">
+              Manage Products
+            </Link>
+            <Link href="/sell" className="hover:text-white transition-colors">
+              Sell on Seyon
+            </Link>
+            <a href="mailto:support@seyon.com" className="hover:text-white transition-colors">
+              Help & Support
+            </a>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+          </div>
+        </nav>
+
         {/* 3-column grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <Link href="/sell" className="text-lg font-bold font-sans tracking-tight text-white flex items-center gap-1">
+            <Link href="/sell" className="text-xl font-bold font-sans tracking-tight text-white flex items-center group">
               seyon
-              <span className="text-[10px] text-zinc-500 ml-1 font-sans tracking-normal">Sellers</span>
+              <span className="text-[9px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase">
+                sellers
+              </span>
             </Link>
-            <p className="text-xs text-zinc-600 leading-relaxed">
+            <p className="text-xs text-zinc-500 leading-relaxed">
               Your selling dashboard. Manage products, track performance, and grow your storefront.
             </p>
-            {/* Social links */}
-            <div className="flex items-center gap-3">
-              <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-pink-500 transition-colors" aria-label="Instagram">
-                <InstagramIcon />
-              </a>
-              <a href="https://x.com/seyonstore" target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-white transition-colors" aria-label="X (Twitter)">
-                <XIcon />
-              </a>
-              <a href="https://linkedin.com/company/seyon" target="_blank" rel="noopener noreferrer" className="text-zinc-600 hover:text-sky-500 transition-colors" aria-label="LinkedIn">
-                <LinkedInIcon />
-              </a>
+            
+            {/* Follow Us Section */}
+            <div className="space-y-3 pt-2">
+              <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block">
+                FOLLOW US
+              </span>
+              <div className="flex items-center gap-3">
+                <a 
+                  href="https://instagram.com/seyon.store" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" 
+                  aria-label="Instagram"
+                >
+                  <InstagramIcon className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://x.com/seyonstore" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" 
+                  aria-label="X (Twitter)"
+                >
+                  <XIcon className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://linkedin.com/company/seyon" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" 
+                  aria-label="LinkedIn"
+                >
+                  <LinkedInIcon className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
 
           {/* Column 2: Seller Tools */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider block">Seller Tools</span>
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+              Seller Tools
+            </span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
@@ -80,7 +136,9 @@ export async function SellerFooter() {
 
           {/* Column 3: Support & Legal */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-600 tracking-wider block">Support & Legal</span>
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+              Support & Legal
+            </span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/faqs" className="hover:text-white transition-colors">FAQs</Link>
@@ -102,7 +160,7 @@ export async function SellerFooter() {
         </div>
 
         {/* Copyright */}
-        <div className="pt-6 border-t border-zinc-800">
+        <div className="pt-6 border-t border-zinc-850">
           <p className="text-xs text-zinc-600 text-center">
             &copy; {new Date().getFullYear()} Seyon. All rights reserved.
           </p>
@@ -111,4 +169,5 @@ export async function SellerFooter() {
     </footer>
   );
 }
+
 export default SellerFooter;

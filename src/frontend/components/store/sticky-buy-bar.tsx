@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MessageCircle, PackageX } from 'lucide-react';
+import { MessageCircle, PackageX, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { buildOrderMessage } from '@/shared/lib/order-message';
 
@@ -68,9 +68,13 @@ export function StickyBuyBar({
         <button
           type="button"
           onClick={handleClick}
-          className="shrink-0 inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-bold px-5 py-2.5 shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+          className="shrink-0 bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-full py-1.5 px-4 shadow-3xs flex items-center gap-2.5 transition-all duration-300 group/btn cursor-pointer active:scale-[0.98]"
         >
-          <MessageCircle className="h-4 w-4" /> Chat to Buy
+          <div className="text-right select-none">
+            <span className="font-serif text-[10px] font-bold text-zinc-950 block leading-none">Talk to Creator</span>
+            <span className="text-[7px] text-zinc-450 font-bold block mt-0.5 leading-none">on WhatsApp</span>
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-0.5 stroke-[2]" />
         </button>
       ) : (
         <button

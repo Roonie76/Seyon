@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, PackageX, ShoppingCart, Check } from 'lucide-react';
+import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
 import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget } from './store-cart';
@@ -175,14 +175,17 @@ export function ProductCTA({
               </>
             )}
           </button>
-          <Button
+          <button
+            type="button"
             onClick={handleClick}
-            variant="whatsapp"
-            size="lg"
-            className="w-full justify-center gap-2 text-sm uppercase font-extrabold tracking-wide rounded-lg h-12"
+            className="w-full bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-[20px] py-3 px-4 shadow-2xs flex items-center justify-between transition-all duration-300 group/btn cursor-pointer active:scale-[0.98]"
           >
-            <MessageCircle className="h-5 w-5" /> Chat on WhatsApp
-          </Button>
+            <div className="flex-1 text-center pl-6 select-none">
+              <span className="font-serif text-sm font-bold text-zinc-950 block leading-tight">Talk to Creator</span>
+              <span className="text-xs text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
+            </div>
+            <ArrowRight className="h-5 w-5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-1 stroke-[2]" />
+          </button>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

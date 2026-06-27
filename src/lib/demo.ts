@@ -177,3 +177,26 @@ export function getHeroReelStats(): { likes: string; comments: string; shares: s
     shares: '124'
   };
 }
+
+const DEMO_CATEGORY_COUNTS: Record<string, number> = {
+  'fashion': 9842,
+  'electronics': 6128,
+  'beauty': 5463,
+  'home & living': 7329,
+  'clay crafts': 1863,
+  'diy crafts': 2345,
+  'art & collectibles': 3215,
+  'food & beverages': 4987
+};
+
+/**
+ * Returns premium mockup counts for categories in development, or actual counts in production.
+ */
+export function getCategoryProductCount(categoryName: string, realCount: number): number {
+  if (!isDevelopment) {
+    return realCount;
+  }
+  const key = categoryName.toLowerCase().trim();
+  return DEMO_CATEGORY_COUNTS[key] ?? (realCount > 0 ? realCount : 150 + (getDeterministicHash(key) % 850));
+}
+

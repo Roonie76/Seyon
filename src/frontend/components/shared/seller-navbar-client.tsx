@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Menu, Search, X, Heart, ChevronRight, User, LayoutDashboard, ShoppingBag, ShieldAlert, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Menu, Search, X, Heart, ChevronRight, User, LogOut, LayoutDashboard, ShoppingBag, ShieldAlert } from 'lucide-react';
 
 interface SellerNavbarClientProps {
   user?: {
@@ -23,22 +24,16 @@ interface Suggestion {
 }
 
 export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: SellerNavbarClientProps) {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Focus search input when opened
-  React.useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
-  // Fetch search suggestions from the local API endpoint
+  // Fetch search suggestions
   React.useEffect(() => {
     if (!searchQuery.trim()) {
+      setSuggestions(null);
       return;
     }
 
@@ -57,26 +52,16 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setSearchQuery(val);
-    if (!val.trim()) {
-      setSuggestions(null);
-    }
-  };
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `${buyerMarketUrl}/marketplace?q=${encodeURIComponent(searchQuery.trim())}`;
-      setIsSearchOpen(false);
-      setSearchQuery('');
+      setSuggestions(null);
     }
   };
 
   const closeAll = () => {
     setIsMenuOpen(false);
-    setIsSearchOpen(false);
     setSearchQuery('');
     setSuggestions(null);
   };
@@ -84,131 +69,79 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
   return (
     <>
       {/* Header element */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-black text-secondary-foreground shadow-sm transition-colors duration-300">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 relative">
+      <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white text-zinc-900 shadow-sm transition-colors duration-300">
+        <div className="container mx-auto px-4 sm:px-6 py-3 md:py-4">
           
-          {/* Left Side: Menu & Search */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            <button
-              onClick={() => { setIsMenuOpen(true); setIsSearchOpen(false); }}
-              className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors uppercase font-semibold text-[10px] sm:text-xs tracking-widest cursor-pointer"
-            >
-              <Menu className="h-4 w-4 stroke-[1.5]" />
-              <span className="hidden xs:inline">Menu</span>
-            </button>
-            <button
-              onClick={() => { setIsSearchOpen(prev => !prev); setIsMenuOpen(false); }}
-              className="flex items-center gap-1.5 text-zinc-300 hover:text-white transition-colors uppercase font-semibold text-[10px] sm:text-xs tracking-widest cursor-pointer"
-            >
-              <Search className="h-4 w-4 stroke-[1.5]" />
-              <span className="hidden xs:inline">Search</span>
-            </button>
-          </div>
-
-          {/* Middle: Logo (centered) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Link
-              href="/sell"
-              className="text-xl sm:text-2xl font-bold font-sans tracking-tight text-white flex items-center gap-0.5 group"
-            >
-              <span>seyon</span>
-            </Link>
-          </div>
-
-          {/* Right Side: Account, Wishlist */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            {user ? (
-              <Link
-                href="/account"
-                className="p-0.5 text-zinc-300 hover:text-primary transition-colors flex items-center justify-center"
-                title="My Account"
+          {/* Main row */}
+          <div className="flex items-center justify-between gap-4 md:gap-8">
+            
+            {/* Left: Logo & Hamburger (Mobile) */}
+            <div className="flex items-center gap-3">
+              {/* Hamburger Menu Trigger (Mobile only) */}
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="md:hidden p-1 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+                aria-label="Open menu"
               >
-                {user.image ? (
-                  <div className="h-5 w-5 rounded-full overflow-hidden border border-zinc-700">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
-                  </div>
-                ) : (
-                  <User className="h-5 w-5 stroke-[1.5]" />
-                )}
-              </Link>
-            ) : (
+                <Menu className="h-6 w-6 stroke-[1.5]" />
+              </button>
+
+              {/* Serif elegant Logo */}
               <Link
-                href="/login?callbackUrl=/dashboard"
-                className="inline-flex items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white px-3 py-1 text-[11px] sm:text-xs font-semibold text-zinc-350 transition-all shadow-sm active:scale-95 cursor-pointer"
-                title="Login or Sign Up"
+                href="/sell"
+                onClick={closeAll}
+                className="text-2xl font-bold tracking-tight text-zinc-900 flex items-center group font-serif"
+                style={{ fontFamily: 'Georgia, serif' }}
               >
-                <span className="xs:hidden">Login</span>
-                <span className="hidden xs:inline">Login / Sign Up</span>
-              </Link>
-            )}
-            <Link
-              href={`${buyerMarketUrl}/wishlist`}
-              className="relative p-0.5 text-zinc-300 hover:text-rose-500 transition-colors flex items-center justify-center"
-              title="My Wishlist"
-            >
-              <Heart className="h-5 w-5 stroke-[1.5]" />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-rose-500 text-[9px] text-white font-extrabold rounded-full flex items-center justify-center">
-                  {wishlistCount}
+                seyon
+                <span className="text-[9px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase self-end mb-1">
+                  sellers
                 </span>
-              )}
-            </Link>
-          </div>
-        </div>
+              </Link>
+            </div>
 
-        {/* Slide-Down Search Panel */}
-        {isSearchOpen && (
-          <div className="border-t border-zinc-800 bg-black animate-slide-down shadow-md">
-            <div className="container mx-auto px-4 py-4 sm:px-6">
-              <form onSubmit={handleSearchSubmit} className="flex gap-3 items-center relative">
-                <Search className="h-5 w-5 text-zinc-400 shrink-0" />
+            {/* Center: Inline search bar (Desktop & tablet) */}
+            <div className="hidden md:block flex-1 max-w-md lg:max-w-lg relative">
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full bg-white border border-zinc-200 focus-within:border-[#A77F3A] focus-within:ring-2 focus-within:ring-[#A77F3A]/10 rounded-full px-4 py-1.5 transition-all">
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search products, brands, categories on marketplace..."
+                  placeholder="Search products, creators, stores on marketplace..."
                   value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full bg-transparent border-0 outline-0 focus:ring-0 text-sm text-zinc-100 placeholder-zinc-500 py-1"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-0 outline-0 focus:ring-0 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 pr-12"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setSuggestions(null); }}
-                    className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="absolute right-12 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-primary hover:bg-primary/90 text-black rounded text-xs font-semibold uppercase tracking-wider transition-colors"
+                  className="absolute right-1 w-8 h-8 bg-[#A77F3A] hover:bg-[#916b2f] text-white rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer"
                 >
-                  Go
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsSearchOpen(false)}
-                  className="text-zinc-400 hover:text-white font-semibold p-1"
-                >
-                  <X className="h-5 w-5" />
+                  <Search className="h-3.5 w-3.5 stroke-[2.5] text-white" />
                 </button>
               </form>
 
-              {/* Suggestions dropdown */}
+              {/* Suggestions Dropdown (Desktop) */}
               {suggestions && (
-                <div className="mt-4 border border-zinc-800 rounded-lg bg-zinc-900 shadow-xl max-h-[350px] overflow-y-auto divide-y divide-zinc-800 p-2 animate-fade-in z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[350px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
                   {/* Categories */}
                   {suggestions.categories.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Categories</span>
+                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         {suggestions.categories.map((cat) => (
                           <a
                             key={cat}
                             href={`${buyerMarketUrl}/marketplace?category=${encodeURIComponent(cat)}`}
                             onClick={closeAll}
-                            className="text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full px-2.5 py-1 text-zinc-300 hover:text-primary transition-colors font-medium"
+                            className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-full px-2.5 py-1 text-zinc-700 hover:text-[#A77F3A] transition-colors font-medium"
                           >
                             {cat}
                           </a>
@@ -220,24 +153,23 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   {/* Shops */}
                   {suggestions.shops.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Storefronts</span>
+                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
                         {suggestions.shops.map((shop) => (
                           <a
                             key={shop.slug}
                             href={`${buyerMarketUrl}/store/${shop.slug}`}
                             onClick={closeAll}
-                            className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-zinc-850 transition-colors"
+                            className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-zinc-55 transition-colors"
                           >
                             {shop.logo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={shop.logo} alt={shop.name} className="h-6 w-6 rounded-full object-cover border border-zinc-800" />
+                              <img src={shop.logo} alt={shop.name} className="h-6 w-6 rounded-full object-cover border border-zinc-200" />
                             ) : (
-                              <div className="h-6 w-6 rounded-full bg-zinc-850 flex items-center justify-center text-[10px] font-bold text-zinc-300">
+                              <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
                                 {shop.name[0].toUpperCase()}
                               </div>
                             )}
-                            <span className="text-xs font-semibold text-zinc-200 hover:text-primary transition-colors">{shop.name}</span>
+                            <span className="text-xs font-semibold text-zinc-700 hover:text-[#A77F3A] transition-colors">{shop.name}</span>
                           </a>
                         ))}
                       </div>
@@ -247,17 +179,17 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   {/* Products */}
                   {suggestions.products.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Products</span>
+                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
                       <div className="space-y-1 mt-1.5">
                         {suggestions.products.map((prod) => (
                           <a
                             key={prod.id}
                             href={`${buyerMarketUrl}/marketplace?q=${encodeURIComponent(prod.title)}`}
                             onClick={closeAll}
-                            className="flex items-center justify-between text-xs p-2 rounded-md hover:bg-zinc-850 text-zinc-200 hover:text-primary font-medium transition-colors"
+                            className="flex items-center justify-between text-xs p-2 rounded-lg hover:bg-zinc-50 text-zinc-700 hover:text-[#A77F3A] font-medium transition-colors"
                           >
                             <span>{prod.title}</span>
-                            <span className="font-bold text-zinc-300">₹{prod.price.toFixed(2)}</span>
+                            <span className="font-bold text-zinc-950">₹{Math.round(prod.price)}</span>
                           </a>
                         ))}
                       </div>
@@ -266,16 +198,172 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 </div>
               )}
             </div>
+
+            {/* Right: Navigation Links & Icons */}
+            <div className="flex items-center gap-4 lg:gap-6">
+              {/* Desktop Nav Links */}
+              <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-zinc-600">
+                <Link href="/dashboard" className="hover:text-zinc-950 transition-colors py-1">Dashboard</Link>
+                <Link href="/dashboard/products" className="hover:text-zinc-950 transition-colors py-1">Products</Link>
+                {user && user.role === 'ADMIN' && (
+                  <Link href="/admin" className="hover:text-zinc-950 transition-colors py-1">Moderation</Link>
+                )}
+                <a href={`${buyerMarketUrl}/marketplace`} className="hover:text-zinc-950 transition-colors py-1">Explore Marketplace</a>
+              </nav>
+
+              <div className="hidden lg:block h-5 w-px bg-zinc-200" />
+
+              {/* Icons row */}
+              <div className="flex items-center gap-4">
+                {/* Wishlist */}
+                <a
+                  href={`${buyerMarketUrl}/wishlist`}
+                  className="relative p-1 text-zinc-600 hover:text-rose-500 transition-colors flex items-center justify-center"
+                  title="My Wishlist"
+                >
+                  <Heart className="h-5 w-5 stroke-[1.5]" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </a>
+
+                {/* Account */}
+                {user ? (
+                  <Link
+                    href="/account"
+                    className="h-8 w-8 rounded-full border border-zinc-200 overflow-hidden flex items-center justify-center hover:border-[#A77F3A]/50 transition-all shadow-2xs cursor-pointer"
+                    title="My Account"
+                  >
+                    {user.image ? (
+                      <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full bg-[#FAF8F5] flex items-center justify-center text-xs font-bold text-[#A77F3A] font-serif">
+                        {user.name ? user.name[0].toUpperCase() : 'U'}
+                      </div>
+                    )}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login?callbackUrl=/dashboard"
+                    className="h-8 w-8 rounded-full bg-zinc-50 border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-[#A77F3A] hover:border-[#A77F3A]/50 transition-all shadow-2xs cursor-pointer"
+                    title="Login or Sign Up"
+                  >
+                    <User className="h-4.5 w-4.5 stroke-[1.5]" />
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Mobile search bar (Visible under the header row on mobile only) */}
+          <div className="md:hidden mt-3 relative">
+            <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full bg-white border border-zinc-200 focus-within:border-[#A77F3A] rounded-full px-4 py-1.5">
+              <input
+                type="text"
+                placeholder="Search products, creators, stores on marketplace..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent border-0 outline-0 focus:ring-0 text-xs text-zinc-900 placeholder-zinc-400 pr-12"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(''); setSuggestions(null); }}
+                  className="absolute right-12 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="submit"
+                className="absolute right-1 w-7 h-7 bg-[#A77F3A] text-white rounded-full flex items-center justify-center"
+              >
+                <Search className="h-3 w-3 stroke-[2.5]" />
+              </button>
+            </form>
+
+            {/* Suggestions Dropdown (Mobile) */}
+            {suggestions && (
+              <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[300px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
+                {/* Categories */}
+                {suggestions.categories.length > 0 && (
+                  <div className="py-2 px-2">
+                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {suggestions.categories.map((cat) => (
+                        <a
+                          key={cat}
+                          href={`${buyerMarketUrl}/marketplace?category=${encodeURIComponent(cat)}`}
+                          onClick={closeAll}
+                          className="text-[11px] bg-zinc-100 rounded-full px-2 py-0.5 text-zinc-700"
+                        >
+                          {cat}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Creators */}
+                {suggestions.shops.length > 0 && (
+                  <div className="py-2 px-2">
+                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
+                    <div className="space-y-1.5 mt-1">
+                      {suggestions.shops.map((shop) => (
+                        <a
+                          key={shop.slug}
+                          href={`${buyerMarketUrl}/store/${shop.slug}`}
+                          onClick={closeAll}
+                          className="flex items-center gap-2 p-1 rounded hover:bg-zinc-55"
+                        >
+                          {shop.logo ? (
+                            <img src={shop.logo} alt={shop.name} className="h-5 w-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-5 w-5 rounded-full bg-zinc-200 flex items-center justify-center text-[9px] font-bold text-zinc-600">
+                              {shop.name[0]}
+                            </div>
+                          )}
+                          <span className="text-xs text-zinc-700">{shop.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Products */}
+                {suggestions.products.length > 0 && (
+                  <div className="py-2 px-2">
+                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
+                    <div className="space-y-1 mt-1">
+                      {suggestions.products.map((prod) => (
+                        <a
+                          key={prod.id}
+                          href={`${buyerMarketUrl}/marketplace?q=${encodeURIComponent(prod.title)}`}
+                          onClick={closeAll}
+                          className="flex items-center justify-between text-xs p-1 rounded hover:bg-zinc-55 text-zinc-700"
+                        >
+                          <span>{prod.title}</span>
+                          <span className="font-bold">₹{Math.round(prod.price)}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+        </div>
       </header>
 
-      {/* Menu Drawer Drawer overlay */}
+      {/* Menu Drawer overlay (Mobile drawer in white theme) */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
             onClick={() => setIsMenuOpen(false)}
             onKeyDown={(e) => { if (e.key === 'Escape') setIsMenuOpen(false); }}
             role="button"
@@ -284,140 +372,155 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
           />
 
           {/* Drawer Body */}
-          <div className="relative flex w-full max-w-xs flex-col bg-black text-zinc-250 shadow-2xl border-r border-zinc-900 animate-slide-right py-6 px-6">
+          <div className="relative flex w-full max-w-xs flex-col bg-white text-zinc-800 shadow-2xl border-r border-zinc-100 animate-slide-right py-6 px-6">
             
             {/* Header / Close button */}
-            <div className="flex items-center justify-between border-b border-zinc-900 pb-4 mb-6">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-4 mb-6">
               <Link
                 href="/sell"
                 onClick={closeAll}
-                className="flex items-center gap-1 group"
+                className="flex items-center gap-1 group font-serif text-xl font-bold text-zinc-900"
+                style={{ fontFamily: 'Georgia, serif' }}
               >
-                <span className="text-lg font-bold font-sans tracking-tight text-white">seyon</span>
+                seyon
+                <span className="text-[8px] text-[#A77F3A] font-sans tracking-wider font-bold uppercase">
+                  sellers
+                </span>
               </Link>
               <button
                 onClick={() => setIsMenuOpen(false)}
-                className="text-zinc-400 hover:text-white p-1 rounded-full hover:bg-zinc-900 transition-colors cursor-pointer"
+                className="text-zinc-400 hover:text-zinc-955 p-1 rounded-full hover:bg-zinc-55 transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Menu Links */}
-            <nav className="flex-1 space-y-6 overflow-y-auto pr-1">
+            <nav className="flex-1 space-y-6">
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Seller Portal</span>
+                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Seller Portal</span>
                 <Link
                   href="/dashboard"
                   onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <LayoutDashboard className="h-4 w-4 stroke-[1.5]" />
                     Dashboard
                   </span>
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </Link>
                 <Link
                   href="/dashboard/products"
                   onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <ShoppingBag className="h-4 w-4 stroke-[1.5]" />
                     Products
                   </span>
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </Link>
                 {user && user.role === 'ADMIN' && (
                   <Link
                     href="/admin"
                     onClick={closeAll}
-                    className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                    className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                   >
                     <span className="flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4 stroke-[1.5]" />
                       Moderation
                     </span>
-                    <ChevronRight className="h-4 w-4 text-zinc-500" />
+                    <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </Link>
                 )}
               </div>
 
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-500 tracking-wider">Navigation</span>
+                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Navigation</span>
                 <a
                   href={`${buyerMarketUrl}/marketplace`}
                   onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                 >
                   Go to Marketplace
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </a>
                 <a
                   href={`${buyerMarketUrl}/wishlist`}
                   onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                 >
                   My Wishlist
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </a>
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
+                <a
+                  href="mailto:support@seyon.com"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
+                >
+                  Contact Support
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                </a>
+                <Link
+                  href="/privacy"
+                  onClick={closeAll}
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
+                >
+                  Privacy Policy
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                </Link>
               </div>
             </nav>
 
             {/* Auth / Account Panel */}
             {user ? (
-              <div className="border-t border-zinc-900 pt-6 mt-6 space-y-4">
+              <div className="border-t border-zinc-100 pt-6 mt-6 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
                     {user.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={user.image} alt={user.name || 'User'} className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-sm font-bold text-primary">
+                      <span className="text-sm font-bold text-[#A77F3A]">
                         {user.name ? user.name[0].toUpperCase() : 'U'}
                       </span>
                     )}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white">{user.name}</span>
-                    <span className="text-[10px] text-zinc-500 capitalize">{user.role?.toLowerCase() || ''}</span>
+                    <span className="text-xs font-bold text-zinc-800">{user.name}</span>
+                    <span className="text-[10px] text-zinc-450 capitalize">{user.role?.toLowerCase() || ''}</span>
                   </div>
                 </div>
                 <Link
                   href="/account"
                   onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-300 hover:text-primary py-1 transition-colors"
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
                 >
                   My Account Settings
-                  <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </Link>
                 <button
                   onClick={async () => {
                     closeAll();
                     await onSignOut();
                   }}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-800 hover:border-red-500/35 bg-zinc-900/40 hover:bg-red-500/10 text-zinc-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-200 hover:border-red-500 bg-white hover:bg-red-55 text-zinc-600 hover:text-red-500 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   Log Out
                 </button>
               </div>
             ) : (
-              <div className="border-t border-zinc-900 pt-6 mt-6 space-y-3">
+              <div className="border-t border-zinc-100 pt-6 mt-6">
                 <Link
                   href="/login?callbackUrl=/dashboard"
                   onClick={closeAll}
-                  className="w-full flex items-center justify-center rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 text-zinc-200 text-xs font-bold uppercase tracking-wider py-2.5 transition-colors"
+                  className="w-full flex items-center justify-center rounded-lg bg-[#A77F3A] hover:bg-[#916b2f] text-white text-xs font-bold uppercase tracking-wider py-2.5 transition-colors cursor-pointer"
                 >
-                  Log In
-                </Link>
-                <Link
-                  href="/login?callbackUrl=/dashboard"
-                  onClick={closeAll}
-                  className="w-full flex items-center justify-center rounded-lg bg-primary hover:bg-primary/90 text-black text-xs font-bold uppercase tracking-wider py-2.5 transition-colors"
-                >
-                  Register Shop
+                  Login / Sign Up
                 </Link>
               </div>
             )}

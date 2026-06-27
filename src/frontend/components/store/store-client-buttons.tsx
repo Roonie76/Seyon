@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Star, AlertTriangle } from 'lucide-react';
+import { MessageCircle, Star, AlertTriangle, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { createReview } from '@/actions/reviews';
 import { createReport } from '@/actions/reports';
@@ -45,9 +45,17 @@ export function WhatsAppButton({ shopId, whatsappNumber, shopName, productId, pr
   };
 
   return (
-    <Button onClick={handleClick} variant="whatsapp" size="lg" className="w-full sm:w-auto">
-      <MessageCircle className="h-5 w-5" /> Chat on WhatsApp
-    </Button>
+    <button
+      type="button"
+      onClick={handleClick}
+      className="w-full sm:w-auto bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-[20px] py-2.5 px-6 shadow-3xs flex items-center justify-between sm:justify-start gap-4 transition-all duration-300 group/btn cursor-pointer active:scale-[0.98]"
+    >
+      <div className="flex-1 sm:flex-none text-center sm:text-left select-none">
+        <span className="font-serif text-[11px] font-bold text-zinc-950 block leading-tight">Talk to Creator</span>
+        <span className="text-[8px] text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
+      </div>
+      <ArrowRight className="h-3.5 w-3.5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-0.5 stroke-[2]" />
+    </button>
   );
 }
 

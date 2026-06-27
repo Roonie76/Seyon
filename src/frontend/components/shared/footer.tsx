@@ -8,17 +8,24 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" {...props}>
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 11.5a8.3 8.3 0 0 1-8.3 8.3 8.3 8.3 0 0 1-4-.1L4 20.8l1.1-4.6a8.3 8.3 0 1 1 15.9-4.7z" />
+    <path d="M15.4 14c-.2-.1-.9-.4-1.1-.5s-.3-.1-.4 0-.4.5-.5.6-.2.2-.4.1A5.3 5.3 0 0 1 10.3 12a4.8 4.8 0 0 1-1-1.3c-.1-.2 0-.3.1-.4s.2-.2.3-.3v-.3c0-.1-.1-.3-.3-.6s-.4-.5-.5-.5h-.3c-.1 0-.3.1-.4.2s-.5.5-.5 1.1.4 1.3.5 1.4c.1.1 1.7 2.6 4.1 3.6a13.3 13.3 0 0 0 1.4.5c.6.2 1.1.2 1.5.1s1-.4 1.1-1c.2-.5.2-1 0-1.1z" fill="currentColor" stroke="none" />
   </svg>
 );
 
-const LinkedInIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-    <rect x="2" y="9" width="4" height="12" />
-    <circle cx="4" cy="4" r="2" />
+const TelegramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="m22 2-7 20-4-9-9-4Z" />
+    <path d="M22 2 11 13" />
+  </svg>
+);
+
+const YouTubeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
+    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" />
   </svg>
 );
 
@@ -29,7 +36,7 @@ export function Footer() {
       <div className="container mx-auto px-4 sm:px-6">
         {/* Department links: internal link equity for the SEO category pages */}
         <nav aria-label="Shop by category" className="mb-8 pb-6 border-b border-zinc-800">
-          <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block mb-3">Shop by Category</span>
+          <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">SHOP BY CATEGORY</span>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400">
             {['Fashion', 'Electronics', 'Beauty', 'Home & Living', 'Clay Crafts', 'DIY Crafts', 'Art & Collectibles', 'Food & Beverages'].map((cat) => (
               <Link
@@ -53,17 +60,25 @@ export function Footer() {
             <p className="text-xs text-zinc-500 leading-relaxed">
               Social-commerce storefronts for independent sellers. Discover, browse, and buy direct.
             </p>
-            {/* Social links */}
-            <div className="flex items-center gap-3">
-              <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-pink-500 transition-colors" aria-label="Instagram">
-                <InstagramIcon />
-              </a>
-              <a href="https://x.com/seyonstore" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors" aria-label="X (Twitter)">
-                <XIcon />
-              </a>
-              <a href="https://linkedin.com/company/seyon" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-sky-500 transition-colors" aria-label="LinkedIn">
-                <LinkedInIcon />
-              </a>
+            {/* Follow Us Section */}
+            <div className="space-y-3 pt-2">
+              <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block">
+                FOLLOW US
+              </span>
+              <div className="flex items-center gap-3">
+                <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="Instagram">
+                  <InstagramIcon className="h-4.5 w-4.5" />
+                </a>
+                <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="WhatsApp">
+                  <WhatsAppIcon className="h-4.5 w-4.5" />
+                </a>
+                <a href="https://t.me/seyon" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="Telegram">
+                  <TelegramIcon className="h-4.5 w-4.5" />
+                </a>
+                <a href="https://youtube.com/@seyon" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="YouTube">
+                  <YouTubeIcon className="h-4.5 w-4.5" />
+                </a>
+              </div>
             </div>
           </div>
 
