@@ -62,9 +62,11 @@ export async function SellerFooter() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <Link href="/sell" className="text-xl font-bold font-sans tracking-tight text-white flex items-center group">
-              seyon
-              <span className="text-[9px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase">
+            <Link href="/sell" className="flex flex-col group w-fit">
+              <span className="text-2xl font-bold tracking-tight text-white font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+                seyon
+              </span>
+              <span className="text-[9px] text-[#A77F3A] font-sans tracking-widest font-bold uppercase mt-0.5">
                 sellers
               </span>
             </Link>

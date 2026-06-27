@@ -54,7 +54,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <Link href="/" className="text-xl font-bold font-sans tracking-tight text-white">
+            <Link href="/" className="text-2xl font-bold tracking-tight text-white font-serif" style={{ fontFamily: 'Georgia, serif' }}>
               seyon
             </Link>
             <p className="text-xs text-zinc-500 leading-relaxed">

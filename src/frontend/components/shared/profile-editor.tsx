@@ -54,7 +54,6 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Client-side validation
     if (file.size > 5 * 1024 * 1024) {
       setMessage({ type: 'error', text: 'Image must be under 5MB' });
       return;
@@ -116,30 +115,30 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
   };
 
   const roleBadgeColor: Record<string, string> = {
-    ADMIN: 'bg-red-500/10 text-red-400 border-red-500/20',
-    SELLER: 'bg-amber-50/10 text-amber-400 border-amber-500/20',
-    USER: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    ADMIN: 'bg-red-50 text-red-700 border-red-200',
+    SELLER: 'bg-amber-50 text-[#A77F3A] border-amber-200',
+    USER: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
       <BackButton fallbackHref={type === 'seller' ? '/dashboard' : '/marketplace'} />
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+      <div className="mb-8 mt-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 tracking-tight">
           {type === 'seller' ? 'Seller Account' : 'My Account'}
         </h1>
-        <p className="text-sm text-zinc-400 mt-1">
+        <p className="text-sm text-zinc-500 mt-1">
           {type === 'seller' ? 'Manage your seller profile information' : 'Manage your shopper profile information'}
         </p>
       </div>
 
       {/* Profile Card */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-sm shadow-xl overflow-hidden">
+      <div className="rounded-2xl border border-zinc-200 bg-white shadow-md overflow-hidden">
         {/* Avatar Section */}
-        <div className="relative bg-gradient-to-br from-zinc-800/50 via-zinc-900 to-zinc-950 px-6 py-8 flex flex-col items-center border-b border-zinc-800">
+        <div className="relative bg-[#FAF8F5] px-6 py-8 flex flex-col items-center border-b border-zinc-200">
           <div className="relative group">
-            <div className="h-24 w-24 rounded-full border-2 border-zinc-700 overflow-hidden bg-zinc-800 shadow-lg transition-all group-hover:border-primary/50">
+            <div className="h-24 w-24 rounded-full border border-zinc-200 overflow-hidden bg-zinc-50 shadow-sm transition-all group-hover:border-[#A77F3A]/50">
               {image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -148,7 +147,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center bg-zinc-800 text-zinc-400">
+                <div className="h-full w-full flex items-center justify-center bg-zinc-100 text-zinc-400">
                   <User className="h-10 w-10 stroke-[1]" />
                 </div>
               )}
@@ -159,7 +158,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-wait"
+              className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-wait"
             >
               {uploading ? (
                 <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -176,7 +175,9 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
             />
           </div>
 
-          <span className="mt-3 text-lg font-bold text-white">{name || 'Unnamed'}</span>
+          <span className="mt-3 text-lg font-bold text-zinc-900 font-serif" style={{ fontFamily: 'Georgia, serif' }}>
+            {name || 'Unnamed'}
+          </span>
           <div className="flex items-center gap-2 mt-1.5">
             <span
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${roleBadgeColor[user.role] || roleBadgeColor.USER}`}
@@ -191,8 +192,8 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
         <div className="px-6 py-6 space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              <User className="h-3.5 w-3.5" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <User className="h-3.5 w-3.5 text-zinc-400" />
               Display Name
             </label>
             <input
@@ -201,26 +202,26 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
               maxLength={100}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
             />
           </div>
 
           {/* Email (read-only) */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              <Mail className="h-3.5 w-3.5" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <Mail className="h-3.5 w-3.5 text-zinc-400" />
               Email
-              <span className="text-[9px] font-normal normal-case tracking-normal text-zinc-500 ml-1">(cannot be changed)</span>
+              <span className="text-[9px] font-normal normal-case tracking-normal text-zinc-550 ml-1">(cannot be changed)</span>
             </label>
-            <div className="w-full rounded-lg border border-zinc-800 bg-zinc-850/30 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed select-none">
+            <div className="w-full rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed select-none">
               {user.email || '—'}
             </div>
           </div>
 
           {/* Phone */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              <Phone className="h-3.5 w-3.5" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <Phone className="h-3.5 w-3.5 text-zinc-400" />
               Phone Number
             </label>
             <input
@@ -228,16 +229,16 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 9876543210"
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
             />
           </div>
 
           {/* Shopper Address Details */}
           {type === 'shopper' && (
             <>
-              <div className="pt-4 border-t border-zinc-800">
-                <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider mb-1 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-amber-500" /> Shipping Address (WhatsApp Pre-fill)
+              <div className="pt-4 border-t border-zinc-200">
+                <h3 className="text-sm font-bold text-zinc-800 uppercase tracking-wider mb-1 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[#A77F3A]" /> Shipping Address (WhatsApp Pre-fill)
                 </h3>
                 <p className="text-[10px] text-zinc-500 leading-normal mb-4">
                   This address will be automatically appended to WhatsApp inquiry messages.
@@ -246,7 +247,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
 
               {/* Address Line 1 */}
               <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                   Address Line 1
                 </label>
                 <input
@@ -254,13 +255,13 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
                   placeholder="Flat, House no., Building, Company, Apartment"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                 />
               </div>
 
               {/* Address Line 2 */}
               <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                   Address Line 2
                 </label>
                 <input
@@ -268,14 +269,14 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                   value={addressLine2}
                   onChange={(e) => setAddressLine2(e.target.value)}
                   placeholder="Area, Street, Sector, Village"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                  className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                 />
               </div>
 
-              {/* City & State (two columns) */}
+              {/* City & State */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     City
                   </label>
                   <input
@@ -283,12 +284,12 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="City"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     State
                   </label>
                   <input
@@ -296,15 +297,15 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder="State"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                   />
                 </div>
               </div>
 
-              {/* ZIP & Country (two columns) */}
+              {/* ZIP & Country */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Postal / ZIP Code
                   </label>
                   <input
@@ -312,12 +313,12 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder="600001"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
                     Country
                   </label>
                   <input
@@ -325,7 +326,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                     placeholder="India"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors"
+                    className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-[#A77F3A] focus:ring-1 focus:ring-[#A77F3A]/20 transition-colors"
                   />
                 </div>
               </div>
@@ -334,11 +335,11 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
 
           {/* Member Since (read-only) */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              <CalendarDays className="h-3.5 w-3.5" />
+            <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+              <CalendarDays className="h-3.5 w-3.5 text-zinc-400" />
               Member Since
             </label>
-            <div className="w-full rounded-lg border border-zinc-800 bg-zinc-850/30 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed select-none">
+            <div className="w-full rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed select-none">
               {new Date(user.createdAt).toLocaleDateString('en-IN', {
                 year: 'numeric',
                 month: 'long',
@@ -355,8 +356,8 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
             <div
               className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold border ${
                 message.type === 'success'
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                  : 'bg-red-500/10 text-red-400 border-red-500/20'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-red-50 text-red-700 border-red-200'
               }`}
             >
               {message.type === 'success' ? <Check className="h-3.5 w-3.5" /> : null}
@@ -369,7 +370,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
             type="button"
             onClick={handleSave}
             disabled={saving || !hasChanges}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary hover:bg-primary/90 disabled:bg-zinc-800 disabled:text-zinc-500 text-black font-semibold text-sm uppercase tracking-wider py-3 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#A77F3A] hover:bg-[#916b2f] disabled:bg-zinc-100 disabled:text-zinc-400 text-white font-semibold text-sm uppercase tracking-wider py-3 transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             {saving ? (
               <>
