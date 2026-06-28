@@ -978,7 +978,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               Meet Independent Creators
             </h2>
             <Link
-              href="/?q=&sort=newest"
+              href="/creators"
               className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
             >
               View all creators &rarr;
@@ -1062,7 +1062,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               Worth Discovering <span className="text-xs text-zinc-400 font-semibold font-sans normal-case hidden sm:inline ml-2">— Handpicked products trending with our community</span>
             </h2>
             <Link
-              href="/marketplace"
+              href="/?q="
               className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
             >
               View all products &rarr;
