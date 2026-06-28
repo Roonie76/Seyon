@@ -845,258 +845,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      {/* 2 & 3. Side-by-Side "Why Seyon?" and "Benefits Bar" Grid (Scroll Layout) */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-[1980px] mx-auto w-full mb-16 select-none">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-0 items-center w-full relative">
-          {/* Left Card: Why Seyon Comparison Card — Tall, prominent, sits ON TOP */}
-          <div className="lg:col-span-5 bg-white border border-[#E9DED0] rounded-[32px] p-6 sm:p-8 lg:px-10 lg:py-12 shadow-[0_14px_36px_rgba(37,28,18,0.10)] flex flex-col justify-between text-center lg:text-left h-full min-h-[340px] relative z-20">
-            <h3 className="font-serif text-xl sm:text-2xl font-bold text-zinc-950 text-center lg:text-left mb-7 tracking-tight">Why Seyon?</h3>
 
-            {/* Desktop Only Side-by-Side Table */}
-            <div className="hidden lg:block w-full flex-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 sm:gap-9 relative h-full">
-                {/* Social Media column */}
-                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pr-5">
-                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Social Media</span>
-                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-fit sm:mx-auto lg:mx-0">
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                      </svg>
-                      <span>Scroll through hundreds of reels</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                      </svg>
-                      <span>Check highlights & captions</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                      </svg>
-                      <span>DM for price & details</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                      </svg>
-                      <span>Wait for replies</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <line x1="9" y1="9" x2="15" y2="15" />
-                        <line x1="15" y1="9" x2="9" y2="15" />
-                      </svg>
-                      <span>Lose it forever</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Vertical Divider Line */}
-                <div className="hidden sm:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E7E2D8] -translate-x-1/2" />
-
-                {/* VS Badge */}
-                <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                  <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
-                </div>
-
-                {/* Seyon column */}
-                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pl-7">
-                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Seyon</span>
-                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-fit sm:mx-auto lg:mx-0">
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>Search what you want</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>Find verified creators</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>View all products in one place</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>DM to order instantly</span>
-                    </li>
-                    <li className="flex items-start gap-2 leading-snug text-left">
-                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="9"/>
-                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span>Easy, Fast, Reliable.</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile/Tablet Only Tab Toggle */}
-            <div className="block lg:hidden w-full">
-              <WhySeyonTabs />
-            </div>
-          </div>
-
-          {/* Right Card: Benefits Bar — Shorter, rounded only on right, layered behind */}
-          <div className="lg:col-span-7 bg-[#FCFAF7]/40 lg:bg-[#FCFAF7] border border-[#E9DED0]/50 lg:border-[#E9DED0] lg:border-l-0 rounded-[28px] lg:rounded-l-none lg:rounded-r-[24px] px-4 py-6 lg:px-10 lg:py-8 shadow-3xs lg:shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[200px] lg:min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
-            <div className="flex lg:grid flex-row lg:grid-cols-5 overflow-x-auto lg:overflow-x-visible no-scrollbar gap-4 lg:gap-0 pb-4 lg:pb-0 w-full items-start h-full snap-x snap-mandatory">
-              {/* Benefit 1: From Social Platforms */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Elegant Bear Face Outline */}
-                    <path d="M12 6.5c-1.2 0-2.3.2-3.3.6C7.5 5.5 6 4.5 4.5 4.5 3 4.5 2 5.5 2 7c0 1.5 1 3 2.5 3.5.2 2.5 1.8 7.5 7.5 7.5s7.3-5 7.5-7.5c1.5-.5 2.5-2 2.5-3.5 0-1.5-1-2.5-2.5-2.5-1.5 0-3 1-4.2 2.6-1-.4-2.1-.6-3.3-.6z" />
-                    {/* Central circle snout */}
-                    <circle cx="12" cy="12.5" r="2.5" />
-                  </svg>
-                </div>
-                <div className="flex flex-col items-center">
-                  <h4 className="text-xs font-bold text-zinc-900 leading-snug max-w-[120px]">From Social Platforms</h4>
-                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
-                    Instagram, WhatsApp, Telegram & YouTube
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 mt-4">
-                  {/* Instagram */}
-                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
-                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
-                      <defs>
-                        <linearGradient id="ig-icon-grad" x1="11.5" y1="1" x2="11.5" y2="23" gradientUnits="userSpaceOnUse">
-                          <stop offset="0" stopColor="#E040FB"/>
-                          <stop offset="0.5" stopColor="#FF4081"/>
-                          <stop offset="1" stopColor="#F57C00"/>
-                        </linearGradient>
-                      </defs>
-                      <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig-icon-grad)"/>
-                      <rect x="5" y="5" width="14" height="14" rx="3" stroke="white" strokeWidth="1.5" fill="none"/>
-                      <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="1.5" fill="none"/>
-                      <circle cx="16.5" cy="7.5" r="1" fill="white"/>
-                    </svg>
-                  </span>
-                  {/* WhatsApp */}
-                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
-                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#25D366"/>
-                      <path d="M12 6a5.9 5.9 0 0 0-5.1 8.9L6 18l3.2-.8A5.9 5.9 0 1 0 12 6zm2.8 7.8c-.1.3-.7.6-.9.6s-.5.1-1.5-.3a5.5 5.5 0 0 1-2.4-2.1c-.4-.7-.7-1.4-.7-2.1 0-.7.3-1 .5-1.2.2-.2.4-.2.5-.2h.4c.1 0 .2 0 .3.2.1.2.4 1 .4 1.1s0 .3-.1.4c-.1.1-.2.2-.3.3s-.2.1-.1.3a3.7 3.7 0 0 0 1.4 1.7 3.3 3.3 0 0 0 2 .7c.2 0 .4-.1.5-.2.1-.2.5-.6.6-.8s.2-.2.4-.1.9.4 1 .5c.1 0 .2.1.1.3z" fill="white"/>
-                    </svg>
-                  </span>
-                  {/* Telegram */}
-                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
-                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#2196F3"/>
-                      <path d="M6.8 11.5l9.2-3.6c.4-.2.8.1.7.6l-1.6 7.4c-.1.5-.4.6-.8.3l-2.5-1.9-1.2 1.2c-.1.1-.3.2-.4.2l.2-2.7 4.9-4.5c.2-.2 0-.3-.3-.1l-6.1 3.8-2.6-.8c-.6-.2-.6-.6.2-.9z" fill="white"/>
-                    </svg>
-                  </span>
-                  {/* YouTube */}
-                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
-                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF0000"/>
-                      <path d="M10 8.5v7l6-3.5-6-3.5z" fill="white"/>
-                    </svg>
-                  </span>
-                </div>
-              </div>
-
-              {/* Benefit 2: DM to Order */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Two overlapping chat bubbles */}
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    <path d="M8 9h8" />
-                    <path d="M8 13h4" />
-                  </svg>
-                </div>
-                <div className="flex flex-col items-center">
-                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">DM to Order</h4>
-                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
-                    Chat directly with creators
-                  </p>
-                </div>
-              </div>
-
-              {/* Benefit 3: No Middlemen */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Person with X – no middlemen */}
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <line x1="17" y1="8" x2="23" y2="14" />
-                    <line x1="23" y1="8" x2="17" y2="14" />
-                  </svg>
-                </div>
-                <div className="flex flex-col items-center">
-                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">No Middlemen</h4>
-                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
-                    Buy directly from independent creators
-                  </p>
-                </div>
-              </div>
-
-              {/* Benefit 4: Support Small */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Group of people – community */}
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </div>
-                <div className="flex flex-col items-center">
-                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">Support Small</h4>
-                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
-                    Empower independent businesses
-                  </p>
-                </div>
-              </div>
-
-              {/* Benefit 5: Trusted Listings */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Person with checkmark – verified user */}
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <polyline points="17 11 19 13 23 9" />
-                  </svg>
-                </div>
-                <div className="flex flex-col items-center">
-                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">Trusted Listings</h4>
-                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
-                    Verified creators & real products
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* 4. Trending Across Creators (10 Category Circles) */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full mb-16">
@@ -1656,6 +1405,259 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </ProductCarousel>
         </section>
       )}
+
+      {/* 2 & 3. Side-by-Side "Why Seyon?" and "Benefits Bar" Grid (Scroll Layout) */}
+      <section className="px-4 sm:px-6 lg:px-8 max-w-[1980px] mx-auto w-full mb-16 select-none">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-0 items-center w-full relative">
+          {/* Left Card: Why Seyon Comparison Card — Tall, prominent, sits ON TOP */}
+          <div className="lg:col-span-5 bg-white border border-[#E9DED0] rounded-[32px] p-6 sm:p-8 lg:px-10 lg:py-12 shadow-[0_14px_36px_rgba(37,28,18,0.10)] flex flex-col justify-between text-center lg:text-left h-full min-h-[340px] relative z-20">
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-zinc-950 text-center lg:text-left mb-7 tracking-tight">Why Seyon?</h3>
+
+            {/* Desktop Only Side-by-Side Table */}
+            <div className="hidden lg:block w-full flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 sm:gap-9 relative h-full">
+                {/* Social Media column */}
+                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pr-5">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Social Media</span>
+                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-fit sm:mx-auto lg:mx-0">
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Scroll through hundreds of reels</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Check highlights & captions</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>DM for price & details</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Wait for replies</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                      </svg>
+                      <span>Lose it forever</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Vertical Divider Line */}
+                <div className="hidden sm:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E7E2D8] -translate-x-1/2" />
+
+                {/* VS Badge */}
+                <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
+                </div>
+
+                {/* Seyon column */}
+                <div className="text-center lg:text-left flex flex-col items-center lg:items-start sm:pl-7">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-800 leading-tight">Shopping on Seyon</span>
+                  <ul className="flex flex-col gap-3 text-xs sm:text-[13px] text-zinc-700 font-medium mt-4 w-fit sm:mx-auto lg:mx-0">
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Search what you want</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Find verified creators</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>View all products in one place</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>DM to order instantly</span>
+                    </li>
+                    <li className="flex items-start gap-2 leading-snug text-left">
+                      <svg className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="M8.5 12.5l2.5 2.5 4.5-4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span>Easy, Fast, Reliable.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile/Tablet Only Tab Toggle */}
+            <div className="block lg:hidden w-full">
+              <WhySeyonTabs />
+            </div>
+          </div>
+
+          {/* Right Card: Benefits Bar — Shorter, rounded only on right, layered behind */}
+          <div className="lg:col-span-7 bg-[#FCFAF7]/40 lg:bg-[#FCFAF7] border border-[#E9DED0]/50 lg:border-[#E9DED0] lg:border-l-0 rounded-[28px] lg:rounded-l-none lg:rounded-r-[24px] px-4 py-6 lg:px-10 lg:py-8 shadow-3xs lg:shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[200px] lg:min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
+            <div className="flex lg:grid flex-row lg:grid-cols-5 overflow-x-auto lg:overflow-x-visible no-scrollbar gap-4 lg:gap-0 pb-4 lg:pb-0 w-full items-start h-full snap-x snap-mandatory">
+              {/* Benefit 1: From Social Platforms */}
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
+                <div className="h-10 w-10 flex items-center justify-center mb-4">
+                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Elegant Bear Face Outline */}
+                    <path d="M12 6.5c-1.2 0-2.3.2-3.3.6C7.5 5.5 6 4.5 4.5 4.5 3 4.5 2 5.5 2 7c0 1.5 1 3 2.5 3.5.2 2.5 1.8 7.5 7.5 7.5s7.3-5 7.5-7.5c1.5-.5 2.5-2 2.5-3.5 0-1.5-1-2.5-2.5-2.5-1.5 0-3 1-4.2 2.6-1-.4-2.1-.6-3.3-.6z" />
+                    {/* Central circle snout */}
+                    <circle cx="12" cy="12.5" r="2.5" />
+                  </svg>
+                </div>
+                <div className="flex flex-col items-center">
+                  <h4 className="text-xs font-bold text-zinc-900 leading-snug max-w-[120px]">From Social Platforms</h4>
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
+                    Instagram, WhatsApp, Telegram & YouTube
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-4">
+                  {/* Instagram */}
+                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
+                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="ig-icon-grad" x1="11.5" y1="1" x2="11.5" y2="23" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stopColor="#E040FB"/>
+                          <stop offset="0.5" stopColor="#FF4081"/>
+                          <stop offset="1" stopColor="#F57C00"/>
+                        </linearGradient>
+                      </defs>
+                      <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig-icon-grad)"/>
+                      <rect x="5" y="5" width="14" height="14" rx="3" stroke="white" strokeWidth="1.5" fill="none"/>
+                      <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="1.5" fill="none"/>
+                      <circle cx="16.5" cy="7.5" r="1" fill="white"/>
+                    </svg>
+                  </span>
+                  {/* WhatsApp */}
+                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
+                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#25D366"/>
+                      <path d="M12 6a5.9 5.9 0 0 0-5.1 8.9L6 18l3.2-.8A5.9 5.9 0 1 0 12 6zm2.8 7.8c-.1.3-.7.6-.9.6s-.5.1-1.5-.3a5.5 5.5 0 0 1-2.4-2.1c-.4-.7-.7-1.4-.7-2.1 0-.7.3-1 .5-1.2.2-.2.4-.2.5-.2h.4c.1 0 .2 0 .3.2.1.2.4 1 .4 1.1s0 .3-.1.4c-.1.1-.2.2-.3.3s-.2.1-.1.3a3.7 3.7 0 0 0 1.4 1.7 3.3 3.3 0 0 0 2 .7c.2 0 .4-.1.5-.2.1-.2.5-.6.6-.8s.2-.2.4-.1.9.4 1 .5c.1 0 .2.1.1.3z" fill="white"/>
+                    </svg>
+                  </span>
+                  {/* Telegram */}
+                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
+                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#2196F3"/>
+                      <path d="M6.8 11.5l9.2-3.6c.4-.2.8.1.7.6l-1.6 7.4c-.1.5-.4.6-.8.3l-2.5-1.9-1.2 1.2c-.1.1-.3.2-.4.2l.2-2.7 4.9-4.5c.2-.2 0-.3-.3-.1l-6.1 3.8-2.6-.8c-.6-.2-.6-.6.2-.9z" fill="white"/>
+                    </svg>
+                  </span>
+                  {/* YouTube */}
+                  <span className="inline-flex items-center justify-center h-4.5 w-4.5 rounded-md shadow-3xs select-none">
+                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF0000"/>
+                      <path d="M10 8.5v7l6-3.5-6-3.5z" fill="white"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {/* Benefit 2: DM to Order */}
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
+                <div className="h-10 w-10 flex items-center justify-center mb-4">
+                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Two overlapping chat bubbles */}
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <path d="M8 9h8" />
+                    <path d="M8 13h4" />
+                  </svg>
+                </div>
+                <div className="flex flex-col items-center">
+                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">DM to Order</h4>
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
+                    Chat directly with creators
+                  </p>
+                </div>
+              </div>
+
+              {/* Benefit 3: No Middlemen */}
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
+                <div className="h-10 w-10 flex items-center justify-center mb-4">
+                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Person with X – no middlemen */}
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="17" y1="8" x2="23" y2="14" />
+                    <line x1="23" y1="8" x2="17" y2="14" />
+                  </svg>
+                </div>
+                <div className="flex flex-col items-center">
+                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">No Middlemen</h4>
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
+                    Buy directly from independent creators
+                  </p>
+                </div>
+              </div>
+
+              {/* Benefit 4: Support Small */}
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
+                <div className="h-10 w-10 flex items-center justify-center mb-4">
+                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Group of people – community */}
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                </div>
+                <div className="flex flex-col items-center">
+                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">Support Small</h4>
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
+                    Empower independent businesses
+                  </p>
+                </div>
+              </div>
+
+              {/* Benefit 5: Trusted Listings */}
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
+                <div className="h-10 w-10 flex items-center justify-center mb-4">
+                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Person with checkmark – verified user */}
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <polyline points="17 11 19 13 23 9" />
+                  </svg>
+                </div>
+                <div className="flex flex-col items-center">
+                  <h4 className="text-xs font-bold text-zinc-900 leading-snug">Trusted Listings</h4>
+                  <p className="text-[11px] text-zinc-700 mt-2 lg:mt-3 font-semibold leading-relaxed max-w-[124px]">
+                    Verified creators & real products
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 11. Footer Seller Sign-up CTA Banner */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
