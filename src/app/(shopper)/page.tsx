@@ -1127,7 +1127,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             Shop by Collections
           </h2>
           <Link
-            href="/?q=&sort=newest"
+            href="/?q="
             className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
           >
             Explore all collections &rarr;
@@ -1351,7 +1351,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               New Creators This Week
             </h2>
             <Link
-              href="/?q=&sort=newest"
+              href="/creators?sort=newest"
               className="text-xs font-extrabold text-[#A77F3A] hover:text-[#916b2f] flex items-center gap-1 transition-colors"
             >
               See all new creators &rarr;

@@ -14,7 +14,14 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default async function CreatorsPage() {
+interface CreatorsPageProps {
+  searchParams: Promise<{ sort?: string }>;
+}
+
+export default async function CreatorsPage({ searchParams }: CreatorsPageProps) {
+  const params = await searchParams;
+  const sort = params.sort;
+
   let creators: any[] = [];
   try {
     creators = await db.shop.findMany({
@@ -29,7 +36,7 @@ export default async function CreatorsPage() {
           select: { products: { where: { status: 'ACTIVE' } } }
         }
       },
-      orderBy: { reviewCount: 'desc' }
+      orderBy: sort === 'newest' ? { createdAt: 'desc' } : { reviewCount: 'desc' }
     });
   } catch (error) {
     console.error('Error loading creators list', error);
