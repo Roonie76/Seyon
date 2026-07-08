@@ -24,7 +24,11 @@ export default async function OgImage({
     | null = null;
   try {
     product = await db.product.findFirst({
-      where: { slug: productSlug, shop: { slug: shopSlug } },
+      where: {
+        slug: productSlug,
+        status: 'ACTIVE',
+        shop: { slug: shopSlug, isSuspended: false, isPaused: false },
+      },
       select: {
         title: true,
         price: true,

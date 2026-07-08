@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useJourney } from './journey-context';
 
 interface BackButtonProps {
@@ -21,6 +21,16 @@ function BackButtonInner({ fallbackHref, label = 'Storefront', className = '' }:
   const { stack, truncateJourneyStack } = useJourney();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const isFooterPage = pathname ? (
+    pathname.startsWith('/help') ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/about' ||
+    pathname === '/faqs' ||
+    pathname === '/contact'
+  ) : false;
 
   const queryString = searchParams ? searchParams.toString() : '';
   const currentPath = pathname + (queryString ? `?${queryString}` : '');
@@ -44,6 +54,25 @@ function BackButtonInner({ fallbackHref, label = 'Storefront', className = '' }:
       truncateJourneyStack(target.path);
     }
   };
+
+  if (isFooterPage) {
+    return (
+      <button
+        onClick={() => router.back()}
+        aria-label="Go back"
+        className={`inline-flex items-center bg-transparent text-zinc-800 dark:text-zinc-250 hover:text-amber-600 dark:hover:text-amber-500 transition-colors duration-200 cursor-pointer select-none group focus:outline-none focus:ring-2 focus:ring-amber-500/50 rounded-sm ${className}`}
+        style={{
+          fontFamily: 'var(--font-serif-custom), Georgia, serif',
+          fontSize: '18px',
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+          textTransform: 'none',
+        }}
+      >
+        ← Go Back
+      </button>
+    );
+  }
 
   return (
     <Link

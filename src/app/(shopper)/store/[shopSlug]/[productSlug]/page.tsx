@@ -46,7 +46,8 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const product = await db.product.findFirst({
     where: {
       slug: resolvedParams.productSlug,
-      shop: { slug: resolvedParams.shopSlug, isSuspended: false },
+      status: 'ACTIVE',
+      shop: { slug: resolvedParams.shopSlug, isSuspended: false, isPaused: false },
     },
     include: {
       images: { orderBy: { displayOrder: 'asc' } },
@@ -65,7 +66,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const product = await db.product.findFirst({
     where: {
       slug: productSlug,
-      shop: { slug: shopSlug, isSuspended: false },
+      status: 'ACTIVE',
+      shop: { slug: shopSlug, isSuspended: false, isPaused: false },
     },
     include: {
       images: { orderBy: { displayOrder: 'asc' } },

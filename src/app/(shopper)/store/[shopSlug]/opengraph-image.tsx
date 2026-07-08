@@ -10,8 +10,8 @@ export default async function OgImage({ params }: { params: Promise<{ shopSlug: 
 
   let shop: { name: string; description: string | null; logo: string | null; city: string | null; region: string | null } | null = null;
   try {
-    shop = await db.shop.findUnique({
-      where: { slug: shopSlug },
+    shop = await db.shop.findFirst({
+      where: { slug: shopSlug, isSuspended: false, isPaused: false },
       select: { name: true, description: true, logo: true, city: true, region: true },
     });
   } catch {

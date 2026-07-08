@@ -3,16 +3,17 @@ import { NextRequest } from 'next/server';
 import { middleware as rootMiddleware } from '../src/middleware';
 
 describe('Root Middleware Routing and Domain Redirection', () => {
-  it('redirects to the buyer market when a shopper route is accessed on a seller domain', () => {
+  it('redirects to the buyer market when a shopper route is accessed on a seller domain', async () => {
     const req = new NextRequest(new URL('https://seyon-seller.vercel.app/store/pasteldreams'));
     req.headers.set('host', 'seyon-seller.vercel.app');
 
     const res = rootMiddleware(req) as any;
 
     expect(res).toBeDefined();
-    // It should be a redirect response (status 307/308)
-    expect([307, 308]).toContain(res.status);
-    expect(res.headers.get('location')).toBe('https://seyon-pied.vercel.app/store/pasteldreams');
+    // It should return an HTML script redirect response (status 200)
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('https://seyon-pied.vercel.app/store/pasteldreams');
   });
 
   it('redirects to the seller homepage when root path is accessed on a seller domain', () => {
@@ -46,14 +47,16 @@ describe('Root Middleware Routing and Domain Redirection', () => {
     expect(res.headers.get('x-middleware-next')).toBe('1');
   });
 
-  it('blocks access to seller-only dashboard on the buyer domain', () => {
+  it('blocks access to seller-only dashboard on the buyer domain', async () => {
     const req = new NextRequest(new URL('https://seyon-pied.vercel.app/dashboard'));
     req.headers.set('host', 'seyon-pied.vercel.app');
 
     const res = rootMiddleware(req) as any;
 
     expect(res).toBeDefined();
-    expect(res.headers.get('x-middleware-rewrite')).toBe('https://seyon-pied.vercel.app/404');
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('https://seyon-seller.vercel.app/dashboard');
   });
 });
 
@@ -98,7 +101,7 @@ describe('Root Middleware Host Detection (SELLER_HOSTS)', () => {
     expect([307, 308]).toContain(res.status);
   });
 
-  it('treats hosts not in SELLER_HOSTS as buyer domains', () => {
+  it('treats hosts not in SELLER_HOSTS as buyer domains', async () => {
     vi.stubEnv('SELLER_HOSTS', 'sell.seyon.in');
 
     const req = new NextRequest(new URL('https://seyon.in/dashboard'));
@@ -107,6 +110,8 @@ describe('Root Middleware Host Detection (SELLER_HOSTS)', () => {
     const res = rootMiddleware(req) as any;
 
     expect(res).toBeDefined();
-    expect(res.headers.get('x-middleware-rewrite')).toBe('https://seyon.in/404');
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('https://seyon-seller.vercel.app/dashboard');
   });
 });

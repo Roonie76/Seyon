@@ -9,6 +9,7 @@ import { HomepageSearch } from '@/components/shared/homepage-search';
 import { ArrowRight, Heart, Check, CheckCircle, Sparkles, Users, Award, Shield, ShoppingBag, MessageSquare, Play, Search, Menu } from 'lucide-react';
 import { getCreatorPresentation, getProductBadges, getHeroReelStats } from '@/lib/demo';
 import { WhySeyonTabs } from '@/components/shared/why-seyon-tabs';
+import SocialPlatformsIcon from '@/components/icons/SocialPlatformsIcon';
 
 import { auth } from '@/lib/auth';
 import { MarketplaceClient } from './marketplace/marketplace-client';
@@ -43,7 +44,11 @@ const getJustDiscovered = unstable_cache(
 const getHeroFeaturedProduct = unstable_cache(
   async () => {
     const p = await db.product.findFirst({
-      where: { slug: 'mystic-oud-eau-de-parfum', status: 'ACTIVE' },
+      where: {
+        slug: 'mystic-oud-eau-de-parfum',
+        status: 'ACTIVE',
+        shop: { isSuspended: false, isPaused: false },
+      },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
         shop: { select: { name: true, slug: true, isVerified: true, logo: true } },
@@ -51,7 +56,10 @@ const getHeroFeaturedProduct = unstable_cache(
     });
     if (p) return p;
     return db.product.findFirst({
-      where: { status: 'ACTIVE' },
+      where: {
+        status: 'ACTIVE',
+        shop: { isSuspended: false, isPaused: false },
+      },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
         shop: { select: { name: true, slug: true, isVerified: true, logo: true } },
@@ -1407,6 +1415,27 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       )}
 
       {/* 2 & 3. Side-by-Side "Why Seyon?" and "Benefits Bar" Grid (Scroll Layout) */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideInFromLeft {
+          from {
+            transform: translateX(-30px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .benefit-item-animate {
+          opacity: 0;
+          animation: slideInFromLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .benefit-delay-1 { animation-delay: 0.1s; }
+        .benefit-delay-2 { animation-delay: 0.25s; }
+        .benefit-delay-3 { animation-delay: 0.4s; }
+        .benefit-delay-4 { animation-delay: 0.55s; }
+        .benefit-delay-5 { animation-delay: 0.7s; }
+      ` }} />
       <section className="px-4 sm:px-6 lg:px-8 max-w-[1980px] mx-auto w-full mb-16 select-none">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-0 items-center w-full relative">
           {/* Left Card: Why Seyon Comparison Card — Tall, prominent, sits ON TOP */}
@@ -1525,13 +1554,24 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <div className="lg:col-span-7 bg-[#FCFAF7]/40 lg:bg-[#FCFAF7] border border-[#E9DED0]/50 lg:border-[#E9DED0] lg:border-l-0 rounded-[28px] lg:rounded-l-none lg:rounded-r-[24px] px-4 py-6 lg:px-10 lg:py-8 shadow-3xs lg:shadow-[0_10px_30px_rgba(37,28,18,0.04)] flex items-center justify-center lg:-ml-8 relative z-10 min-h-[200px] lg:min-h-[260px] lg:self-center" style={{ backgroundImage: 'linear-gradient(180deg, rgba(245,239,227,0.15) 0%, rgba(252,250,247,1) 8%, rgba(252,250,247,1) 92%, rgba(245,239,227,0.15) 100%)' }}>
             <div className="flex lg:grid flex-row lg:grid-cols-5 overflow-x-auto lg:overflow-x-visible no-scrollbar gap-4 lg:gap-0 pb-4 lg:pb-0 w-full items-start h-full snap-x snap-mandatory">
               {/* Benefit 1: From Social Platforms */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    {/* Elegant Bear Face Outline */}
-                    <path d="M12 6.5c-1.2 0-2.3.2-3.3.6C7.5 5.5 6 4.5 4.5 4.5 3 4.5 2 5.5 2 7c0 1.5 1 3 2.5 3.5.2 2.5 1.8 7.5 7.5 7.5s7.3-5 7.5-7.5c1.5-.5 2.5-2 2.5-3.5 0-1.5-1-2.5-2.5-2.5-1.5 0-3 1-4.2 2.6-1-.4-2.1-.6-3.3-.6z" />
-                    {/* Central circle snout */}
-                    <circle cx="12" cy="12.5" r="2.5" />
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none benefit-item-animate benefit-delay-1">
+                <div className="h-10 w-10 bg-[#FAF4E9] border border-[#E9DEC6]/40 rounded-[12px] flex items-center justify-center mb-4 transition-all duration-300 hover:scale-110">
+                  <svg className="h-5.5 w-5.5 text-[#A77F3A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    {/* Smartphone */}
+                    <rect x="7" y="2" width="10" height="20" rx="2" />
+                    <line x1="11" y1="4" x2="13" y2="4" />
+                    {/* Connection lines */}
+                    <line x1="7" y1="8" x2="4" y2="8" />
+                    <line x1="17" y1="8" x2="20" y2="8" />
+                    <line x1="7" y1="16" x2="4" y2="16" />
+                    <line x1="17" y1="16" x2="20" y2="16" />
+                    {/* Social nodes */}
+                    <circle cx="3" cy="8" r="1.5" />
+                    <circle cx="21" cy="8" r="1.5" />
+                    <circle cx="3" cy="16" r="1.5" />
+                    <circle cx="21" cy="16" r="1.5" />
+                    {/* Chat bubble on screen */}
+                    <path d="M10 10.5h4v2.5l-1.5-1H10z" />
                   </svg>
                 </div>
                 <div className="flex flex-col items-center">
@@ -1582,9 +1622,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
 
               {/* Benefit 2: DM to Order */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none benefit-item-animate benefit-delay-2">
+                <div className="h-10 w-10 bg-[#FAF4E9] border border-[#E9DEC6]/40 rounded-[12px] flex items-center justify-center mb-4 transition-all duration-300 hover:scale-110">
+                  <svg className="h-5.5 w-5.5 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Two overlapping chat bubbles */}
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     <path d="M8 9h8" />
@@ -1600,9 +1640,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
 
               {/* Benefit 3: No Middlemen */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none benefit-item-animate benefit-delay-3">
+                <div className="h-10 w-10 bg-[#FAF4E9] border border-[#E9DEC6]/40 rounded-[12px] flex items-center justify-center mb-4 transition-all duration-300 hover:scale-110">
+                  <svg className="h-5.5 w-5.5 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Person with X – no middlemen */}
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -1619,9 +1659,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
 
               {/* Benefit 4: Support Small */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center lg:border-r border-[#E7E2D8]/60 h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none benefit-item-animate benefit-delay-4">
+                <div className="h-10 w-10 bg-[#FAF4E9] border border-[#E9DEC6]/40 rounded-[12px] flex items-center justify-center mb-4 transition-all duration-300 hover:scale-110">
+                  <svg className="h-5.5 w-5.5 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Group of people – community */}
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -1638,9 +1678,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
 
               {/* Benefit 5: Trusted Listings */}
-              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none">
-                <div className="h-10 w-10 flex items-center justify-center mb-4">
-                  <svg className="h-9 w-9 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="px-3 lg:px-5 flex flex-col items-center text-center h-full justify-start select-none min-h-[190px] lg:min-h-[210px] shrink-0 w-[220px] lg:w-auto snap-center bg-white lg:bg-transparent border border-[#F0ECE3]/60 lg:border-none rounded-2xl lg:rounded-none p-5 lg:p-0 shadow-3xs lg:shadow-none benefit-item-animate benefit-delay-5">
+                <div className="h-10 w-10 bg-[#FAF4E9] border border-[#E9DEC6]/40 rounded-[12px] flex items-center justify-center mb-4 transition-all duration-300 hover:scale-110">
+                  <svg className="h-5.5 w-5.5 text-[#A77F3A] filter drop-shadow-[0_2px_7px_rgba(167,127,58,0.16)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                     {/* Person with checkmark – verified user */}
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />

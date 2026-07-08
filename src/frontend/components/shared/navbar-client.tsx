@@ -29,6 +29,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
   const [searchQuery, setSearchQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
   const [showCartTooltip, setShowCartTooltip] = React.useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Fetch search suggestions
@@ -59,6 +60,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
     if (searchQuery.trim()) {
       router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
       setSuggestions(null);
+      setIsMobileSearchOpen(false);
     }
   };
 
@@ -66,6 +68,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
     setIsMenuOpen(false);
     setSearchQuery('');
     setSuggestions(null);
+    setIsMobileSearchOpen(false);
   };
 
   return (
@@ -206,13 +209,21 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 <Link href="/marketplace" className="hover:text-zinc-950 transition-colors py-1">Explore</Link>
                 <Link href="/#creators-section" className="hover:text-zinc-950 transition-colors py-1">Creators</Link>
                 <Link href="/#collections-section" className="hover:text-zinc-950 transition-colors py-1">Collections</Link>
-                <Link href="/?q=candle" className="hover:text-zinc-950 transition-colors py-1">Deals</Link>
               </nav>
 
               <div className="hidden lg:block h-5 w-px bg-zinc-200" />
 
               {/* Icons row */}
               <div className="flex items-center gap-4">
+                {/* Search Toggle (Mobile only) */}
+                <button
+                  onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                  className="md:hidden p-1.5 text-zinc-650 hover:text-[#A77F3A] transition-colors cursor-pointer"
+                  title="Search"
+                >
+                  <Search className="h-5 w-5 stroke-[1.5]" />
+                </button>
+
                 {/* Wishlist */}
                 <Link
                   href={`${buyerMarketUrl}/wishlist`}
@@ -256,32 +267,33 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
             </div>
           </div>
 
-          {/* Mobile search bar (Visible under the header row on mobile only) */}
-          <div className="md:hidden mt-3 relative">
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full bg-white border border-zinc-200 focus-within:border-[#A77F3A] rounded-full px-4 py-1.5">
-              <input
-                type="text"
-                placeholder="Search products, creators, stores..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-0 outline-0 focus:ring-0 text-xs text-zinc-900 placeholder-zinc-400 pr-12"
-              />
-              {searchQuery && (
+          {/* Mobile search bar (Visible under the header row on mobile only when toggled) */}
+          {isMobileSearchOpen && (
+            <div className="md:hidden mt-3 relative animate-fade-in">
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full bg-white border border-zinc-200 focus-within:border-[#A77F3A] rounded-full px-4 py-1.5">
+                <input
+                  type="text"
+                  placeholder="Search products, creators, stores..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-0 outline-0 focus:ring-0 text-xs text-zinc-900 placeholder-zinc-400 pr-12"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setSuggestions(null); }}
+                    className="absolute right-12 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={() => { setSearchQuery(''); setSuggestions(null); }}
-                  className="absolute right-12 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+                  type="submit"
+                  className="absolute right-1 w-7 h-7 bg-[#A77F3A] text-white rounded-full flex items-center justify-center"
                 >
-                  <X className="h-4 w-4" />
+                  <Search className="h-3 w-3 stroke-[2.5]" />
                 </button>
-              )}
-              <button
-                type="submit"
-                className="absolute right-1 w-7 h-7 bg-[#A77F3A] text-white rounded-full flex items-center justify-center"
-              >
-                <Search className="h-3 w-3 stroke-[2.5]" />
-              </button>
-            </form>
+              </form>
 
             {/* Suggestions Dropdown (Mobile) */}
             {suggestions && (
@@ -352,7 +364,8 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                 )}
               </div>
             )}
-          </div>
+            </div>
+          )}
 
         </div>
       </header>

@@ -1,9 +1,9 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { MapPin } from 'lucide-react';
+import { MapPin, Clock } from 'lucide-react';
 import { BackButton } from '@/components/shared/back-button';
 import { safeJsonLdStringify } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site';
 import type { Metadata } from 'next';
+import { PrivacyCallout } from '../privacy/_components/privacy-callout';
 
 export const metadata: Metadata = {
   title: 'Company Address',
@@ -28,74 +28,85 @@ const addressJsonLd = {
 
 export default function AddressPage() {
   return (
-    <div className="flex-1 py-16 px-4 relative max-w-4xl mx-auto w-full">
+    <div className="flex-1 py-12 md:py-16 px-4 relative max-w-3xl mx-auto w-full bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(addressJsonLd) }}
       />
 
-      {/* Background glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <BackButton fallbackHref="/marketplace" label="Back to Marketplace" className="mb-6 text-zinc-650 hover:text-zinc-950 transition-colors" />
 
-      <BackButton fallbackHref="/marketplace" label="Back to Marketplace" className="mb-6" />
-
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-10 w-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-          <MapPin className="h-5 w-5 text-amber-600" />
+      {/* Header */}
+      <div className="border-b border-zinc-200 pb-6 mb-8 select-none">
+        <div className="mb-4">
+          <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight font-serif">
+            Company Address
+          </h1>
         </div>
-        <div>
-          <h1 className="text-3xl font-black text-foreground">Company Address</h1>
-          <p className="text-xs text-muted-foreground">Our registered office</p>
-        </div>
+        <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl font-serif italic">
+          Registered office address and business operations schedule for Seyon.
+        </p>
       </div>
 
-      <Card className="glass border-border shadow-2xl relative z-10">
-        <CardContent className="pt-6 space-y-8 text-sm text-zinc-300 leading-relaxed">
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white">Registered Office</h2>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin className="h-5 w-5 text-amber-500" />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-bold text-white text-base">Seyon</p>
-                  <p className="text-zinc-400">42, Anna Salai, Triplicane</p>
-                  <p className="text-zinc-400">Chennai, Tamil Nadu 600005</p>
-                  <p className="text-zinc-400">India</p>
-                </div>
+      {/* Main Content Area */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-8 relative z-10">
+        {/* Section 1: Registered Office */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-zinc-950 font-serif border-b border-zinc-100 pb-2">Registered Office</h2>
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-6 space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-lg bg-[#FAF4E9] border border-[#E9DEC6]/60 flex items-center justify-center shrink-0 mt-0.5">
+                <MapPin className="h-5.5 w-5.5 text-[#A77F3A]" />
+              </div>
+              <div className="space-y-1 text-sm text-zinc-600">
+                <p className="font-bold text-zinc-950 text-base">Seyon</p>
+                <p>42, Anna Salai, Triplicane</p>
+                <p>Chennai, Tamil Nadu 600005</p>
+                <p className="font-semibold text-zinc-900">India</p>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-white">Business Hours</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">Weekdays</p>
-                <p className="text-sm text-white font-medium">Monday – Friday</p>
-                <p className="text-xs text-zinc-400">10:00 AM – 7:00 PM IST</p>
+        {/* Section 2: Business Hours */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-zinc-950 font-serif border-b border-zinc-100 pb-2">Business Hours</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-[#A77F3A]" />
+                <p className="text-[10px] font-bold text-[#A77F3A] uppercase tracking-wider">Weekdays</p>
               </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">Saturday</p>
-                <p className="text-sm text-white font-medium">Saturday</p>
-                <p className="text-xs text-zinc-400">10:00 AM – 2:00 PM IST</p>
+              <div className="space-y-0.5">
+                <p className="text-sm text-zinc-950 font-bold">Monday – Friday</p>
+                <p className="text-xs text-zinc-500 font-medium">10:00 AM – 7:00 PM IST</p>
               </div>
             </div>
-          </section>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-[#A77F3A]" />
+                <p className="text-[10px] font-bold text-[#A77F3A] uppercase tracking-wider">Saturday</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-sm text-zinc-950 font-bold">Saturday</p>
+                <p className="text-xs text-zinc-500 font-medium">10:00 AM – 2:00 PM IST</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          <section className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-1">
-            <p className="text-xs font-semibold text-amber-400">📬 Postal Correspondence</p>
-            <p className="text-xs text-zinc-400">
-              For any official correspondence or documents, please send to our registered office address above. 
-              For faster responses, we recommend reaching out via our{' '}
-              <a href="/contact" className="text-amber-400 hover:text-amber-300 underline underline-offset-2">
-                Contact page
-              </a>.
-            </p>
-          </section>
-        </CardContent>
-      </Card>
+        {/* Section 3: Postal Correspondence Callout */}
+        <PrivacyCallout type="info">
+          <p className="text-xs font-semibold text-zinc-950 mb-1">📬 Postal Correspondence</p>
+          <p className="text-xs text-zinc-600 leading-relaxed">
+            For any official correspondence or documents, please send to our registered office address above. 
+            For faster responses, we recommend reaching out via our{' '}
+            <a href="/contact" className="text-[#A77F3A] hover:underline font-bold">
+              Contact page
+            </a>.
+          </p>
+        </PrivacyCallout>
+      </div>
     </div>
   );
 }

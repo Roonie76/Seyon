@@ -181,7 +181,7 @@ export function DeliveryOffersList({
         return (
           <details 
             key={idx} 
-            className="group border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-500/[0.01]"
+            className="group border border-zinc-200 bg-zinc-50/50 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-50/50"
           >
             <summary className="flex items-center gap-3 p-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
               <div className="h-8 w-8 rounded-full border border-amber-500/15 bg-amber-500/5 flex items-center justify-center text-amber-600 shrink-0">
@@ -202,7 +202,7 @@ export function DeliveryOffersList({
       })}
 
       {/* 2. Standard "How purchasing works" Accordion item at the bottom */}
-      <details className="group border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-500/[0.01]">
+      <details className="group border border-zinc-200 bg-zinc-50/50 rounded-xl overflow-hidden transition-all duration-300 open:border-amber-500/30 open:bg-amber-50/50">
         <summary className="flex items-center gap-3 p-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
           <div className="h-8 w-8 rounded-full border border-amber-500/15 bg-amber-500/5 flex items-center justify-center text-amber-600 shrink-0">
             <Info className="h-4 w-4" />

@@ -96,6 +96,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 bg-background text-foreground animate-fade-in">
+      {shop.isPaused && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3 shadow-xs">
+          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-amber-850">Store is in Vacation Mode</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Your storefront is currently offline. Customers see a &ldquo;Currently away&rdquo; notice, order actions are disabled, and your products are hidden from the search catalog. You can reopen your store anytime from the settings below.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header Info */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-200 pb-6">
         <div>
@@ -194,7 +206,7 @@ export default async function DashboardPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Profile Settings form */}
-        <div className="lg:col-span-2">
+        <div id="settings" className="lg:col-span-2">
           <StoreSettingsForm shop={shop} />
         </div>
 

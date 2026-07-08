@@ -38,12 +38,12 @@ export function revalidateShopSurface(shopSlug: string, productSlug?: string, ca
     PUBLIC_CACHE_TAGS.products,
     PUBLIC_CACHE_TAGS.shop(shopSlug),
     // Homepage cache tags
-    'homepage-top-offers',
-    'homepage-new-arrivals-v2',
-    'homepage-category-spotlight',
-    'homepage-popular-categories',
-    'homepage-verified-shops',
-    'homepage-verified-picks-v2',
+    'homepage-just-discovered-v2',
+    'homepage-hero-product',
+    'homepage-featured-creators',
+    'homepage-trending-products',
+    'homepage-recently-added-stores',
+    'homepage-trending-categories',
   ];
 
   const paths = [`/store/${shopSlug}`, '/marketplace', '/'];

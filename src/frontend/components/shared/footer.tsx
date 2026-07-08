@@ -50,8 +50,8 @@ export function Footer() {
           </div>
         </nav>
 
-        {/* 4-column grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+        {/* 5-column grid */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
             <Link href="/" className="text-2xl font-bold tracking-tight text-white font-serif" style={{ fontFamily: 'Georgia, serif' }}>
@@ -87,9 +87,6 @@ export function Footer() {
             <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Explore</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
-                <Link href="/" className="hover:text-white transition-colors">Marketplace</Link>
-              </li>
-              <li>
                 <Link href="/category" className="hover:text-white transition-colors">Categories</Link>
               </li>
               <li>
@@ -98,7 +95,20 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Support */}
+          {/* Column 3: Sell on Seyon */}
+          <div className="space-y-3">
+            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Sell on Seyon</span>
+            <ul className="space-y-2 text-sm text-zinc-400">
+              <li>
+                <Link href="/sell" className="hover:text-white transition-colors">Sellers Home</Link>
+              </li>
+              <li>
+                <Link href="/dashboard" className="hover:text-white transition-colors">Seller Dashboard</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Support */}
           <div className="space-y-3">
             <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Support</span>
             <ul className="space-y-2 text-sm text-zinc-400">

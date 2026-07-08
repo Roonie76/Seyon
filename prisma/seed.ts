@@ -826,6 +826,22 @@ Your Trust Score on Seyon reflects all of these factors. A higher score means be
   await prisma.shop.updateMany({ data: { isBeta: true } });
   await prisma.product.updateMany({ data: { isBeta: true } });
 
+  // Update discountPercent for all products with a compareAtPrice
+  console.log('Calculating discount percentages for seeded products...');
+  const productsWithCompare = await prisma.product.findMany({
+    where: { compareAtPrice: { not: null } },
+  });
+  for (const product of productsWithCompare) {
+    if (product.compareAtPrice && product.compareAtPrice > product.price) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          discountPercent: (product.compareAtPrice - product.price) / product.compareAtPrice,
+        },
+      });
+    }
+  }
+
   console.log('Seeding complete! 10 shops and 20+ products seeded and flagged as beta successfully.');
 }
 
