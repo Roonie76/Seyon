@@ -5,18 +5,25 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { WishlistButton } from './wishlist-button';
 import { NoImagePlaceholder } from './no-image-placeholder';
+import { useRouter } from 'next/navigation';
+import { ShoppingCart, Check, Plus } from 'lucide-react';
+import { getLocalCart, saveLocalCart } from '@/frontend/components/store/store-cart';
+import { bumpCartVersion } from '@/frontend/lib/cart-utils';
 
 interface ProductCardProps {
   product: {
     id: string;
+    shopId?: string;
     title: string;
     slug: string;
     price: number;
     compareAtPrice?: number | null;
     category: string;
     inStock?: boolean;
+    options?: string | null;
     images: { url: string }[];
     shop: {
+      id?: string;
       name: string;
       slug: string;
       isVerified?: boolean;
@@ -79,6 +86,51 @@ export function ProductCard({
   const productUrl = `${buyerMarketUrl}/store/${shopSlug}/${productSlug}`;
   const isSoldOut = product.inStock === false;
 
+  const [isAdded, setIsAdded] = React.useState(false);
+  const router = useRouter();
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isAdded) return;
+
+    if (product.options && product.options.trim().length > 0) {
+      router.push(productUrl);
+      return;
+    }
+
+    const shopId = product.shopId || product.shop.id;
+    if (!shopId) return;
+
+    const cart = getLocalCart(shopId);
+    const existingIndex = cart.findIndex(
+      (item) => item.productId === product.id && item.selectionsKey === '_'
+    );
+
+    if (existingIndex > -1) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push({
+        productId: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.images?.[0]?.url,
+        quantity: 1,
+        selections: {},
+        selectionsKey: '_',
+      });
+    }
+
+    saveLocalCart(shopId, cart);
+    setIsAdded(true);
+
+    bumpCartVersion();
+    window.dispatchEvent(new CustomEvent('seyon-cart-updated', { detail: { shopId } }));
+
+    setTimeout(() => setIsAdded(false), 2000);
+  };
+
   const badge = getBadge(product.title, product.category, product.id);
 
   if (layout === 'horizontal') {
@@ -111,12 +163,39 @@ export function ProductCard({
                 )}
               </div>
               
-              {showWishlistButton && (
-                <WishlistButton
-                  productId={product.id}
-                  initialIsWishlisted={initialIsWishlisted}
-                  variant="minimal"
-                />
+              {isSoldOut ? (
+                <span className="text-[10px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
+                  Sold out
+                </span>
+              ) : (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleQuickAdd}
+                    className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
+                      isAdded
+                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
+                    }`}
+                    title={product.options ? "Select options" : "Add to Cart"}
+                  >
+                    {isAdded ? (
+                      <Check className="h-4 w-4" />
+                    ) : product.options && product.options.trim().length > 0 ? (
+                      <Plus className="h-4 w-4" />
+                    ) : (
+                      <ShoppingCart className="h-4 w-4" />
+                    )}
+                  </button>
+
+                  {showWishlistButton && (
+                    <WishlistButton
+                      productId={product.id}
+                      initialIsWishlisted={initialIsWishlisted}
+                      variant="minimal"
+                    />
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -208,13 +287,40 @@ export function ProductCard({
               )}
             </div>
 
-            {showWishlistButton && (
-              <WishlistButton
-                productId={product.id}
-                initialIsWishlisted={initialIsWishlisted}
-                variant="minimal"
-                className="hover:scale-110"
-              />
+            {isSoldOut ? (
+              <span className="text-[10px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
+                Sold out
+              </span>
+            ) : (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleQuickAdd}
+                  className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
+                    isAdded
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
+                  }`}
+                  title={product.options ? "Select options" : "Add to Cart"}
+                >
+                  {isAdded ? (
+                    <Check className="h-4 w-4" />
+                  ) : product.options && product.options.trim().length > 0 ? (
+                    <Plus className="h-4 w-4" />
+                  ) : (
+                    <ShoppingCart className="h-4 w-4" />
+                  )}
+                </button>
+
+                {showWishlistButton && (
+                  <WishlistButton
+                    productId={product.id}
+                    initialIsWishlisted={initialIsWishlisted}
+                    variant="minimal"
+                    className="hover:scale-110"
+                  />
+                )}
+              </div>
             )}
           </div>
         </div>
