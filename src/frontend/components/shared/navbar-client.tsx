@@ -226,7 +226,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
 
                 {/* Wishlist */}
                 <Link
-                  href={`${buyerMarketUrl}/wishlist`}
+                  href="/wishlist"
                   className="relative p-1 text-zinc-600 hover:text-rose-500 transition-colors flex items-center justify-center"
                   title="My Wishlist"
                 >
@@ -432,7 +432,7 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                   <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </Link>
                 <Link
-                  href={`${buyerMarketUrl}/wishlist`}
+                  href="/wishlist"
                   onClick={closeAll}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
                 >
