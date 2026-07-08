@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { WishlistButton } from './wishlist-button';
 import { NoImagePlaceholder } from './no-image-placeholder';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Check, Plus } from 'lucide-react';
+import { ShoppingCart, Check, Plus, Minus } from 'lucide-react';
 import { getLocalCart, saveLocalCart, getSelectionsKey } from '@/frontend/components/store/store-cart';
 import { bumpCartVersion } from '@/frontend/lib/cart-utils';
 import { parseOptions } from '@/shared/lib/order-message';
@@ -139,6 +139,93 @@ export function ProductCard({
     setTimeout(() => setIsAdded(false), 2000);
   };
 
+  const [cartQty, setCartQty] = React.useState(0);
+
+  const getCartQuantity = React.useCallback(() => {
+    const shopId = product.shopId || product.shop.id;
+    if (!shopId) return 0;
+    const cart = getLocalCart(shopId);
+
+    const selections: Record<string, string> = {};
+    if (product.options && product.options.trim().length > 0) {
+      const parsed = parseOptions(product.options);
+      parsed.forEach((group) => {
+        if (group.values.length > 0) {
+          selections[group.label ?? '_'] = group.values[0];
+        }
+      });
+    }
+    const selectionsKey = getSelectionsKey(selections);
+
+    const existing = cart.find(
+      (item) => item.productId === product.id && item.selectionsKey === selectionsKey
+    );
+    return existing ? existing.quantity : 0;
+  }, [product]);
+
+  React.useEffect(() => {
+    setCartQty(getCartQuantity());
+
+    const handleCartUpdated = () => {
+      setCartQty(getCartQuantity());
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('seyon_cart:') || e.key === 'seyon_cart_meta') {
+        setCartQty(getCartQuantity());
+      }
+    };
+
+    window.addEventListener('seyon-cart-updated', handleCartUpdated);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('seyon-cart-updated', handleCartUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [getCartQuantity]);
+
+  const handleUpdateQty = (change: number) => {
+    const shopId = product.shopId || product.shop.id;
+    if (!shopId) return;
+
+    const selections: Record<string, string> = {};
+    if (product.options && product.options.trim().length > 0) {
+      const parsed = parseOptions(product.options);
+      parsed.forEach((group) => {
+        if (group.values.length > 0) {
+          selections[group.label ?? '_'] = group.values[0];
+        }
+      });
+    }
+    const selectionsKey = getSelectionsKey(selections);
+
+    const cart = getLocalCart(shopId);
+    const existingIndex = cart.findIndex(
+      (item) => item.productId === product.id && item.selectionsKey === selectionsKey
+    );
+
+    if (existingIndex > -1) {
+      const newQty = cart[existingIndex].quantity + change;
+      if (newQty <= 0) {
+        const updated = cart.filter(
+          (item) => !(item.productId === product.id && item.selectionsKey === selectionsKey)
+        );
+        if (updated.length === 0) {
+          localStorage.removeItem(`seyon_cart:${shopId}`);
+        } else {
+          saveLocalCart(shopId, updated);
+        }
+      } else {
+        cart[existingIndex].quantity = Math.min(newQty, 99);
+        saveLocalCart(shopId, cart);
+      }
+      
+      bumpCartVersion();
+      window.dispatchEvent(new CustomEvent('seyon-cart-updated', { detail: { shopId } }));
+    }
+  };
+
   const badge = getBadge(product.title, product.category, product.id);
 
   if (layout === 'horizontal') {
@@ -177,22 +264,46 @@ export function ProductCard({
                 </span>
               ) : (
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleQuickAdd}
-                    className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
-                      isAdded
-                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
-                        : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
-                    }`}
-                    title="Add to Cart"
-                  >
-                    {isAdded ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
+                  {cartQty > 0 ? (
+                    <div className="flex items-center gap-1 bg-zinc-50 border border-zinc-200 dark:border-zinc-800 rounded-full p-0.5 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleUpdateQty(-1);
+                        }}
+                        className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 transition-colors cursor-pointer"
+                        title="Decrease"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="w-5 text-center text-xs font-extrabold text-zinc-800 dark:text-zinc-200 select-none">
+                        {cartQty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleUpdateQty(1);
+                        }}
+                        className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-amber-600 hover:bg-zinc-100 transition-colors cursor-pointer"
+                        title="Increase"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleQuickAdd}
+                      className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400`}
+                      title="Add to Cart"
+                    >
                       <ShoppingCart className="h-4 w-4" />
-                    )}
-                  </button>
+                    </button>
+                  )}
 
                   {showWishlistButton && (
                     <WishlistButton
@@ -299,22 +410,46 @@ export function ProductCard({
               </span>
             ) : (
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleQuickAdd}
-                  className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
-                    isAdded
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
-                      : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
-                  }`}
-                  title="Add to Cart"
-                >
-                  {isAdded ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
+                {cartQty > 0 ? (
+                  <div className="flex items-center gap-1 bg-zinc-50 border border-zinc-200 dark:border-zinc-800 rounded-full p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleUpdateQty(-1);
+                      }}
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-rose-600 hover:bg-zinc-100 transition-colors cursor-pointer"
+                      title="Decrease"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-5 text-center text-xs font-extrabold text-zinc-800 dark:text-zinc-200 select-none">
+                      {cartQty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleUpdateQty(1);
+                      }}
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-zinc-500 hover:text-amber-600 hover:bg-zinc-100 transition-colors cursor-pointer"
+                      title="Increase"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleQuickAdd}
+                    className={`h-8 w-8 rounded-full border flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400`}
+                    title="Add to Cart"
+                  >
                     <ShoppingCart className="h-4 w-4" />
-                  )}
-                </button>
+                  </button>
+                )}
 
                 {showWishlistButton && (
                   <WishlistButton
