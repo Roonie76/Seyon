@@ -8,7 +8,7 @@ import { PrivacyCallout } from '../privacy/_components/privacy-callout';
 export const metadata: Metadata = {
   title: 'Company Address',
   description:
-    'Find the registered office address and location of Seyon, the social-commerce storefront platform based in Chennai, Tamil Nadu.',
+    'Find the registered office address and location of Seyon, the social-commerce storefront platform based in Gurgaon, Haryana.',
 };
 
 const addressJsonLd = {
@@ -18,10 +18,10 @@ const addressJsonLd = {
   url: SITE_URL,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '42, Anna Salai, Triplicane',
-    addressLocality: 'Chennai',
-    addressRegion: 'Tamil Nadu',
-    postalCode: '600005',
+    streetAddress: 'Sector-92',
+    addressLocality: 'Gurgaon',
+    addressRegion: 'Haryana',
+    postalCode: '122505',
     addressCountry: 'IN',
   },
 };
@@ -60,8 +60,8 @@ export default function AddressPage() {
               </div>
               <div className="space-y-1 text-sm text-zinc-600">
                 <p className="font-bold text-zinc-950 text-base">Seyon</p>
-                <p>42, Anna Salai, Triplicane</p>
-                <p>Chennai, Tamil Nadu 600005</p>
+                <p>Sector-92</p>
+                <p>Gurgaon, Haryana 122505</p>
                 <p className="font-semibold text-zinc-900">India</p>
               </div>
             </div>

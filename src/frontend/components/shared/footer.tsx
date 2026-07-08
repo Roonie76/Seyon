@@ -41,7 +41,7 @@ export function Footer() {
             {['Fashion', 'Electronics', 'Beauty', 'Home & Living', 'Clay Crafts', 'DIY Crafts', 'Art & Collectibles', 'Food & Beverages'].map((cat) => (
               <Link
                 key={cat}
-                href={`${buyerMarketUrl}/category/${encodeURIComponent(cat.toLowerCase())}`}
+                href={`/category/${encodeURIComponent(cat.toLowerCase())}`}
                 className="hover:text-white transition-colors"
               >
                 {cat}
