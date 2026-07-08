@@ -6,9 +6,10 @@ import { withSentryConfig } from "@sentry/nextjs";
 //   PostHog loads its recorder/bundle from *.posthog.com asset hosts.
 // - connect-src: PostHog event ingestion + Supabase storage API.
 // - img-src: Supabase buckets, Unsplash (seed/demo images), Google avatars (OAuth).
+const isDev = process.env.NODE_ENV === 'development';
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://*.posthog.com",
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ""} https://*.posthog.com`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data: https://*.supabase.co https://images.unsplash.com https://lh3.googleusercontent.com",
   "font-src 'self' data:",

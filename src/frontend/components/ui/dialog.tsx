@@ -34,7 +34,9 @@ export function Dialog({ open: controlledOpen, onOpenChange, children }: DialogP
     [controlledOpen]
   );
 
-  return <DialogContext.Provider value={{ open, setOpen }}>{children}</DialogContext.Provider>;
+  const contextValue = React.useMemo(() => ({ open, setOpen }), [open, setOpen]);
+
+  return <DialogContext.Provider value={contextValue}>{children}</DialogContext.Provider>;
 }
 
 export function DialogTrigger({ children }: { children: React.ReactElement<{ onClick?: React.MouseEventHandler }> }) {
@@ -84,6 +86,16 @@ export function DialogContent({ className, children }: { className?: string; chi
     };
   }, [open, setOpen]);
 
+  // Track whether we've already auto-focused for this open cycle
+  const hasFocusedRef = React.useRef(false);
+
+  // Reset the guard when the dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      hasFocusedRef.current = false;
+    }
+  }, [open]);
+
   // 2. Manage focus-in on open, scroll lock, and restore focus on close
   React.useEffect(() => {
     if (!open) return;
@@ -94,11 +106,14 @@ export function DialogContent({ className, children }: { className?: string; chi
     // Disable body scrolling
     document.body.style.overflow = 'hidden';
 
-    // Focus the first focusable element inside the dialog
-    requestAnimationFrame(() => {
-      const target = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? contentRef.current;
-      target?.focus();
-    });
+    // Focus the first focusable element ONLY on initial open
+    if (!hasFocusedRef.current) {
+      hasFocusedRef.current = true;
+      requestAnimationFrame(() => {
+        const target = contentRef.current?.querySelector<HTMLElement>(FOCUSABLE) ?? contentRef.current;
+        target?.focus();
+      });
+    }
 
     return () => {
       // Re-enable body scrolling

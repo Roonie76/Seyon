@@ -118,32 +118,32 @@ export function parseDeliveryNote(note: string | null | undefined): ParsedOffer[
 
 const themeStyles = {
   emerald: {
-    bg: 'bg-white border-emerald-200 text-emerald-950 dark:bg-emerald-950/20 dark:border-emerald-800/30 dark:text-emerald-300',
-    iconBg: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400',
+    bg: 'bg-emerald-50/80 border-emerald-200/80 text-emerald-950',
+    iconBg: 'bg-emerald-100/80 text-emerald-800',
   },
   amber: {
-    bg: 'bg-amber-50/80 border-amber-200/80 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/30 dark:text-amber-300',
-    iconBg: 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+    bg: 'bg-amber-50/80 border-amber-200/80 text-amber-950',
+    iconBg: 'bg-amber-100/80 text-amber-700',
   },
   sky: {
-    bg: 'bg-sky-50/80 border-sky-200/80 text-sky-800 dark:bg-sky-950/20 dark:border-sky-800/30 dark:text-sky-300',
-    iconBg: 'bg-sky-100/80 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400',
+    bg: 'bg-sky-50/80 border-sky-200/80 text-sky-950',
+    iconBg: 'bg-sky-100/80 text-sky-700',
   },
   indigo: {
-    bg: 'bg-indigo-50/80 border-indigo-200/80 text-indigo-800 dark:bg-indigo-950/20 dark:border-indigo-800/30 dark:text-indigo-300',
-    iconBg: 'bg-indigo-100/80 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400',
+    bg: 'bg-indigo-50/80 border-indigo-200/80 text-indigo-950',
+    iconBg: 'bg-indigo-100/80 text-indigo-700',
   },
   teal: {
-    bg: 'bg-teal-50/80 border-teal-200/80 text-teal-800 dark:bg-teal-950/20 dark:border-teal-800/30 dark:text-teal-300',
-    iconBg: 'bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400',
+    bg: 'bg-teal-50/80 border-teal-200/80 text-teal-950',
+    iconBg: 'bg-teal-100/80 text-teal-700',
   },
   rose: {
-    bg: 'bg-rose-50/80 border-rose-200/80 text-rose-800 dark:bg-rose-950/20 dark:border-rose-800/30 dark:text-rose-300',
-    iconBg: 'bg-rose-100/80 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
+    bg: 'bg-rose-50/80 border-rose-200/80 text-rose-950',
+    iconBg: 'bg-rose-100/80 text-rose-700',
   },
   zinc: {
-    bg: 'bg-zinc-50/80 border-zinc-200/80 text-zinc-700 dark:bg-zinc-900/20 dark:border-zinc-800/30 dark:text-zinc-300',
-    iconBg: 'bg-zinc-100/80 text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400',
+    bg: 'bg-zinc-50/80 border-zinc-200/80 text-zinc-700',
+    iconBg: 'bg-zinc-100/80 text-zinc-500',
   },
 };
 

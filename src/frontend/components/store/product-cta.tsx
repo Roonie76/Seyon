@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight } from 'lucide-react';
+import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight, Info, ShieldCheck } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
 import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget } from './store-cart';
@@ -40,6 +40,8 @@ export function ProductCTA({
   const [selections, setSelections] = React.useState<Record<string, string>>({});
   const [added, setAdded] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [showGuidelines, setShowGuidelines] = React.useState(false);
+  const [showWhyLink, setShowWhyLink] = React.useState(false);
 
   const handleAddToCart = () => {
     if (groups.length > 0) {
@@ -89,7 +91,8 @@ export function ProductCTA({
     });
   };
 
-  const handleClick = async () => {
+  const handleRedirectToWhatsApp = async () => {
+    setShowGuidelines(false);
     try {
       await trackEvent(shopId, 'WHATSAPP_CLICK', productId);
     } catch (error) {
@@ -103,6 +106,10 @@ export function ProductCTA({
     }
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleClick = () => {
+    setShowGuidelines(true);
   };
 
   if (shopPaused) {
@@ -124,25 +131,38 @@ export function ProductCTA({
                   {group.label}
                 </span>
               )}
-              <div className="flex flex-wrap gap-2">
-                {group.values.map((value) => {
-                  const selected = selections[group.label ?? '_'] === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => selectValue(group.label, value)}
-                      aria-pressed={selected}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
-                        selected
-                          ? 'bg-amber-500 text-black border-amber-600 shadow-sm'
-                          : 'bg-white text-foreground border-zinc-300 hover:border-amber-400 hover:bg-amber-50'
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center flex-wrap gap-2 w-full">
+                <div className="flex flex-wrap gap-2">
+                  {group.values.map((value) => {
+                    const selected = selections[group.label ?? '_'] === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => selectValue(group.label, value)}
+                        aria-pressed={selected}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+                          selected
+                            ? 'bg-amber-500 text-black border-amber-600 shadow-sm'
+                            : 'bg-white text-foreground border-zinc-300 hover:border-amber-400 hover:bg-amber-50'
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {(group.label?.toLowerCase() === 'size' || group.label?.toLowerCase() === 'sizes') && (
+                  <button
+                    type="button"
+                    onClick={() => setShowGuidelines(true)}
+                    className="ml-auto text-xs font-bold text-[#A77F3A] hover:underline flex items-center gap-1 cursor-pointer select-none"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                    <span>Guidelines</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -203,6 +223,108 @@ export function ProductCTA({
         shopName={shopName}
         whatsappNumber={whatsappNumber}
       />
+      {/* Guidelines Modal Pop-up */}
+      {showGuidelines && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs select-none">
+          <div className="bg-white border border-zinc-200 rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl space-y-4 animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <h3 className="font-serif text-base font-bold text-zinc-955 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-amber-500 shrink-0" />
+                <span>Buying Safely on Seyon</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowGuidelines(false)}
+                className="text-zinc-450 hover:text-zinc-955 text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+            
+            <p className="text-xs font-bold text-zinc-700">
+              Please review these quick tips before contacting the seller.
+            </p>
+
+            <div className="max-h-[320px] overflow-y-auto pr-1">
+              <ul className="space-y-3.5 text-xs text-zinc-650 leading-relaxed">
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Review the listing:</span> Check product details, photos, pricing, and seller information before placing an order.
+                  </p>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Confirm everything:</span> Discuss product specifications, quantity, delivery charges, delivery timelines, and return expectations with the seller on WhatsApp.
+                  </p>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Pay safely:</span> If advance payment is required, consider limiting it to <span className="font-bold text-zinc-900">10–30% of the total order value</span> and pay the remaining amount <span className="font-bold text-zinc-900">after delivery</span>, whenever both parties agree and it's practical. Prefer <span className="font-bold text-zinc-900">Cash on Delivery (COD)</span> where available.
+                  </p>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Verified isn&apos;t guaranteed:</span> A <span className="font-bold text-zinc-900">Verified</span> badge confirms the seller&apos;s identity. It does <span className="font-bold text-zinc-900">not</span> guarantee product quality, delivery, or the outcome of a transaction.
+                  </p>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Stay alert:</span> Seyon will <span className="font-bold text-zinc-900">never</span> ask you to transfer money on behalf of a seller. Report any suspicious activity immediately.
+                  </p>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+                  <p>
+                    <span className="font-bold text-zinc-900">Leaving Seyon:</span> Your cart will be pre-filled into a WhatsApp message. After you continue, your conversation takes place on WhatsApp, not on Seyon.
+                  </p>
+                </li>
+              </ul>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 italic leading-relaxed pt-1 select-text">
+              These are recommended safety practices to help reduce risk when buying directly from independent sellers.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-10 border border-zinc-200 hover:border-zinc-350 hover:bg-zinc-50 text-zinc-800 text-xs font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer select-none"
+              >
+                Learn More
+              </a>
+              <button
+                type="button"
+                onClick={handleRedirectToWhatsApp}
+                className="w-full h-10 bg-amber-500 hover:bg-amber-400 border border-amber-600 text-black text-xs font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer select-none"
+              >
+                Continue to WhatsApp
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setShowWhyLink(!showWhyLink)}
+                className="text-[11px] text-[#A77F3A] hover:underline block mx-auto font-semibold cursor-pointer select-none"
+              >
+                Why am I seeing this?
+              </button>
+              {showWhyLink && (
+                <p className="text-[10px] text-zinc-500 bg-zinc-50/80 p-2.5 rounded-xl border border-zinc-200/60 animate-in fade-in duration-200 select-text leading-relaxed">
+                  Seyon connects buyers directly with independent sellers. These reminders are shown to help you shop more safely and confidently.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
