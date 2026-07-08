@@ -152,8 +152,7 @@ export function ProductCTA({
                     );
                   })}
                 </div>
-
-                {(group.label?.toLowerCase() === 'size' || group.label?.toLowerCase() === 'sizes') && (
+                {groups[0] === group && (
                   <button
                     type="button"
                     onClick={() => setShowGuidelines(true)}
