@@ -78,7 +78,7 @@ export async function generateMetadata({
   );
 
   return {
-    title: `${categoryName} — Buy Direct from Independent Sellers | Seyon`,
+    title: `${categoryName} — Buy Direct from Independent Sellers`,
     description: `Browse ${categoryName} products on Seyon. Shop direct from independent creators and sellers — chat to buy on WhatsApp.`,
     alternates: {
       canonical: `/category/${canonicalSlug}`,
