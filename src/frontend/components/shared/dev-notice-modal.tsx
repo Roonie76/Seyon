@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function DevNoticeModal() {
@@ -38,13 +38,8 @@ export function DevNoticeModal() {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Dynamic Glowing Icon Header Container */}
-        <div className="h-14 w-14 rounded-full bg-[#A77F3A]/10 dark:bg-[#A77F3A]/20 flex items-center justify-center text-[#A77F3A] mb-5 select-none animate-pulse">
-          <Sparkles className="h-6 w-6 stroke-[2]" />
-        </div>
-
         {/* Header Title with elegant Serif style */}
-        <h2 className="font-serif text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white tracking-tight mb-3">
+        <h2 className="font-serif text-2xl sm:text-3xl font-extrabold text-zinc-950 dark:text-white tracking-tight mb-4 pt-3">
           Seyon is in Development
         </h2>
 
