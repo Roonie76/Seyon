@@ -44,8 +44,10 @@ export function DevNoticeModal() {
         </h2>
 
         {/* Message body describing dev notice and placeholders */}
-        <p className="text-zinc-600 dark:text-zinc-350 text-sm leading-relaxed mb-6 font-medium">
-          Welcome! Seyon is currently in active development. All stores, products, reviews, and transaction checkouts on this platform are placeholder fillers for demonstration purposes. Orders will not be processed or shipped.
+        <p className="text-zinc-650 dark:text-zinc-300 text-sm leading-relaxed mb-6 font-medium">
+          Thank you for visiting our early preview. Seyon is currently under active development, and some stores, products, reviews, and checkout experiences are provided for demonstration purposes only.
+          <br /><br />
+          Orders placed during this preview will not be processed, fulfilled, or shipped.
         </p>
 
         {/* Call to action button with gold/amber premium gradient */}
