@@ -29,6 +29,7 @@ interface MarketplaceClientProps {
   maxPrice: string;
   rating: string;
   query: string;
+  baseUrl?: string;
   children: React.ReactNode;
 }
 
@@ -44,6 +45,7 @@ export function MarketplaceClient({
   rating,
   query,
   children,
+  baseUrl = '/',
 }: MarketplaceClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
@@ -66,13 +68,28 @@ export function MarketplaceClient({
   const getFilterUrl = (state: FilterState, newQuery: string = query) => {
     const params = new URLSearchParams();
     if (newQuery) params.set('q', newQuery);
-    if (state.category) params.set('category', state.category);
     if (state.city) params.set('city', state.city);
     if (state.inStock) params.set('inStock', '1');
     if (state.sort) params.set('sort', state.sort);
     if (state.minPrice) params.set('minPrice', state.minPrice);
     if (state.maxPrice) params.set('maxPrice', state.maxPrice);
     if (state.rating) params.set('rating', state.rating);
+
+    // When on a category page, category switches navigate to the new
+    // category's canonical URL; clearing the category goes to homepage.
+    if (baseUrl.startsWith('/category/')) {
+      if (state.category) {
+        const slug = encodeURIComponent(state.category.toLowerCase());
+        const qs = params.toString();
+        return `/category/${slug}${qs ? `?${qs}` : ''}`;
+      }
+      // Category cleared — go back to homepage
+      const qs = params.toString();
+      return `/${qs ? `?${qs}` : ''}`;
+    }
+
+    // Default homepage behavior
+    if (state.category) params.set('category', state.category);
     return `/?${params.toString()}`;
   };
 

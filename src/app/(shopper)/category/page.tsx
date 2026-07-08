@@ -271,7 +271,7 @@ export default async function CategoryIndexPage() {
             {allCategories.map((cat) => (
               <Link 
                 key={cat.slug} 
-                href={`/?category=${encodeURIComponent(cat.name)}`}
+                href={`/category/${encodeURIComponent(cat.slug)}`}
                 className="group flex flex-col bg-[#FCFAF7] border border-[#F0ECE3] rounded-[24px] overflow-hidden p-7 md:p-8 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:border-[#A77F3A]/30 hover:shadow-[#A77F3A]/5 cursor-pointer h-full justify-between"
               >
                 <div>

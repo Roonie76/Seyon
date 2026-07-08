@@ -13,11 +13,10 @@ import SocialPlatformsIcon from '@/components/icons/SocialPlatformsIcon';
 
 import { auth } from '@/lib/auth';
 import { MarketplaceClient } from './marketplace/marketplace-client';
-import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
 import { generateItemListJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { RecentlyViewedStrip } from '@/components/shared/recently-viewed';
 import { logger } from '@/backend/lib/logger';
-import { Prisma } from '@prisma/client';
+import { fetchShopperProducts, fetchShopperCategoriesAndCities, type ShopperProduct } from '@/backend/lib/shopper-products';
 import { Button } from '@/components/ui/button';
 
 // 12. Cached Query: Just Discovered (Unexpected mixed feed, 5 min TTL)
@@ -201,12 +200,7 @@ const getTrendingCategories = unstable_cache(
   { revalidate: 600, tags: ['homepage-trending-categories'] }
 );
 
-type SearchProduct = Prisma.ProductGetPayload<{
-  include: {
-    images: { select: { url: true } };
-    shop: { select: { name: true; slug: true; isVerified: true } };
-  };
-}>;
+type SearchProduct = ShopperProduct;
 
 interface HomePageProps {
   searchParams: Promise<{
@@ -267,137 +261,27 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         wishlistedProductIds = new Set(userWishlist.map((w) => w.productId));
       }
 
-      const categoriesRaw = await db.product.groupBy({
-        by: ['category'],
-        where: {
-          status: 'ACTIVE',
-          shop: { isSuspended: false, isPaused: false }
-        },
-        _count: {
-          id: true,
-        },
-      });
-      categories = categoriesRaw.map((c) => ({
-        name: c.category,
-        count: c._count.id,
-      })).sort((a, b) => b.count - a.count);
-
-      const cityRows = await db.shop.findMany({
-        where: { isSuspended: false, isPaused: false, city: { not: null } },
-        select: { city: true },
-        distinct: ['city'],
-        take: 100,
-      });
-      cities = cityRows.map((r) => r.city as string).sort();
-
-      if (query) {
-        const parsedMin = parseFloat(minPrice);
-        const parsedMax = parseFloat(maxPrice);
-        const minVal = !isNaN(parsedMin) ? Math.max(0, parsedMin) : undefined;
-        const maxVal = !isNaN(parsedMax) ? Math.max(0, parsedMax) : undefined;
-        const searchSort: ProductSearchSort =
-          sort === 'price-asc' || sort === 'price-desc' || sort === 'newest' ? sort : 'relevance';
-
-        const { ids, total } = await searchProductIds({
+      const [catCities, productResult] = await Promise.all([
+        fetchShopperCategoriesAndCities(),
+        fetchShopperProducts({
           query,
-          category: selectedCategory || undefined,
-          city: selectedCity || undefined,
+          category: selectedCategory,
+          city: selectedCity,
           inStockOnly,
-          minPrice: minVal,
-          maxPrice: maxVal,
-          sort: searchSort,
+          sort,
           page,
-          perPage: itemsPerPage,
-          rating: rating ? parseFloat(rating) : undefined,
-        });
+          itemsPerPage,
+          minPrice,
+          maxPrice,
+          rating,
+        }),
+      ]);
 
-        const found = await db.product.findMany({
-          where: { id: { in: ids } },
-          include: {
-            images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-            shop: { select: { name: true, slug: true, isVerified: true } },
-          },
-        });
-        const byId = new Map(found.map((prod) => [prod.id, prod]));
-        products = ids.map((id) => byId.get(id)).filter((prod): prod is NonNullable<typeof prod> => Boolean(prod));
-        totalProducts = total;
-
-        if (products.length < 4) {
-          discoveryProducts = await db.product.findMany({
-            where: {
-              id: { notIn: products.map((product) => product.id) },
-              status: 'ACTIVE',
-              shop: { isSuspended: false, isPaused: false },
-            },
-            include: {
-              images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-              shop: { select: { name: true, slug: true, isVerified: true } },
-            },
-            orderBy: [{ inStock: 'desc' }, { createdAt: 'desc' }],
-            take: 4,
-          });
-        }
-      } else {
-        const filterConditions: Prisma.ProductWhereInput = {
-          status: 'ACTIVE',
-          shop: { isSuspended: false, isPaused: false },
-        };
-
-        if (selectedCategory) {
-          filterConditions.category = selectedCategory;
-        }
-
-        if (selectedCity) {
-          filterConditions.shop = {
-            isSuspended: false,
-            isPaused: false,
-            city: { equals: selectedCity, mode: 'insensitive' },
-          };
-        }
-
-        if (inStockOnly) {
-          filterConditions.inStock = true;
-        }
-
-        if (minPrice || maxPrice) {
-          const parsedMin = parseFloat(minPrice);
-          const parsedMax = parseFloat(maxPrice);
-          const priceFilter: Prisma.FloatFilter = {};
-          if (!isNaN(parsedMin)) priceFilter.gte = Math.max(0, parsedMin);
-          if (!isNaN(parsedMax)) priceFilter.lte = Math.max(0, parsedMax);
-          filterConditions.price = priceFilter;
-        }
-
-        if (rating) {
-          const ratingVal = parseFloat(rating);
-          if (!isNaN(ratingVal)) {
-            filterConditions.shop = {
-              ...(filterConditions.shop as Prisma.ShopWhereInput),
-              averageRating: { gte: ratingVal },
-            };
-          }
-        }
-
-        let orderBy: Prisma.ProductOrderByWithRelationInput[] = [{ inStock: 'desc' }, { createdAt: 'desc' }];
-        if (sort === 'price-asc') orderBy = [{ inStock: 'desc' }, { price: 'asc' }];
-        else if (sort === 'price-desc') orderBy = [{ inStock: 'desc' }, { price: 'desc' }];
-
-        [products, totalProducts] = await Promise.all([
-          db.product.findMany({
-            where: filterConditions,
-            include: {
-              images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-              shop: { select: { name: true, slug: true, isVerified: true } },
-            },
-            orderBy,
-            skip: (page - 1) * itemsPerPage,
-            take: itemsPerPage,
-          }),
-          db.product.count({
-            where: filterConditions,
-          }),
-        ]);
-      }
+      categories = catCities.categories;
+      cities = catCities.cities;
+      products = productResult.products;
+      discoveryProducts = productResult.discoveryProducts;
+      totalProducts = productResult.totalProducts;
     } catch (error) {
       logger.error('Error fetching products for catalog view', error);
     }
@@ -565,11 +449,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const heroStats = getHeroReelStats();
 
   const suggestionTags = [
-    { name: 'Oud Perfume', query: 'Oud' },
-    { name: 'Silver Jewelry', query: 'Silver' },
-    { name: 'Crochet Bags', query: 'Bag' },
-    { name: 'Home Decor', query: 'Decor' },
-    { name: 'Aesthetic Posters', query: 'Poster' }
+    { name: 'Fashion', slug: 'fashion' },
+    { name: 'Beauty', slug: 'beauty' },
+    { name: 'Home & Living', slug: 'home %26 living' },
+    { name: 'Art & Collectibles', slug: 'art %26 collectibles' },
+    { name: 'Clay Crafts', slug: 'clay crafts' },
   ];
 
   // 10 categories matching mockup with premium Unsplash images
@@ -624,7 +508,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               {suggestionTags.map((tag) => (
                 <Link
                   key={tag.name}
-                  href={`/?q=${encodeURIComponent(tag.query)}`}
+                  href={`/category/${tag.slug}`}
                   className="px-3.5 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-200 hover:border-[#A77F3A]/50 text-zinc-700 hover:text-[#A77F3A] rounded-full text-xs font-semibold transition-all duration-300 shadow-2xs cursor-pointer select-none active:scale-95"
                 >
                   {tag.name}
