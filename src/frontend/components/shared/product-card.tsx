@@ -7,8 +7,9 @@ import { WishlistButton } from './wishlist-button';
 import { NoImagePlaceholder } from './no-image-placeholder';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, Check, Plus } from 'lucide-react';
-import { getLocalCart, saveLocalCart } from '@/frontend/components/store/store-cart';
+import { getLocalCart, saveLocalCart, getSelectionsKey } from '@/frontend/components/store/store-cart';
 import { bumpCartVersion } from '@/frontend/lib/cart-utils';
+import { parseOptions } from '@/shared/lib/order-message';
 
 interface ProductCardProps {
   product: {
@@ -95,17 +96,24 @@ export function ProductCard({
 
     if (isAdded) return;
 
-    if (product.options && product.options.trim().length > 0) {
-      router.push(productUrl);
-      return;
-    }
-
     const shopId = product.shopId || product.shop.id;
     if (!shopId) return;
 
+    // Build default selections from variant options if they exist
+    const selections: Record<string, string> = {};
+    if (product.options && product.options.trim().length > 0) {
+      const parsed = parseOptions(product.options);
+      parsed.forEach((group) => {
+        if (group.values.length > 0) {
+          selections[group.label ?? '_'] = group.values[0];
+        }
+      });
+    }
+    const selectionsKey = getSelectionsKey(selections);
+
     const cart = getLocalCart(shopId);
     const existingIndex = cart.findIndex(
-      (item) => item.productId === product.id && item.selectionsKey === '_'
+      (item) => item.productId === product.id && item.selectionsKey === selectionsKey
     );
 
     if (existingIndex > -1) {
@@ -117,8 +125,8 @@ export function ProductCard({
         price: product.price,
         image: product.images?.[0]?.url,
         quantity: 1,
-        selections: {},
-        selectionsKey: '_',
+        selections,
+        selectionsKey,
       });
     }
 
@@ -177,12 +185,10 @@ export function ProductCard({
                         ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
                         : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
                     }`}
-                    title={product.options ? "Select options" : "Add to Cart"}
+                    title="Add to Cart"
                   >
                     {isAdded ? (
                       <Check className="h-4 w-4" />
-                    ) : product.options && product.options.trim().length > 0 ? (
-                      <Plus className="h-4 w-4" />
                     ) : (
                       <ShoppingCart className="h-4 w-4" />
                     )}
@@ -301,12 +307,10 @@ export function ProductCard({
                       ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
                       : 'bg-white hover:bg-amber-50 text-zinc-700 hover:text-amber-600 border-zinc-250 hover:border-amber-400'
                   }`}
-                  title={product.options ? "Select options" : "Add to Cart"}
+                  title="Add to Cart"
                 >
                   {isAdded ? (
                     <Check className="h-4 w-4" />
-                  ) : product.options && product.options.trim().length > 0 ? (
-                    <Plus className="h-4 w-4" />
                   ) : (
                     <ShoppingCart className="h-4 w-4" />
                   )}

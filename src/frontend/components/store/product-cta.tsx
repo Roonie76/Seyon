@@ -37,7 +37,18 @@ export function ProductCTA({
   imageUrl,
 }: ProductCTAProps) {
   const groups = React.useMemo(() => (options ? parseOptions(options) : []), [options]);
-  const [selections, setSelections] = React.useState<Record<string, string>>({});
+  const [selections, setSelections] = React.useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    if (options) {
+      const parsed = parseOptions(options);
+      parsed.forEach((group) => {
+        if (group.values.length > 0) {
+          initial[group.label ?? '_'] = group.values[0];
+        }
+      });
+    }
+    return initial;
+  });
   const [added, setAdded] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showGuidelines, setShowGuidelines] = React.useState(false);
