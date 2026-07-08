@@ -3,7 +3,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, X, Heart, ChevronRight, User, LogOut, ShoppingBag } from 'lucide-react';
+import { Menu, Search, X, Heart, ChevronRight, User, LogOut, ShoppingBag, ShoppingCart } from 'lucide-react';
+import { getTotalCartCount } from '@/frontend/lib/cart-utils';
 
 interface NavbarClientProps {
   user?: {
@@ -31,6 +32,30 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
   const [showCartTooltip, setShowCartTooltip] = React.useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [cartCount, setCartCount] = React.useState(0);
+
+  // Sync cart count
+  React.useEffect(() => {
+    setCartCount(getTotalCartCount());
+
+    const handleCartUpdated = () => {
+      setCartCount(getTotalCartCount());
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('seyon_cart:') || e.key === 'seyon_cart_meta') {
+        setCartCount(getTotalCartCount());
+      }
+    };
+
+    window.addEventListener('seyon-cart-updated', handleCartUpdated);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('seyon-cart-updated', handleCartUpdated);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   // Fetch search suggestions
   React.useEffect(() => {
@@ -238,6 +263,20 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                   )}
                 </Link>
 
+                {/* Cart */}
+                <Link
+                  href="/cart"
+                  className="relative p-1 text-zinc-600 hover:text-amber-500 transition-colors flex items-center justify-center"
+                  title="My Cart"
+                >
+                  <ShoppingCart className="h-5 w-5 stroke-[1.5]" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center animate-fade-in">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+
 
                 {/* Account */}
                 {user ? (
@@ -437,6 +476,21 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
                   className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
                 >
                   My Wishlist
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                </Link>
+                <Link
+                  href="/cart"
+                  onClick={closeAll}
+                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    My Basket
+                    {cartCount > 0 && (
+                      <span className="bg-amber-500 text-[10px] text-white px-2 py-0.5 rounded-full font-extrabold">
+                        {cartCount}
+                      </span>
+                    )}
+                  </span>
                   <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </Link>
               </div>

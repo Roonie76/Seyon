@@ -72,6 +72,8 @@ export const RATE_LIMITS = {
   WHATSAPP_VERIFY_REQUEST: { limit: 3, windowMs: 3_600_000 },
   /** WhatsApp verification code attempts, keyed by shop id. */
   WHATSAPP_VERIFY_CONFIRM: { limit: 6, windowMs: 3_600_000 },
+  /** Cart validation requests, keyed by IP address. */
+  CART_VALIDATE: { limit: 30, windowMs: 60_000 },
 } as const;
 
 /** Test-only helper to reset state between test cases. */
