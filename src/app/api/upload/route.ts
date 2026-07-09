@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const rl = rateLimit(`upload:${session.user.id}`, RATE_LIMITS.UPLOAD.limit, RATE_LIMITS.UPLOAD.windowMs);
+    const rl = await rateLimit(`upload:${session.user.id}`, RATE_LIMITS.UPLOAD.limit, RATE_LIMITS.UPLOAD.windowMs);
     if (!rl.success) {
       return NextResponse.json(
         { error: 'Upload limit reached. Please try again later.' },
@@ -40,6 +40,20 @@ export async function POST(req: NextRequest) {
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json({ error: 'Unsupported file format. Use JPEG, PNG, WEBP, or GIF' }, { status: 400 });
+    }
+
+    // Validate magic bytes server-side
+    const fileTypeModule = await import('file-type');
+    const fromBufferFn = fileTypeModule.fromBuffer || (fileTypeModule as Record<string, { fromBuffer?: unknown }>).default?.fromBuffer;
+    if (typeof fromBufferFn !== 'function') {
+      throw new Error('file-type fromBuffer is not a function');
+    }
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const detectedType = await fromBufferFn(buffer);
+
+    if (!detectedType || !ALLOWED_TYPES.includes(detectedType.mime)) {
+      return NextResponse.json({ error: 'File content does not match allowed image formats' }, { status: 400 });
     }
 
     const publicUrl = await uploadFile(file, bucket);

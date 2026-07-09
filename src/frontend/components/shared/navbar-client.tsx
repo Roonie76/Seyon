@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, X, Heart, ChevronRight, User, LogOut, ShoppingBag, ShoppingCart } from 'lucide-react';
+import { Menu, Search, X, Heart, ChevronRight, User, LogOut, ShoppingCart } from 'lucide-react';
 import { getTotalCartCount } from '@/frontend/lib/cart-utils';
 
 interface NavbarClientProps {
@@ -24,20 +24,22 @@ interface Suggestion {
   products: { id: string; title: string; slug: string; price: number; shop: { slug: string } }[];
 }
 
-export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: NavbarClientProps) {
+export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
-  const [showCartTooltip, setShowCartTooltip] = React.useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const [cartCount, setCartCount] = React.useState(0);
+  const [cartCount, setCartCount] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return getTotalCartCount();
+    }
+    return 0;
+  });
 
   // Sync cart count
   React.useEffect(() => {
-    setCartCount(getTotalCartCount());
-
     const handleCartUpdated = () => {
       setCartCount(getTotalCartCount());
     };
@@ -229,15 +231,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
 
             {/* Right: Navigation Links & Icons */}
             <div className="flex items-center gap-4 lg:gap-6">
-              {/* Desktop Nav Links */}
-              <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-zinc-600">
-                <Link href="/marketplace" className="hover:text-zinc-950 transition-colors py-1">Explore</Link>
-                <Link href="/#creators-section" className="hover:text-zinc-950 transition-colors py-1">Creators</Link>
-                <Link href="/#collections-section" className="hover:text-zinc-950 transition-colors py-1">Collections</Link>
-              </nav>
-
-              <div className="hidden lg:block h-5 w-px bg-zinc-200" />
-
               {/* Icons row */}
               <div className="flex items-center gap-4">
                 {/* Search Toggle (Mobile only) */}
@@ -445,31 +438,6 @@ export function NavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }:
             {/* Menu Links */}
             <nav className="flex-1 space-y-6">
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Browse</span>
-                <Link
-                  href="/marketplace"
-                  onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
-                >
-                  Explore Marketplace
-                  <ChevronRight className="h-4 w-4 text-zinc-400" />
-                </Link>
-                <Link
-                  href="/#creators-section"
-                  onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
-                >
-                  Meet Creators
-                  <ChevronRight className="h-4 w-4 text-zinc-400" />
-                </Link>
-                <Link
-                  href="/#collections-section"
-                  onClick={closeAll}
-                  className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
-                >
-                  Shop by Collections
-                  <ChevronRight className="h-4 w-4 text-zinc-400" />
-                </Link>
                 <Link
                   href="/wishlist"
                   onClick={closeAll}

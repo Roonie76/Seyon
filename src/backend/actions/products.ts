@@ -61,7 +61,7 @@ export async function createProduct(shopId: string, rawData: unknown) {
 
     const { shop } = await verifyShopOwnership(parsedShopId.data);
 
-    const rl = rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
+    const rl = await rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
     if (!rl.success) {
       return { error: 'Too many products created today. Please try again later.' };
     }
@@ -322,7 +322,7 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
       return { error: validated.error.issues[0].message };
     }
 
-    const rl = rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
+    const rl = await rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
     if (!rl.success) {
       return { error: 'Too many products created today. Please try again later.' };
     }

@@ -103,8 +103,10 @@ export async function POST(req: NextRequest) {
   try {
     // Rate-limit by IP (anonymous endpoint — no auth required)
     const ip =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    const rl = rateLimit(
+      req.headers.get('x-real-ip') ||
+      req.headers.get('x-forwarded-for')?.split(',').pop()?.trim() ||
+      'unknown';
+    const rl = await rateLimit(
       `cart-validate:${ip}`,
       RATE_LIMITS.CART_VALIDATE.limit,
       RATE_LIMITS.CART_VALIDATE.windowMs

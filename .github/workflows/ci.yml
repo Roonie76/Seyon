@@ -29,6 +29,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Security Scan
+        run: npm run security-scan
+
       - name: Unit tests
         run: npm run test
 

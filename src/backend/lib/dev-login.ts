@@ -6,9 +6,7 @@
  * (e.g. on a throwaway staging deployment). Never set this on a real domain.
  */
 export function isDevLoginEnabled(
-  nodeEnv: string | undefined = process.env.NODE_ENV,
   override: string | undefined = process.env.ALLOW_INSECURE_DEV_LOGIN
 ): boolean {
-  if (override === 'true') return true;
-  return nodeEnv !== 'production';
+  return override === 'true';
 }

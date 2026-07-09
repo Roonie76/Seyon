@@ -97,7 +97,7 @@ async function sendWhatsappTemplate(to: string, code: string) {
 export async function requestWhatsappVerification() {
   try {
     const shop = await getOwnedShop();
-    const rl = rateLimit(
+    const rl = await rateLimit(
       `whatsapp-verify-request:${shop.id}`,
       RATE_LIMITS.WHATSAPP_VERIFY_REQUEST.limit,
       RATE_LIMITS.WHATSAPP_VERIFY_REQUEST.windowMs
@@ -158,7 +158,7 @@ export async function confirmWhatsappVerification(rawCode: string) {
       return { error: 'Enter the 6-digit verification code' };
     }
 
-    const rl = rateLimit(
+    const rl = await rateLimit(
       `whatsapp-verify-confirm:${shop.id}`,
       RATE_LIMITS.WHATSAPP_VERIFY_CONFIRM.limit,
       RATE_LIMITS.WHATSAPP_VERIFY_CONFIRM.windowMs

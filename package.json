@@ -12,7 +12,8 @@
     "lighthouse": "lhci autorun",
     "prepare": "husky",
     "db:indexes": "tsx prisma/apply-indexes.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "security-scan": "npx tsx scripts/owasp-scan.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -24,10 +25,12 @@
     "@supabase/supabase-js": "^2.106.2",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
-    "next-auth": "^5.0.0-beta.25",
+    "next-auth": "^5.0.0-beta.31",
     "node-vibrant": "^4.0.4",
     "pg": "^8.21.0",
     "posthog-js": "^1.378.1",
@@ -60,6 +63,9 @@
     "tsx": "^4.22.4",
     "typescript": "^5",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "tmp": "^0.2.6"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

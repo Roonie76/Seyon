@@ -6,6 +6,13 @@ import { db } from '@/lib/db';
 import { Role } from '@prisma/client';
 import { rateLimit, RATE_LIMITS } from './rate-limit';
 import { isDevLoginEnabled } from './dev-login';
+import { logger } from './logger';
+
+if (isDevLoginEnabled()) {
+  logger.warn(
+    'SECURITY WARNING: Insecure dev login credentials provider is active! This should only be used in local development.'
+  );
+}
 
 // Single source of truth for the secret. NextAuth v5 also auto-reads AUTH_SECRET
 // internally for some operations, so AUTH_SECRET and NEXTAUTH_SECRET MUST hold the
@@ -23,7 +30,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      allowDangerousEmailAccountLinking: true,
+      allowDangerousEmailAccountLinking: process.env.ALLOW_DANGEROUS_ACCOUNT_LINKING === 'true',
     }),
     // Dev/demo only: passwordless email login. Excluded from production builds
     // (see src/backend/lib/dev-login.ts).
@@ -42,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = credentials.email as string;
 
-        const rl = rateLimit(`login:${email.toLowerCase()}`, RATE_LIMITS.LOGIN.limit, RATE_LIMITS.LOGIN.windowMs);
+        const rl = await rateLimit(`login:${email.toLowerCase()}`, RATE_LIMITS.LOGIN.limit, RATE_LIMITS.LOGIN.windowMs);
         if (!rl.success) {
           return null;
         }

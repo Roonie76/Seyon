@@ -22,7 +22,7 @@ export async function createShop(rawData: unknown) {
 
     const userId = session.user.id;
 
-    const rl = rateLimit(`shop-create:${userId}`, RATE_LIMITS.SHOP_CREATE.limit, RATE_LIMITS.SHOP_CREATE.windowMs);
+    const rl = await rateLimit(`shop-create:${userId}`, RATE_LIMITS.SHOP_CREATE.limit, RATE_LIMITS.SHOP_CREATE.windowMs);
     if (!rl.success) {
       return { error: 'Too many shop creation attempts today. Please try again later.' };
     }

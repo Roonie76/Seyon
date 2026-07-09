@@ -1,14 +1,20 @@
 /**
- * In-memory sliding-window rate limiter.
+ * Serverless-safe rate limiter with Upstash Redis backend.
  *
- * Scope: per server instance. On serverless/multi-instance deployments each
- * instance keeps its own counters, so real-world limits are (limit x instances).
- * That still blunts brute-force and spam. For exact global limits, swap the
- * Map for Upstash Redis — the function signature is designed to stay the same.
+ * When UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are configured,
+ * rate limits are enforced via a shared Redis sliding-window counter (global
+ * across all Vercel instances). When credentials are missing or Redis errors
+ * out, falls back to the original in-memory Map sliding-window limiter.
+ *
+ * Visibility:
+ *  - Missing credentials in production → SECURITY WARNING via logger.warn
+ *  - Redis errors mid-request → tagged logger.error (RATE_LIMIT_REDIS_FALLBACK)
+ *  - Missing credentials in dev/test → silent (zero-setup local experience)
  */
 
-const WINDOWS = new Map<string, number[]>();
-const MAX_TRACKED_KEYS = 10_000;
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import { logger } from './logger';
 
 export interface RateLimitResult {
   success: boolean;
@@ -17,7 +23,11 @@ export interface RateLimitResult {
   retryAfterSeconds: number;
 }
 
-export function rateLimit(
+// --- In-Memory fallback rate limiter (original implementation) ---
+const WINDOWS = new Map<string, number[]>();
+const MAX_TRACKED_KEYS = 10_000;
+
+function localRateLimit(
   key: string,
   limit: number,
   windowMs: number,
@@ -54,6 +64,89 @@ export function rateLimit(
   };
 }
 
+// --- Upstash Redis Serverless rate limiter (lazy initialization) ---
+let _redis: Redis | null | undefined; // undefined = not yet initialized
+let _prodWarningEmitted = false;
+
+function getRedis(): Redis | null {
+  if (_redis !== undefined) return _redis;
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    _redis = new Redis({ url, token });
+  } else {
+    _redis = null;
+    if (process.env.NODE_ENV === 'production' && !_prodWarningEmitted) {
+      _prodWarningEmitted = true;
+      logger.warn(
+        'SECURITY WARNING: Upstash Redis connection parameters ' +
+        '(UPSTASH_REDIS_REST_URL/TOKEN) are missing in production! ' +
+        'Rate limiting is running on non-shared in-memory storage, ' +
+        'which is not serverless-safe.'
+      );
+    }
+  }
+
+  return _redis;
+}
+
+const ratelimiters = new Map<string, Ratelimit>();
+
+function getRateLimiter(prefix: string, limit: number, windowMs: number): Ratelimit | null {
+  const redis = getRedis();
+  if (!redis) return null;
+
+  // Scoped cache key prevents collision if the same prefix
+  // is ever reused with different limit/windowMs config
+  const cacheKey = `${prefix}:${limit}:${windowMs}`;
+  let limiter = ratelimiters.get(cacheKey);
+  if (!limiter) {
+    const durationString = `${Math.ceil(windowMs / 1000)} s`;
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, durationString as Parameters<typeof Ratelimit.slidingWindow>[1]),
+      prefix: `seyon:ratelimit:${prefix}`,
+    });
+    ratelimiters.set(cacheKey, limiter);
+  }
+  return limiter;
+}
+
+export async function rateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+  now: number = Date.now()
+): Promise<RateLimitResult> {
+  const prefix = key.split(':')[0] || 'default';
+  const limiter = getRateLimiter(prefix, limit, windowMs);
+
+  if (!limiter) {
+    return localRateLimit(key, limit, windowMs, now);
+  }
+
+  try {
+    const result = await limiter.limit(key);
+    return {
+      success: result.success,
+      remaining: result.remaining,
+      retryAfterSeconds: result.success
+        ? 0
+        : Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
+    };
+  } catch (err) {
+    logger.error(
+      'RATE_LIMIT_REDIS_FALLBACK: Redis rate limiter failed, ' +
+      'falling back to local memory storage',
+      err,
+      { key, prefix, limit, windowMs }
+    );
+    return localRateLimit(key, limit, windowMs, now);
+  }
+}
+
 /** Central registry of limits so policies live in one place. */
 export const RATE_LIMITS = {
   /** Credentials sign-in attempts, keyed by email. */
@@ -74,9 +167,14 @@ export const RATE_LIMITS = {
   WHATSAPP_VERIFY_CONFIRM: { limit: 6, windowMs: 3_600_000 },
   /** Cart validation requests, keyed by IP address. */
   CART_VALIDATE: { limit: 30, windowMs: 60_000 },
+  /** Search suggestions autocomplete endpoints, keyed by IP. */
+  SUGGESTIONS: { limit: 30, windowMs: 60_000 },
 } as const;
 
-/** Test-only helper to reset state between test cases. */
+/** Test-only: reset in-memory state and force lazy Redis re-evaluation. */
 export function _clearRateLimitStore(): void {
   WINDOWS.clear();
+  ratelimiters.clear();
+  _redis = undefined;
+  _prodWarningEmitted = false;
 }

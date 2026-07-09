@@ -20,7 +20,7 @@ export async function createReview(shopId: string, rawData: unknown) {
       return { error: 'User ID not found in session' };
     }
 
-    const rl = rateLimit(`review:${userId}`, RATE_LIMITS.REVIEW_CREATE.limit, RATE_LIMITS.REVIEW_CREATE.windowMs);
+    const rl = await rateLimit(`review:${userId}`, RATE_LIMITS.REVIEW_CREATE.limit, RATE_LIMITS.REVIEW_CREATE.windowMs);
     if (!rl.success) {
       return { error: 'You have submitted too many reviews today. Please try again later.' };
     }

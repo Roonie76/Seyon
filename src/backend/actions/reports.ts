@@ -20,7 +20,7 @@ export async function createReport(shopId: string, rawData: unknown) {
       return { error: 'User ID not found in session' };
     }
 
-    const rl = rateLimit(`report:${userId}`, RATE_LIMITS.REPORT_CREATE.limit, RATE_LIMITS.REPORT_CREATE.windowMs);
+    const rl = await rateLimit(`report:${userId}`, RATE_LIMITS.REPORT_CREATE.limit, RATE_LIMITS.REPORT_CREATE.windowMs);
     if (!rl.success) {
       return { error: 'You have filed too many reports today. Please try again later.' };
     }
