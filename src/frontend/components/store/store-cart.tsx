@@ -187,7 +187,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
       {/* Floating Cart Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white rounded-full shadow-2xl hover:scale-105 transition-all duration-300 select-none animate-bounce cursor-pointer font-bold border border-amber-500/20"
+        className="fixed bottom-24 lg:bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white rounded-full shadow-2xl hover:scale-105 transition-all duration-300 select-none animate-bounce cursor-pointer font-bold border border-amber-500/20"
       >
         <ShoppingCart className="h-5 w-5 animate-pulse" />
         <span className="text-xs bg-white text-amber-700 h-5 w-5 flex items-center justify-center rounded-full font-black">
