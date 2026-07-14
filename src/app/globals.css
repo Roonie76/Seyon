@@ -3,32 +3,32 @@
 @theme {
   --color-background: #ffffff;
   --color-foreground: hsl(0 0% 9%);
-  
+
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(0 0% 9%);
-  
+
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(0 0% 9%);
-  
+
   --color-primary: hsl(46 65% 52%);
   --color-primary-foreground: hsl(0 0% 3%);
-  
+
   --color-secondary: hsl(218 22% 10%);
   --color-secondary-foreground: hsl(0 0% 100%);
-  
+
   --color-muted: hsl(0 0% 94%);
   --color-muted-foreground: hsl(0 0% 40%);
-  
+
   --color-accent: hsl(46 65% 94%);
   --color-accent-foreground: hsl(46 65% 30%);
-  
+
   --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  
+
   --color-border: hsl(0 0% 89%);
   --color-input: hsl(0 0% 89%);
   --color-ring: hsl(46 65% 52%);
-  
+
   --color-whatsapp: hsl(142.1 76.2% 36.3%);
   --color-whatsapp-foreground: hsl(210 40% 98%);
 
@@ -50,6 +50,10 @@
   --radius-lg: 0.75rem;
   --radius-md: calc(0.75rem - 2px);
   --radius-sm: calc(0.75rem - 4px);
+
+  --font-sans: var(--font-geist-sans), sans-serif;
+  --font-serif: var(--font-serif-custom), Georgia, serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 @layer base {
@@ -57,35 +61,22 @@
     border-color: var(--color-border);
     outline-color: var(--color-ring);
   }
-  
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
   }
 
-  button,
-  .button,
-  .btn,
-  a[role="button"],
-  input[type="submit"],
-  input[type="button"],
-  [type="button"],
-  /* Text Inputs & Placeholders */
-  input,
-  input::placeholder,
-  textarea,
-  textarea::placeholder,
-  /* Global Luxury Typography: All headings & uppercase elements */
   h1,
   h2,
   h3,
   h4,
   h5,
-  h6,
-  .uppercase {
-    font-family: var(--font-serif-custom), Georgia, serif !important;
+  h6 {
+    font-family: var(--font-serif);
   }
 }
 
@@ -131,9 +122,17 @@
 }
 
 @keyframes glow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Custom Scrollbar */
@@ -157,18 +156,35 @@
 
 /* Custom navigation drawer and slide animations */
 @keyframes slide-down {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-right {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-slide-down {
@@ -204,12 +220,10 @@
   left: 0;
   width: 150%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.45) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255, 255, 255, 0) 100%);
   transform: skewX(-20deg) translateX(-150%);
   animation: goldShineSweep 4s infinite ease-in-out;
 }
@@ -218,7 +232,9 @@
   0% {
     transform: skewX(-20deg) translateX(-150%);
   }
-  35%, 100% {
+
+  35%,
+  100% {
     transform: skewX(-20deg) translateX(150%);
   }
 }
