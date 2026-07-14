@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, MessageCircle, MapPin, ClipboardCheck, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { createPortal } from 'react-dom';
+import { ShoppingCart, X, Plus, Minus, Trash2, MapPin, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { getUserProfile } from '@/backend/actions/user-profile';
 import { trackEvent } from '@/actions/analytics';
 
@@ -55,6 +55,12 @@ interface StoreCartWidgetProps {
 
 export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartWidgetProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
   const [items, setItems] = React.useState<CartItem[]>(() => getLocalCart(shopId));
   const [address, setAddress] = React.useState<{
     addressLine1?: string | null;
@@ -191,7 +197,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
       </button>
 
       {/* Slide-over Drawer Panel */}
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end">
           {/* Backdrop Click Dismiss */}
           <button
@@ -340,7 +346,8 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
