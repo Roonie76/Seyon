@@ -22,31 +22,7 @@ function htmlRedirect(url: string): NextResponse {
   });
 }
 
-/**
- * Seller hosts are configured explicitly via the SELLER_HOSTS env var
- * (comma-separated hostnames, no protocol, no port), e.g.:
- *   SELLER_HOSTS="sell.seyon.in,seyon-seller.vercel.app"
- *
- * Exact hostname matching replaces the old substring sniffing
- * (host.includes('sell')), which misclassified any shopper domain
- * containing "sell" anywhere in it.
- */
-function getSellerHosts(): Set<string> {
-  const configured = process.env.SELLER_HOSTS || 'seyon-seller.vercel.app,localhost:3001,127.0.0.1:3000';
-  return new Set(
-    configured
-      .split(',')
-      .map((h) => h.trim().toLowerCase())
-      .filter(Boolean)
-  );
-}
-
-function isSellerHost(host: string): boolean {
-  const sellerHosts = getSellerHosts();
-  const normalized = host.toLowerCase();
-  const withoutPort = normalized.replace(/:\d+$/, '');
-  return sellerHosts.has(normalized) || sellerHosts.has(withoutPort);
-}
+import { isSellerHost } from '@/lib/is-seller-host';
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();

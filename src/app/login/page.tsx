@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ShoppingBag, Globe } from 'lucide-react';
 import { isDevLoginEnabled } from '@/backend/lib/dev-login';
+import { isSellerHost as checkIsSellerHost } from '@/lib/is-seller-host';
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -20,7 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   
   const host = (await headers()).get('host') || '';
-  const isSellerHost = host.startsWith('sell') || host.includes('sell.');
+  const isSellerHost = checkIsSellerHost(host);
   const defaultCallback = isSellerHost ? '/dashboard' : '/marketplace';
   const callbackUrl = params.callbackUrl || defaultCallback;
   const error = params.error;

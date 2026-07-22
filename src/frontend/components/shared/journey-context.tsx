@@ -89,10 +89,17 @@ export function JourneyProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const defaultJourneyContext: JourneyContextValue = {
+  stack: [],
+  isInitialized: true,
+  pushJourneyItem: () => {},
+  truncateJourneyStack: () => {},
+};
+
 export function useJourney() {
   const context = React.useContext(JourneyContext);
   if (context === undefined) {
-    throw new Error('useJourney must be used within a JourneyProvider');
+    return defaultJourneyContext;
   }
   return context;
 }

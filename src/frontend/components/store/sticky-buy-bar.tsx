@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MessageCircle, PackageX, ArrowRight } from 'lucide-react';
+import { PackageX, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { buildOrderMessage } from '@/shared/lib/order-message';
 

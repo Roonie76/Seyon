@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight, Info, ShieldCheck } from 'lucide-react';
+import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight, Info, ShieldCheck, Plus, Minus } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
-import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget } from './store-cart';
+import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget, CartItem } from './store-cart';
 
 interface ProductCTAProps {
   shopId: string;
@@ -53,22 +53,48 @@ export function ProductCTA({
   const [error, setError] = React.useState<string | null>(null);
   const [showGuidelines, setShowGuidelines] = React.useState(false);
   const [showWhyLink, setShowWhyLink] = React.useState(false);
+  const [cartItems, setCartItems] = React.useState<CartItem[]>(() => getLocalCart(shopId));
 
-  const handleAddToCart = () => {
+  React.useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.shopId === shopId) {
+        setCartItems(getLocalCart(shopId));
+      }
+    };
+
+    window.addEventListener('seyon-cart-updated', handleUpdate);
+    return () => window.removeEventListener('seyon-cart-updated', handleUpdate);
+  }, [shopId]);
+
+  const currentSelectionsKey = React.useMemo(() => getSelectionsKey(selections), [selections]);
+
+  const currentCartItem = React.useMemo(() => {
+    return cartItems.find(
+      (item) => item.productId === productId && item.selectionsKey === currentSelectionsKey
+    );
+  }, [cartItems, productId, currentSelectionsKey]);
+
+  const currentQuantity = currentCartItem ? currentCartItem.quantity : 0;
+
+  const validateSelections = (): boolean => {
     if (groups.length > 0) {
       const missing = groups.filter((g) => !selections[g.label ?? '_']);
       if (missing.length > 0) {
         setError(`Please select: ${missing.map((m) => m.label).join(', ')}`);
         setTimeout(() => setError(null), 3000);
-        return;
+        return false;
       }
     }
+    return true;
+  };
 
-    const selectionsKey = getSelectionsKey(selections);
+  const handleAddToCart = () => {
+    if (!validateSelections()) return;
+
     const cart = getLocalCart(shopId);
-
     const existingIndex = cart.findIndex(
-      (item) => item.productId === productId && item.selectionsKey === selectionsKey
+      (item) => item.productId === productId && item.selectionsKey === currentSelectionsKey
     );
 
     if (existingIndex > -1) {
@@ -81,13 +107,57 @@ export function ProductCTA({
         image: imageUrl,
         quantity: 1,
         selections,
-        selectionsKey,
+        selectionsKey: currentSelectionsKey,
       });
     }
 
     saveLocalCart(shopId, cart);
+    setCartItems(cart);
     setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  const handleIncrement = () => {
+    if (!validateSelections()) return;
+
+    const cart = getLocalCart(shopId);
+    const existingIndex = cart.findIndex(
+      (item) => item.productId === productId && item.selectionsKey === currentSelectionsKey
+    );
+
+    if (existingIndex > -1) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push({
+        productId,
+        title: productName,
+        price,
+        image: imageUrl,
+        quantity: 1,
+        selections,
+        selectionsKey: currentSelectionsKey,
+      });
+    }
+
+    saveLocalCart(shopId, cart);
+    setCartItems(cart);
+  };
+
+  const handleDecrement = () => {
+    const cart = getLocalCart(shopId);
+    const existingIndex = cart.findIndex(
+      (item) => item.productId === productId && item.selectionsKey === currentSelectionsKey
+    );
+
+    if (existingIndex > -1) {
+      if (cart[existingIndex].quantity > 1) {
+        cart[existingIndex].quantity -= 1;
+      } else {
+        cart.splice(existingIndex, 1);
+      }
+      saveLocalCart(shopId, cart);
+      setCartItems(cart);
+    }
   };
 
   const selectValue = (groupLabel: string | null, value: string) => {
@@ -187,24 +257,51 @@ export function ProductCTA({
 
       {inStock ? (
         <div className="flex flex-col gap-3 w-full">
-          <button
-            onClick={handleAddToCart}
-            className={`w-full h-12 rounded-lg text-sm font-extrabold uppercase tracking-wide border flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer shadow-sm ${
-              added
-                ? 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600'
-                : 'bg-amber-500 hover:bg-amber-400 text-black border-amber-600'
-            }`}
-          >
-            {added ? (
-              <>
-                <Check className="h-4 w-4" /> Added to Cart
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="h-4 w-4" /> Add to Cart
-              </>
-            )}
-          </button>
+          {currentQuantity > 0 ? (
+            <div className="w-full h-12 rounded-lg bg-amber-500 border border-amber-600 shadow-sm flex items-center justify-between px-2 text-black transition-all duration-300">
+              <button
+                type="button"
+                onClick={handleDecrement}
+                aria-label="Decrease quantity"
+                className="w-9 h-9 rounded-md bg-black/10 hover:bg-black/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer select-none"
+              >
+                <Minus className="h-4 w-4 stroke-[2.5]" />
+              </button>
+              <div className="flex items-center gap-2 font-black text-sm select-none">
+                <span className="text-base font-black">{currentQuantity}</span>
+                <span className="text-[11px] uppercase font-extrabold text-black/75 tracking-wider">
+                  in Cart
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleIncrement}
+                aria-label="Increase quantity"
+                className="w-9 h-9 rounded-md bg-black/10 hover:bg-black/20 active:scale-90 flex items-center justify-center transition-all cursor-pointer select-none"
+              >
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className={`w-full h-12 rounded-lg text-sm font-extrabold uppercase tracking-wide border flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 cursor-pointer shadow-sm ${
+                added
+                  ? 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black border-amber-600'
+              }`}
+            >
+              {added ? (
+                <>
+                  <Check className="h-4 w-4" /> Added to Cart
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4" /> Add to Cart
+                </>
+              )}
+            </button>
+          )}
           <button
             type="button"
             onClick={handleClick}
@@ -272,7 +369,7 @@ export function ProductCTA({
                 <li className="flex items-start gap-2.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
                   <p>
-                    <span className="font-bold text-zinc-900">Pay safely:</span> If advance payment is required, consider limiting it to <span className="font-bold text-zinc-900">10–30% of the total order value</span> and pay the remaining amount <span className="font-bold text-zinc-900">after delivery</span>, whenever both parties agree and it's practical. Prefer <span className="font-bold text-zinc-900">Cash on Delivery (COD)</span> where available.
+                    <span className="font-bold text-zinc-900">Pay safely:</span> If advance payment is required, consider limiting it to <span className="font-bold text-zinc-900">10–30% of the total order value</span> and pay the remaining amount <span className="font-bold text-zinc-900">after delivery</span>, whenever both parties agree and it&apos;s practical. Prefer <span className="font-bold text-zinc-900">Cash on Delivery (COD)</span> where available.
                   </p>
                 </li>
                 <li className="flex items-start gap-2.5">

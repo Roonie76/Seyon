@@ -33,8 +33,8 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
   // Fetch search suggestions
   React.useEffect(() => {
     if (!searchQuery.trim()) {
-      setSuggestions(null);
-      return;
+      const timer = setTimeout(() => setSuggestions(null), 0);
+      return () => clearTimeout(timer);
     }
 
     const delayDebounce = setTimeout(async () => {

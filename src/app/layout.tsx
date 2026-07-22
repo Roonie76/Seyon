@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
+import { JourneyProvider } from "@/components/shared/journey-context";
 import { SITE_URL } from "@/lib/site";
 import { generateWebsiteJSONLD, generateOrganizationJSONLD, safeJsonLdStringify } from "@/lib/seo";
 
@@ -62,7 +63,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(generateOrganizationJSONLD()) }}
         />
         <PostHogProvider>
-          {children}
+          <JourneyProvider>
+            {children}
+          </JourneyProvider>
         </PostHogProvider>
       </body>
     </html>

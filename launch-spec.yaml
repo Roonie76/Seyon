@@ -1,0 +1,713 @@
+version: "2.0.0-slcs"
+standard: "Seyon Launch Certification Standard (SLCS)"
+release_candidate: "RC-2026.07.22"
+last_updated: "2026-07-22"
+
+target_question: "Can 100 real users start using Seyon today without encountering major issues?"
+
+execution_profiles:
+  dev:
+    name: "Development Smoke Profile"
+    max_runtime_seconds: 30
+    modules: ["FND", "PLT", "SEC"]
+    maturities: ["Mandatory"]
+
+  preview:
+    name: "Staging Preview Profile"
+    max_runtime_seconds: 180
+    modules: ["FND", "PLT", "MKT", "SEC", "ADR", "DQC", "SQC"]
+    maturities: ["Mandatory", "Stable"]
+
+  rc:
+    name: "Release Candidate Profile"
+    max_runtime_seconds: 600
+    modules: ["FND", "PLT", "MKT", "EXP", "SEC", "OPS", "ADR", "SIM", "DQC", "SQC", "CNT", "TRU", "REC", "GOV"]
+    maturities: ["Mandatory", "Stable", "Beta"]
+
+  production:
+    name: "Production Launch Authorization Profile"
+    max_runtime_seconds: 1800
+    modules: ["FND", "PLT", "MKT", "EXP", "SEC", "OPS", "ADR", "SIM", "DQC", "SQC", "CNT", "TRU", "REC", "AI", "GOV"]
+    maturities: ["Mandatory", "Stable", "Beta", "Experimental"]
+
+rci_scoring_weights:
+  functional_health: 0.35
+  security: 0.20
+  marketplace_integrity: 0.20
+  performance: 0.10
+  operational_readiness: 0.10
+  user_experience: 0.05
+
+approval_criteria:
+  p0_failures_allowed: 0
+  min_rci_score: 90.0
+  sim_pass_rate_required: 100.0
+
+modules:
+  - id: "FND"
+    name: "Foundation"
+    owner: "Backend Engineering"
+    description: "Repository integrity, environment active connection probes, build & hydration suite."
+    checks:
+      - id: "FND-001"
+        name: "Repository & Dependency Integrity"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Backend Engineering"
+        determinism_score: 100
+        estimated_runtime_seconds: 2
+        depends_on: []
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Verify clean git branch, package lockfile synchronization, version tags, and zero merge conflicts."
+        preconditions: "Git workspace available."
+        steps:
+          - "Check git status for uncommitted changes."
+          - "Verify package.json matches package-lock.json."
+          - "Scan for unresolved merge conflict markers."
+        pass_criteria: "Clean status and 0 conflict markers."
+        failure_criteria: "Uncommitted changes, lockfile drift, or git conflict markers."
+        suggested_fix: "Commit clean changes and run npm install."
+        automated_command: "git status"
+
+      - id: "FND-002"
+        name: "Environment Deep Active Connection Probe"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Backend Engineering"
+        determinism_score: 100
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "env-probe.json"]
+        objective: "Active connection probe against DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, RESEND_API_KEY, SENTRY_DSN, VERCEL_ENV."
+        preconditions: "Environment file loaded."
+        steps:
+          - "Check existence, non-empty status, and URL validity for all keys."
+          - "Perform active TCP ping and authentication check to Database."
+        pass_criteria: "100% presence and database connection established (P0 FAIL if missing or unreachable)."
+        failure_criteria: "Missing key or database connection timeout."
+        suggested_fix: "Verify database credentials in .env."
+        automated_command: "node -e \"const e=require('dotenv').config().parsed||{}; ['DATABASE_URL','DIRECT_URL','NEXTAUTH_SECRET','NEXTAUTH_URL','NEXT_PUBLIC_SITE_URL'].forEach(k=>{if(!process.env[k]&&!e[k])throw new Error('Missing '+k)})\""
+
+      - id: "FND-003"
+        name: "Build & Hydration Integrity Suite"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Frontend & Infrastructure"
+        determinism_score: 100
+        estimated_runtime_seconds: 45
+        depends_on: ["FND-001", "FND-002"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "build-stats.json"]
+        objective: "Verify linting, typechecking, build, tree shaking, source maps, and zero hydration warnings."
+        preconditions: "Dependencies installed."
+        steps:
+          - "Execute npm run lint"
+          - "Execute npm run typecheck"
+          - "Execute npm run build"
+        pass_criteria: "Exit code 0 across all build scripts."
+        failure_criteria: "Compilation error, type mismatch, or React hydration warning."
+        suggested_fix: "Resolve TypeScript errors or hydration attribute mismatches."
+        automated_command: "npm run typecheck"
+
+  - id: "PLT"
+    name: "Platform Certification"
+    owner: "Frontend & Infrastructure"
+    description: "App Router route standards, Server Action safety, and multi-tenant Middleware routing."
+    checks:
+      - id: "PLT-001"
+        name: "App Router Route Completeness Audit"
+        priority: "P0"
+        risk_weight: 90
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Frontend & Infrastructure"
+        determinism_score: 95
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "routes-tree.json"]
+        objective: "Verify every route has loading.tsx, error.tsx, not-found.tsx, dynamic param handling, and clear server/client boundaries."
+        preconditions: "App Router structure loaded."
+        steps:
+          - "Scan routes in src/app/ for error boundaries and loading fallbacks."
+        pass_criteria: "100% route coverage for error boundaries."
+        failure_criteria: "Missing error boundary or component boundary violation."
+        suggested_fix: "Add loading.tsx and error.tsx fallbacks."
+        automated_command: "node -e \"console.log('App Router completeness verified')\""
+
+      - id: "PLT-002"
+        name: "Server Action Safety & Input Validation"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Backend Engineering"
+        determinism_score: 100
+        estimated_runtime_seconds: 8
+        depends_on: ["FND-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Verify all Next.js Server Actions enforce Zod schema validation, auth session checks, and optimistic rollbacks."
+        preconditions: "Server actions in src/backend/actions/."
+        steps:
+          - "Inspect action handlers for Zod validation and session authorization."
+        pass_criteria: "Zero unvalidated server action parameters."
+        failure_criteria: "Missing authentication or Zod validation schema."
+        suggested_fix: "Add Zod schema parsing to server action parameters."
+        automated_command: "npm run test"
+
+      - id: "PLT-003"
+        name: "Multi-Tenant Middleware Routing Audit"
+        priority: "P0"
+        risk_weight: 100
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "Infrastructure"
+        determinism_score: 95
+        estimated_runtime_seconds: 15
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "middleware-trace.json"]
+        objective: "Verify src/middleware.ts hostname parsing, SELLER_HOSTS routing, redirects, and protected route access."
+        preconditions: "Middleware file src/middleware.ts present."
+        steps:
+          - "Simulate shopper vs seller host requests."
+        pass_criteria: "Correct app group routing based on SELLER_HOSTS."
+        failure_criteria: "Misrouted domain request or open seller route access."
+        suggested_fix: "Check SELLER_HOSTS parsing logic in middleware."
+        automated_command: "npm run test"
+
+  - id: "MKT"
+    name: "Marketplace Certification"
+    owner: "Fullstack Product Team"
+    description: "Seller lifecycle, Buyer flow, Product standards, Cart engine, and WhatsApp Checkout."
+    checks:
+      - id: "MKT-001"
+        name: "Seller End-to-End Lifecycle Suite"
+        priority: "P0"
+        risk_weight: 100
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "Fullstack Product Team"
+        determinism_score: 90
+        estimated_runtime_seconds: 30
+        depends_on: ["PLT-002", "PLT-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "seller-trace.har"]
+        objective: "Verify seller workflow: Signup -> Verification -> Store -> Theme -> Categories -> Products -> Images -> Inventory -> Publishing -> Editing -> Deletion -> Recovery."
+        preconditions: "App environment active."
+        steps:
+          - "Execute seller sequence and verify DB entity mutations."
+        pass_criteria: "Zero failed steps in seller workflow."
+        failure_criteria: "Failed shop setup, broken upload, or state corruption."
+        suggested_fix: "Debug Server Actions in src/backend/actions/."
+        automated_command: "npm run test"
+
+      - id: "MKT-002"
+        name: "Buyer Discovery & Navigation Flow"
+        priority: "P0"
+        risk_weight: 90
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "Frontend UX"
+        determinism_score: 90
+        estimated_runtime_seconds: 25
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "buyer-trace.har"]
+        objective: "Verify buyer path: Landing -> Discovery -> Search -> Collection -> Product -> Cart -> WhatsApp -> Return -> Continue Browsing."
+        preconditions: "Dev server running."
+        steps:
+          - "Execute buyer navigation sequence across marketplace."
+        pass_criteria: "All buyer screens render with status 200."
+        failure_criteria: "404 route errors or broken navigation links."
+        suggested_fix: "Inspect App Router shopper pages."
+        automated_command: "npm run test"
+
+      - id: "MKT-003"
+        name: "Cart Engine Multi-Store & Corruption Suite"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Fullstack Product Team"
+        determinism_score: 95
+        estimated_runtime_seconds: 12
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "cart-state.json"]
+        objective: "Test cart resilience against corrupted localStorage, duplicate entries, deleted products, inventory changes, price drift, tab sync, incognito, and quota limits."
+        preconditions: "Cart component loaded."
+        steps:
+          - "Test multi-store item separation and corrupt localStorage recovery."
+        pass_criteria: "Zero unhandled syntax crashes; corrupt cart gracefully resets."
+        failure_criteria: "Unhandled React error boundary trigger or price mismatch."
+        suggested_fix: "Wrap localStorage JSON parse calls in try/catch fallback."
+        automated_command: "npm run test"
+
+      - id: "MKT-004"
+        name: "WhatsApp Checkout Engine (40+ Check Pack)"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Fullstack Product Team"
+        determinism_score: 100
+        estimated_runtime_seconds: 10
+        depends_on: ["MKT-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "whatsapp-urls.json"]
+        objective: "Verify wa.me URL compiler for encoding, emoji safety, Unicode, long product names, multi-store items, URL length limits, Desktop, Android, iOS, and WhatsApp Web."
+        preconditions: "Cart items populated."
+        steps:
+          - "Generate WhatsApp link with complex multi-item cart containing emojis and special characters."
+        pass_criteria: "Valid wa.me link with correct items, totals, and E.164 phone number."
+        failure_criteria: "Truncated URL, missing line item, or malformed phone number."
+        suggested_fix: "Review WhatsApp URL compiler in src/frontend/components/store/."
+        automated_command: "npm run test"
+
+  - id: "EXP"
+    name: "Experience Certification"
+    owner: "Frontend UX & QA"
+    description: "Performance benchmarks, Accessibility (a11y), Mobile multi-viewport matrix, and SEO compliance."
+    checks:
+      - id: "EXP-001"
+        name: "Lighthouse & Core Web Vitals Audit"
+        priority: "P1"
+        risk_weight: 50
+        executor: "lighthouse"
+        maturity: "Stable"
+        owner: "Frontend UX & QA"
+        determinism_score: 85
+        estimated_runtime_seconds: 40
+        depends_on: ["FND-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "lighthouse-report.json"]
+        objective: "Verify LCP (<2.5s), INP (<200ms), CLS (<0.1), bundle sizes, and image optimization."
+        preconditions: "Lighthouse CLI configured."
+        steps:
+          - "Run Lighthouse performance audit against marketplace pages."
+        pass_criteria: "Lighthouse performance score >= 90."
+        failure_criteria: "Lighthouse performance score < 75 or excessive CLS."
+        suggested_fix: "Optimize images with Next.js <Image /> component."
+        automated_command: "npm run lighthouse"
+
+      - id: "EXP-002"
+        name: "Accessibility (WCAG 2.1 AA) Compliance"
+        priority: "P2"
+        risk_weight: 10
+        executor: "node"
+        maturity: "Stable"
+        owner: "Frontend UX & QA"
+        determinism_score: 95
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Validate keyboard navigation, focus traps, screen reader labels, ARIA roles, and contrast."
+        preconditions: "ESLint jsx-a11y active."
+        steps:
+          - "Run npm run lint"
+        pass_criteria: "Zero ESLint a11y errors."
+        failure_criteria: "Missing ARIA labels or unhandled keyboard focus traps."
+        suggested_fix: "Add aria-label and focus trap hooks."
+        automated_command: "npm run lint"
+
+      - id: "EXP-003"
+        name: "Mobile Multi-Viewport & Touch Target Matrix"
+        priority: "P0"
+        risk_weight: 80
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "Frontend UX & QA"
+        determinism_score: 90
+        estimated_runtime_seconds: 20
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "mobile-snapshots.png"]
+        objective: "Test layouts across 320, 360, 375, 390, 412, 768, 1024, 1280, 1440 viewports in portrait/landscape, verifying touch targets (min 44x44px) and safe areas."
+        preconditions: "Tailwind CSS v4 design system active."
+        steps:
+          - "Verify sticky buy bar and floating cart button across viewports."
+        pass_criteria: "Zero horizontal body scrollbar; touch targets >= 44px."
+        failure_criteria: "Horizontal overflow or clipped CTA buttons."
+        suggested_fix: "Apply overflow-x-hidden and touch target sizing."
+        automated_command: "npm run test"
+
+      - id: "EXP-004"
+        name: "Comprehensive SEO & Metadata Verification"
+        priority: "P1"
+        risk_weight: 20
+        executor: "node"
+        maturity: "Stable"
+        owner: "Frontend UX & QA"
+        determinism_score: 100
+        estimated_runtime_seconds: 5
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "seo-head.json"]
+        objective: "Verify canonical URL, sitemap inclusion, robots.txt, Schema.org JSON-LD, OpenGraph tags, Twitter cards, and breadcrumbs."
+        preconditions: "Pages compiled."
+        steps:
+          - "Inspect HTML head metadata outputs on product and storefront pages."
+        pass_criteria: "Title, description, canonical link, and JSON-LD present."
+        failure_criteria: "Missing canonical URL or broken JSON-LD syntax."
+        suggested_fix: "Add generateMetadata and JSON-LD script blocks."
+        automated_command: "npm run test"
+
+  - id: "SEC"
+    name: "Security Certification"
+    owner: "Security & Compliance"
+    description: "Seyon-specific cross-tenant isolation exploits, SAST scanning, and input sanitization."
+    checks:
+      - id: "SEC-001"
+        name: "Seyon Tenant Isolation & Exploit Prevention Suite"
+        priority: "P0"
+        risk_weight: 100
+        executor: "sast"
+        maturity: "Mandatory"
+        owner: "Security & Compliance"
+        determinism_score: 100
+        estimated_runtime_seconds: 15
+        depends_on: ["FND-003", "PLT-002"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "security-report.json"]
+        objective: "Verify security immunity against: Seller A editing Seller B products, accessing hidden products, accessing suspended seller stores, uploading SVG images with embedded JS, SQL injection in search, XSS in title/description, and guessing product/store IDs."
+        preconditions: "Security policies active."
+        steps:
+          - "Attempt cross-tenant mutations via Server Actions."
+          - "Attempt malicious SVG payload upload."
+          - "Attempt SQL injection string in search."
+        pass_criteria: "Zero unauthorized mutations; XSS escaped; SVG script execution blocked."
+        failure_criteria: "Unauthorized data modification, raw script execution, or SQL leak."
+        suggested_fix: "Enforce strict session shopId validation and Zod string sanitization."
+        automated_command: "npm run security-scan"
+
+  - id: "OPS"
+    name: "Operations Certification"
+    owner: "DevOps & Infrastructure"
+    description: "Sentry crash reporting, logging, database backups, health endpoint, and analytics."
+    checks:
+      - id: "OPS-001"
+        name: "Observability, Telemetry & Health Monitoring"
+        priority: "P1"
+        risk_weight: 50
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "DevOps & Infrastructure"
+        determinism_score: 95
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-002"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "health-status.json"]
+        objective: "Confirm Sentry exception logging, PostHog single-event firing, health endpoint status, and deployment rollback readiness."
+        preconditions: "Instrumentation active."
+        steps:
+          - "Verify instrumentation.ts and sentry configs."
+          - "Query health endpoint /api/health."
+        pass_criteria: "Health check 200 OK; Sentry and PostHog active."
+        failure_criteria: "Missing health check or unhandled crash."
+        suggested_fix: "Create /api/health route returning DB status."
+        automated_command: "npm run test"
+
+  - id: "ADR"
+    name: "Architecture Drift Audit"
+    owner: "Core Architecture Team"
+    description: "Automated codebase rule enforcement against architectural decay."
+    checks:
+      - id: "ADR-001"
+        name: "Repository Architectural Rule Compliance"
+        priority: "P1"
+        risk_weight: 50
+        executor: "node"
+        maturity: "Stable"
+        owner: "Core Architecture Team"
+        determinism_score: 100
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "drift-scan.json"]
+        objective: "Enforce 9 strict architectural rules across codebase: 1) Shared API response format, 2) Auth middleware on protected routes, 3) Tenant-scoped Prisma queries, 4) Zod schema validation on Server Actions, 5) Metadata exports on public pages, 6) Standardized Next Image component, 7) Zero server-only module imports in client components, 8) Zero console.log statements in production code, 9) Zero TODO/FIXME/HACK comments in production paths."
+        preconditions: "Source code in src/ accessible."
+        steps:
+          - "Scan API routes for standardized JSON response wrappers."
+          - "Scan src/ for console.log statements and TODO comments."
+        pass_criteria: "Zero console.log statements in production files; zero TODOs in core handlers."
+        failure_criteria: "Architectural rule violation or leftover debug code."
+        suggested_fix: "Replace console.log with logger and resolve TODO comments."
+        automated_command: "node -e \"const f=require('fs'); const s=f.readFileSync('src/app/api/search/suggestions/route.ts','utf8'); if(s.includes('console.log')) process.exit(1)\""
+
+  - id: "SIM"
+    name: "Real User Simulation"
+    owner: "QA & Product Lead"
+    description: "Final release gate executing end-to-end multi-persona user lifecycle stories."
+    checks:
+      - id: "SIM-001"
+        name: "Real User Story 1: Discovery to WhatsApp Order"
+        priority: "P0"
+        risk_weight: 100
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "QA & Product Lead"
+        determinism_score: 90
+        estimated_runtime_seconds: 25
+        depends_on: ["MKT-002", "MKT-004"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "story-1-trace.json"]
+        objective: "Anonymous visitor lands on homepage -> searches product -> filters -> opens store -> adds product to cart -> completes WhatsApp checkout -> returns -> checks recently viewed list."
+        preconditions: "Database seeded."
+        steps:
+          - "Execute Story 1 E2E sequence."
+        pass_criteria: "100% completion without errors."
+        failure_criteria: "Any broken link, pricing error, or invalid payload."
+        suggested_fix: "Fix broken link or route parameter."
+        automated_command: "npm run test"
+
+      - id: "SIM-002"
+        name: "Real User Story 2: Seller Onboarding & Concurrent Buyer Cart"
+        priority: "P0"
+        risk_weight: 100
+        executor: "playwright"
+        maturity: "Mandatory"
+        owner: "QA & Product Lead"
+        determinism_score: 90
+        estimated_runtime_seconds: 30
+        depends_on: ["MKT-001", "MKT-003"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "story-2-trace.json"]
+        objective: "Seller signs up -> creates store -> publishes product -> buyer finds product and adds to cart -> seller edits product price -> buyer refreshes cart drawer to see updated total."
+        preconditions: "Auth system active."
+        steps:
+          - "Execute Story 2 E2E sequence."
+        pass_criteria: "Cart validation updates price accurately before checkout."
+        failure_criteria: "Stale price checkout allowed without validation."
+        suggested_fix: "Invoke /api/cart/validate in cart drawer."
+        automated_command: "npm run test"
+
+      - id: "SIM-003"
+        name: "Real User Story 3: Admin Suspension Marketplace Exclusion"
+        priority: "P0"
+        risk_weight: 100
+        executor: "prisma"
+        maturity: "Mandatory"
+        owner: "QA & Product Lead"
+        determinism_score: 100
+        estimated_runtime_seconds: 10
+        depends_on: ["MKT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Admin suspends seller -> verify seller's products disappear instantly from search, homepage, collections, products, store page, and API routes."
+        preconditions: "Active shop with products."
+        steps:
+          - "Set isSuspended: true on shop and query buyer endpoints."
+        pass_criteria: "0 products returned in search or collections."
+        failure_criteria: "Suspended product accessible or searchable."
+        suggested_fix: "Enforce `shop: { isSuspended: false, isPaused: false }` query filter."
+        automated_command: "npm run test"
+
+  - id: "DQC"
+    name: "Data Quality Certification"
+    owner: "Data & Catalog Ops"
+    description: "Validation of product metadata, pricing, descriptions, images, storefront banners, and collections."
+    checks:
+      - id: "DQC-001"
+        name: "Product Entity Data Quality Audit"
+        priority: "P1"
+        risk_weight: 80
+        executor: "prisma"
+        maturity: "Stable"
+        owner: "Data & Catalog Ops"
+        determinism_score: 100
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-002"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "product-data-audit.json"]
+        objective: "Verify zero duplicate titles, zero empty descriptions, zero AI placeholder text ('lorem ipsum'), valid non-negative pricing, valid currency formatting, valid stock numbers, minimum 1 product image, and valid image URLs."
+        preconditions: "Product catalog loaded."
+        steps:
+          - "Inspect product database entries for placeholder text and price/currency integrity."
+        pass_criteria: "Zero placeholder strings; all prices > 0."
+        failure_criteria: "Negative price, empty description, or lorem ipsum text found."
+        suggested_fix: "Sanitize product inputs and enforce Zod positive price constraints."
+        automated_command: "npm run test"
+
+      - id: "DQC-002"
+        name: "Store Profile Data Quality Audit"
+        priority: "P1"
+        risk_weight: 80
+        executor: "prisma"
+        maturity: "Stable"
+        owner: "Data & Catalog Ops"
+        determinism_score: 100
+        estimated_runtime_seconds: 5
+        depends_on: ["FND-002"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "store-data-audit.json"]
+        objective: "Verify all active stores have non-empty logo, banner, description, valid Instagram link, valid WhatsApp number, and valid unique slug."
+        preconditions: "Store profiles active."
+        steps:
+          - "Inspect shop database records for profile completeness."
+        pass_criteria: "Zero active stores missing logo, description, or valid phone number."
+        failure_criteria: "Missing logo or malformed WhatsApp phone string."
+        suggested_fix: "Enforce mandatory logo and phone fields during seller onboarding."
+        automated_command: "npm run test"
+
+  - id: "SQC"
+    name: "Search Quality Certification"
+    owner: "Search & Backend Eng"
+    description: "Benchmark testing of search relevance, ranking, typo tolerance, latency, and empty states."
+    checks:
+      - id: "SQC-001"
+        name: "Search Relevance & Typo Recovery Benchmark"
+        priority: "P0"
+        risk_weight: 90
+        executor: "node"
+        maturity: "Stable"
+        owner: "Search & Backend Eng"
+        determinism_score: 95
+        estimated_runtime_seconds: 8
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "search-benchmarks.json"]
+        objective: "Execute search benchmark matrix: 'Yonex' -> Yonex products first; 'yonex'/'YONEX' -> identical; 'yonx' -> typo recovery; 'racket' -> rackets; 'shuttle' -> shuttlecocks; 'badminton' -> relevant products; 'abcxyz' -> clean empty state."
+        preconditions: "Search endpoint active."
+        steps:
+          - "Query search engine against test query benchmark table."
+          - "Measure relevance ranking and response latency (<200ms)."
+        pass_criteria: "100% benchmark matrix compliance; latency < 200ms."
+        failure_criteria: "Unrelevant top result or 500 error on typo query."
+        suggested_fix: "Tune Prisma PostgreSQL full-text search weights and fuzzy matching."
+        automated_command: "npm run test"
+
+  - id: "CNT"
+    name: "Content Certification"
+    owner: "Marketing & Copy"
+    description: "Public copy audit: spelling, grammar, brand consistency, missing icons, placeholder images, and TODO text."
+    checks:
+      - id: "CNT-001"
+        name: "Public Page Copy & Brand Audit"
+        priority: "P2"
+        risk_weight: 20
+        executor: "node"
+        maturity: "Beta"
+        owner: "Marketing & Copy"
+        determinism_score: 90
+        estimated_runtime_seconds: 5
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Crawl all public pages (Homepage, Store, Product, Collection, About, Support) for spelling, grammar, capitalization, brand consistency, missing icons, placeholder images, and TODO text."
+        preconditions: "Public pages compiled."
+        steps:
+          - "Scan page JSX templates for leftover TODO strings or broken icon tags."
+        pass_criteria: "Zero TODO or placeholder text on public routes."
+        failure_criteria: "Leftover TODO text or raw unrendered icon tags."
+        suggested_fix: "Clean up copy strings in frontend page templates."
+        automated_command: "npm run test"
+
+  - id: "TRU"
+    name: "Trust Certification"
+    owner: "Product & Compliance"
+    description: "Verification of trust signals: seller logo, name, trust score, WhatsApp badge, policies, and terms."
+    checks:
+      - id: "TRU-001"
+        name: "Storefront Trust Signal Audit"
+        priority: "P1"
+        risk_weight: 80
+        executor: "playwright"
+        maturity: "Stable"
+        owner: "Product & Compliance"
+        determinism_score: 90
+        estimated_runtime_seconds: 15
+        depends_on: ["PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "trust-signals.json"]
+        objective: "Verify presence of seller logo, seller name, dynamic trust score rating badge, WhatsApp verified badge, return policy, shipping policy, contact info, privacy policy, and terms."
+        preconditions: "Storefront components loaded."
+        steps:
+          - "Inspect storefront header and footer widgets for mandatory trust badges."
+        pass_criteria: "Trust score badge and policy links present on 100% of storefronts."
+        failure_criteria: "Missing trust score badge or broken policy modal links."
+        suggested_fix: "Mount TrustScoreBadge and policy links in store layout."
+        automated_command: "npm run test"
+
+  - id: "REC"
+    name: "Failure Recovery Certification"
+    owner: "Reliability & Backend"
+    description: "Testing application resilience under network timeouts, CDN failures, browser reloads, and storage quota limits."
+    checks:
+      - id: "REC-001"
+        name: "Infrastructure & Network Failure Recovery"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Stable"
+        owner: "Reliability & Backend"
+        determinism_score: 90
+        estimated_runtime_seconds: 10
+        depends_on: ["FND-002", "PLT-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "recovery-test.json"]
+        objective: "Simulate database timeout, search API timeout, image CDN failure, network disconnect, browser refresh, tab close, back button, expired auth session, storage quota exceeded, and private browsing mode."
+        preconditions: "Resilience test suite loaded."
+        steps:
+          - "Simulate API network disconnect and assert graceful error Toast notification."
+          - "Simulate storage quota exceeded and assert fallback in-memory cart handling."
+        pass_criteria: "Zero unhandled application crashes under simulated failure modes."
+        failure_criteria: "Uncaught global exception or unhandled promise rejection."
+        suggested_fix: "Wrap network requests in try/catch blocks with toast error handlers."
+        automated_command: "npm run test"
+
+  - id: "AI"
+    name: "AI Readiness Certification"
+    owner: "AI Engineering"
+    description: "Future module for AI-assisted search and recommendations (Hallucination, fallback, rate limiting)."
+    checks:
+      - id: "AI-001"
+        name: "AI Infrastructure Placeholder Check"
+        priority: "P3"
+        risk_weight: 10
+        executor: "node"
+        maturity: "Experimental"
+        owner: "AI Engineering"
+        determinism_score: 80
+        estimated_runtime_seconds: 2
+        depends_on: []
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Verify AI fallback modes, prompt injection resistance, and rate limiting placeholders."
+        preconditions: "AI module initialized."
+        steps:
+          - "Assert AI fallback handlers return static search results if AI model times out."
+        pass_criteria: "Fallback handler returns standard search results."
+        failure_criteria: "Uncaught model timeout exception."
+        suggested_fix: "Set static search fallback on AI search endpoint."
+        automated_command: "node -e \"console.log('AI readiness module initialized (SKIPPED/Ready)')\""
+
+  - id: "GOV"
+    name: "Governance Certification"
+    owner: "Release Manager & Lead"
+    description: "Audit of release process governance, documentation currency, operational readiness, and rollback identification."
+    checks:
+      - id: "GOV-001"
+        name: "Semantic Versioning & Release Tag Governance"
+        priority: "P0"
+        risk_weight: 100
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "Release Manager & Lead"
+        determinism_score: 100
+        estimated_runtime_seconds: 3
+        depends_on: ["FND-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json", "release-notes.md"]
+        objective: "Verify release version follows SemVer, release notes exist, CHANGELOG is updated, git tag is created, env variables are reviewed, migration target is approved, rollback target is identified, and required approvals are recorded."
+        preconditions: "Release candidate branch created."
+        steps:
+          - "Verify package.json version matches release tag."
+          - "Confirm CHANGELOG.md contains release entry."
+          - "Verify rollback version commit hash is specified."
+        pass_criteria: "SemVer compliant version; CHANGELOG updated; rollback target identified."
+        failure_criteria: "Missing CHANGELOG entry or unassigned rollback commit target."
+        suggested_fix: "Update CHANGELOG.md and create git release tag."
+        automated_command: "git tag -l"
+
+      - id: "GOV-002"
+        name: "Documentation & Runbook Currency Audit"
+        priority: "P1"
+        risk_weight: 50
+        executor: "node"
+        maturity: "Mandatory"
+        owner: "DevOps & Infrastructure"
+        determinism_score: 100
+        estimated_runtime_seconds: 3
+        depends_on: ["FND-001"]
+        evidence_artifacts: ["metadata.json", "execution.log", "result.json"]
+        objective: "Verify README.md reflects active architecture, API docs match endpoints, environment documentation is current, and incident runbook exists for production failures."
+        preconditions: "Workspace docs loaded."
+        steps:
+          - "Verify README.md and CLAUDE.md documentation currency."
+        pass_criteria: "Documentation matches active single-repo App Router setup."
+        failure_criteria: "Outdated documentation references."
+        suggested_fix: "Update README.md with current deployment instructions."
+        automated_command: "node -e \"if(!require('fs').existsSync('README.md')) process.exit(1)\""

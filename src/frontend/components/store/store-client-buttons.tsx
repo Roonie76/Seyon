@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Star, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Star, AlertTriangle, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { createReview } from '@/actions/reviews';
 import { createReport } from '@/actions/reports';
