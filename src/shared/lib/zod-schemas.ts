@@ -1,15 +1,71 @@
 import { z } from 'zod';
 import { ProductStatus } from '@prisma/client';
+import { isAllowedImageUrl, IMAGE_URL_ERROR } from './image-hosts';
+
+/**
+ * The categories the seller form offers. Kept here rather than only in the
+ * <select> so the API cannot be handed a category no page will ever surface.
+ * Adding one here is the only place it needs to change.
+ */
+export const PRODUCT_CATEGORIES = [
+  'Fashion',
+  'Electronics',
+  'Beauty',
+  'Home & Living',
+  'Clay Crafts',
+  'DIY Crafts',
+  'Art & Collectibles',
+  'Food & Beverages',
+  'Other',
+] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+/** Highest price a listing may carry, in rupees. Guards against 1e308 etc. */
+export const MAX_PRICE = 10_000_000;
+
+/**
+ * Strict money parser. `parseFloat` is deliberately avoided: it turns "12abc"
+ * into 12 and silently stores a value the seller never typed.
+ */
+const Money = (label: string) =>
+  z.preprocess((val) => {
+    if (typeof val === 'number') return val;
+    if (typeof val !== 'string') return val;
+    const trimmed = val.trim();
+    if (trimmed === '') return undefined;
+    if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return NaN;
+    return Number(trimmed);
+  }, z
+    .number({ message: `${label} must be a number` })
+    .finite(`${label} must be a number`)
+    .min(0, `${label} must be 0 or greater`)
+    .max(MAX_PRICE, `${label} cannot exceed ₹${MAX_PRICE.toLocaleString('en-IN')}`));
+
+/** Only https URLs on hosts next/image is configured to render. */
+const HostedImageUrl = z.string().refine(isAllowedImageUrl, IMAGE_URL_ERROR);
+
+/** Text that must contain something after trimming, not just whitespace. */
+const TrimmedText = (min: number, max: number, label: string) =>
+  z
+    .string()
+    .transform((s) => s.trim())
+    .pipe(
+      z
+        .string()
+        .min(min, `${label} must be at least ${min} characters`)
+        .max(max, `${label} cannot exceed ${max} characters`)
+    );
 
 export const ShopSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name cannot exceed 100 characters'),
+  name: TrimmedText(2, 100, 'Name'),
   slug: z.string()
     .min(2, 'Slug must be at least 2 characters')
     .max(100, 'Slug cannot exceed 100 characters')
     .regex(/^[a-z0-9-]+$/, 'Slug must only contain lowercase letters, numbers, and hyphens'),
   description: z.string().max(500, 'Description cannot exceed 500 characters').optional().nullable(),
-  logo: z.string().url('Invalid logo URL').or(z.string().length(0)).optional().nullable(),
-  banner: z.string().url('Invalid banner URL').or(z.string().length(0)).optional().nullable(),
+  logo: HostedImageUrl.or(z.string().length(0)).optional().nullable(),
+  banner: HostedImageUrl.or(z.string().length(0)).optional().nullable(),
   whatsapp: z.preprocess(
     (val) => {
       if (typeof val !== 'string') return val;
@@ -31,42 +87,63 @@ export const ShopSchema = z.object({
   city: z.string().max(80, 'City cannot exceed 80 characters').optional().nullable(),
   region: z.string().max(80, 'Region cannot exceed 80 characters').optional().nullable(),
   deliveryNote: z.string().max(200, 'Delivery note cannot exceed 200 characters').optional().nullable(),
+  /**
+   * Optimistic-concurrency token: the updatedAt the client last read. When
+   * present, the write only lands if the row has not changed since.
+   */
+  expectedUpdatedAt: z.union([z.string(), z.date()]).optional().nullable(),
 });
 
 export const ProductImageSchema = z.object({
-  url: z.string().url('Invalid image URL'),
-  displayOrder: z.number().int().default(0),
+  url: HostedImageUrl,
+  displayOrder: z.number().int().min(0, 'Image order cannot be negative').max(100).default(0),
   isPrimary: z.boolean().default(false),
 });
 
-export const ProductSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters').max(200, 'Title cannot exceed 200 characters'),
-  description: z.string().max(2000, 'Description cannot exceed 2000 characters').optional().nullable(),
-  price: z.preprocess(
-    (val) => (typeof val === 'string' ? parseFloat(val) : val),
-    z.number().min(0, 'Price must be 0 or greater')
-  ),
-  compareAtPrice: z.preprocess(
-    (val) => {
-      if (val === '' || val === null || val === undefined) return null;
-      return typeof val === 'string' ? parseFloat(val) : val;
-    },
-    z.number().min(0, 'Compare-at price must be 0 or greater').nullable()
-  ).optional(),
-  category: z.string().min(1, 'Category is required'),
-  options: z.string().max(200, 'Options cannot exceed 200 characters').optional().nullable(),
-  inStock: z.boolean().optional().default(true),
-  status: z.nativeEnum(ProductStatus).default(ProductStatus.ACTIVE),
-  images: z.array(ProductImageSchema).min(1, 'At least one product image is required'),
-});
+export const MAX_PRODUCT_IMAGES = 12;
+
+export const ProductSchema = z
+  .object({
+    title: TrimmedText(2, 200, 'Title'),
+    description: z.string().max(2000, 'Description cannot exceed 2000 characters').optional().nullable(),
+    price: Money('Price'),
+    compareAtPrice: z.preprocess(
+      (val) => (val === '' || val === null || val === undefined ? null : val),
+      Money('Compare-at price').nullable()
+    ).optional(),
+    category: z.enum(PRODUCT_CATEGORIES, {
+      message: 'Choose one of the listed categories',
+    }),
+    options: z.string().max(200, 'Options cannot exceed 200 characters').optional().nullable(),
+    inStock: z.boolean().optional().default(true),
+    status: z.nativeEnum(ProductStatus).default(ProductStatus.ACTIVE),
+    images: z
+      .array(ProductImageSchema)
+      .min(1, 'At least one product image is required')
+      .max(MAX_PRODUCT_IMAGES, `Maximum ${MAX_PRODUCT_IMAGES} images per product`),
+    /**
+     * Optimistic-concurrency token: the updatedAt the client last read. When
+     * present, the write only lands if the row has not changed since — so two
+     * tabs editing the same product can no longer silently overwrite each
+     * other.
+     */
+    expectedUpdatedAt: z.union([z.string(), z.date()]).optional().nullable(),
+  })
+  .refine(
+    (p) => p.compareAtPrice == null || p.compareAtPrice > p.price,
+    {
+      message: 'Compare-at price must be higher than the selling price',
+      path: ['compareAtPrice'],
+    }
+  );
 
 export const ReviewSchema = z.object({
   rating: z.number().int().min(1, 'Rating must be between 1 and 5').max(5, 'Rating must be between 1 and 5'),
-  comment: z.string().min(3, 'Comment must be at least 3 characters').max(1000, 'Comment cannot exceed 1000 characters'),
+  comment: TrimmedText(3, 1000, 'Comment'),
 });
 
 export const ReportSchema = z.object({
-  reason: z.string().min(5, 'Report reason must be at least 5 characters').max(1000, 'Reason cannot exceed 1000 characters'),
+  reason: TrimmedText(5, 1000, 'Reason'),
 });
 
 export const ReorderImageItemSchema = z.object({
@@ -76,4 +153,3 @@ export const ReorderImageItemSchema = z.object({
 });
 
 export const ReorderImagesSchema = z.array(ReorderImageItemSchema);
-

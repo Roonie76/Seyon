@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { ALLOWED_IMAGE_HOSTS } from "./src/shared/lib/image-hosts";
 
 // Content Security Policy
 // - script-src: 'unsafe-inline' is required by Next.js runtime inline scripts;
@@ -32,17 +33,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // The seller platform runs on a second host (SELLER_HOSTS defaults to
+  // 127.0.0.1:3000). Without this, Next 16's dev server treats it as a
+  // cross-origin request and the seller pages never hydrate locally.
+  allowedDevOrigins: ['127.0.0.1', 'localhost'],
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-      },
-    ],
+    // Single source of truth, shared with the Zod image validators so a URL
+    // that next/image cannot render can never be stored. See
+    // src/shared/lib/image-hosts.ts.
+    remotePatterns: [...ALLOWED_IMAGE_HOSTS],
   },
   async headers() {
     return [
