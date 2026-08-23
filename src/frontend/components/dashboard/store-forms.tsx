@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { createShop, updateShop, toggleShopPause, deleteShop } from '@/actions/shops';
+import { runAction } from '@/frontend/lib/run-action';
+import { asciiSlug } from '@/shared/lib/slugify';
 import { confirmWhatsappVerification, requestWhatsappVerification } from '@/backend/actions/whatsapp';
 import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound, Trash2 } from 'lucide-react';
 import { DeliveryOffersRow } from '@/components/shared/delivery-offers';
@@ -60,31 +62,31 @@ export function StoreOnboardingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
     setMessage(null);
 
-    const res = await createShop(formData);
-    setIsLoading(false);
+    const res = await runAction(() => createShop(formData));
 
     if (res.error) {
+      setIsLoading(false);
       setMessage({ type: 'error', text: res.error });
-    } else {
-      setMessage({ type: 'success', text: 'Store successfully created! Redirecting...' });
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1500);
+      return;
     }
+
+    // Stays disabled through the redirect so the form cannot be submitted twice.
+    setMessage({ type: 'success', text: 'Store successfully created! Redirecting...' });
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 1500);
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    const slug = name
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '')
-      .replace(/\-\-+/g, '-');
-    setFormData((prev) => ({ ...prev, name, slug }));
+    // Store handles are ASCII-only (ShopSchema). A name written in another
+    // script yields an empty suggestion; the seller then picks their own
+    // handle rather than being handed "" or "-".
+    setFormData((prev) => ({ ...prev, name, slug: asciiSlug(name) }));
   };
 
   return (
@@ -318,7 +320,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
       return;
     }
     setDeleting(true);
-    const res = await deleteShop();
+    const res = await runAction(() => deleteShop());
     setDeleting(false);
     if (res.error) {
       setMessage({ type: 'error', text: res.error });
@@ -327,12 +329,16 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
     }
   };
   const [whatsappVerifiedAt, setWhatsappVerifiedAt] = React.useState(shop.whatsappVerifiedAt);
+  /** Concurrency token: the row version this form was rendered from. */
+  const [expectedUpdatedAt, setExpectedUpdatedAt] = React.useState<string>(
+    new Date(shop.updatedAt).toISOString()
+  );
   const [verificationCode, setVerificationCode] = React.useState('');
   const [verificationLoading, setVerificationLoading] = React.useState<'request' | 'confirm' | null>(null);
 
   const handlePauseToggle = async () => {
     setPauseLoading(true);
-    const res = await toggleShopPause(!isPaused);
+    const res = await runAction(() => toggleShopPause(!isPaused));
     setPauseLoading(false);
     if (res.error) {
       setMessage({ type: 'error', text: res.error });
@@ -376,26 +382,33 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
     setMessage(null);
 
-    const res = await updateShop(shop.id, formData);
+    const res = await runAction(() =>
+      updateShop(shop.id, { ...formData, expectedUpdatedAt })
+    );
     setIsLoading(false);
 
     if (res.error) {
       setMessage({ type: 'error', text: res.error });
-    } else {
-      setWhatsappVerifiedAt(res.shop?.whatsappVerifiedAt ?? null);
-      setMessage({ type: 'success', text: 'Store configurations updated!' });
-      setTimeout(() => {
-        setMessage(null);
-      }, 3000);
+      return;
     }
+
+    setWhatsappVerifiedAt(res.shop?.whatsappVerifiedAt ?? null);
+    // Track the new version so a second save from this tab is not treated as
+    // a conflict with its own first save.
+    if (res.shop?.updatedAt) setExpectedUpdatedAt(new Date(res.shop.updatedAt).toISOString());
+    setMessage({ type: 'success', text: 'Store configurations updated!' });
+    setTimeout(() => {
+      setMessage(null);
+    }, 3000);
   };
 
   const handleRequestVerification = async () => {
     setVerificationLoading('request');
-    const res = await requestWhatsappVerification();
+    const res = await runAction(() => requestWhatsappVerification());
     setVerificationLoading(null);
 
     if (!('success' in res)) {
@@ -412,7 +425,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
 
   const handleConfirmVerification = async () => {
     setVerificationLoading('confirm');
-    const res = await confirmWhatsappVerification(verificationCode);
+    const res = await runAction(() => confirmWhatsappVerification(verificationCode));
     setVerificationLoading(null);
 
     if (res.error) {

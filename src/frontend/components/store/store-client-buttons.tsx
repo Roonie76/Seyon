@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Star, AlertTriangle, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
+import { runAction } from '@/frontend/lib/run-action';
 import { createReview } from '@/actions/reviews';
 import { createReport } from '@/actions/reports';
 
@@ -76,7 +77,7 @@ export function ReviewModal({ shopId }: ReviewModalProps) {
     setIsLoading(true);
     setMessage(null);
 
-    const result = await createReview(shopId, { rating, comment });
+    const result = await runAction(() => createReview(shopId, { rating, comment }));
     setIsLoading(false);
 
     if (result.error) {
@@ -172,7 +173,7 @@ export function ReportModal({ shopId }: ReportModalProps) {
     setIsLoading(true);
     setMessage(null);
 
-    const result = await createReport(shopId, { reason });
+    const result = await runAction(() => createReport(shopId, { reason }));
     setIsLoading(false);
 
     if (result.error) {

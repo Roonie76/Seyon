@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { createProduct, updateProduct, deleteProduct, toggleProductStock, quickAddProducts } from '@/actions/products';
+import { runAction } from '@/frontend/lib/run-action';
 import { Product, ProductImage, ProductStatus } from '@prisma/client';
 import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap, Share2, Check } from 'lucide-react';
 
@@ -52,7 +53,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
         if (!data.url) throw new Error(data.error || 'Image upload failed');
         urls.push(data.url);
       }
-      const result = await quickAddProducts(shopId, urls);
+      const result = await runAction(() => quickAddProducts(shopId, urls));
       if (result.error) {
         alert(result.error);
       } else {
@@ -68,6 +69,12 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
   const [isLoading, setIsLoading] = React.useState(false);
+  /**
+   * Latches once a save succeeds and stays true until the page reloads, so the
+   * submit button cannot be pressed again during the 1.2s success window — that
+   * gap used to turn one double-click into two identical products.
+   */
+  const [justSaved, setJustSaved] = React.useState(false);
   const [imageUploading, setImageUploading] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -82,6 +89,8 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     inStock: boolean;
     status: ProductStatus;
     images: ProductImageInput[];
+    /** updatedAt of the row this dialog was opened on — the concurrency token. */
+    expectedUpdatedAt: string | null;
   }>({
     title: '',
     description: '',
@@ -92,6 +101,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     inStock: true,
     status: ProductStatus.ACTIVE,
     images: [],
+    expectedUpdatedAt: null,
   });
 
   const resetForm = () => {
@@ -105,9 +115,11 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
       inStock: true,
       status: ProductStatus.ACTIVE,
       images: [],
+      expectedUpdatedAt: null,
     });
     setMessage(null);
     setActiveProduct(null);
+    setJustSaved(false);
   };
 
   const openAdd = () => {
@@ -132,6 +144,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
         isPrimary: img.isPrimary,
         displayOrder: img.displayOrder,
       })),
+      expectedUpdatedAt: new Date(product.updatedAt).toISOString(),
     });
     setDialogMode('edit');
     setIsDialogOpen(true);
@@ -213,54 +226,67 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
   // Submit Handler (Unified Add/Edit)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || justSaved) return;
     setIsLoading(true);
     setMessage(null);
 
-    const res = dialogMode === 'add'
-      ? await createProduct(shopId, formData)
-      : activeProduct
-      ? await updateProduct(activeProduct.id, formData)
-      : { error: 'No active product selected' };
-
-    setIsLoading(false);
+    const res = await runAction(() =>
+      dialogMode === 'add'
+        ? createProduct(shopId, formData)
+        : activeProduct
+        ? updateProduct(activeProduct.id, formData)
+        : Promise.resolve({ error: 'No active product selected' })
+    );
 
     if (res.error) {
+      // Loading only clears on failure. On success the button stays disabled
+      // until the reload, so the success window cannot be double-submitted.
+      setIsLoading(false);
       setMessage({ type: 'error', text: res.error });
-    } else {
-      setMessage({
-        type: 'success',
-        text: dialogMode === 'add' ? 'Product created successfully!' : 'Product updated successfully!',
-      });
-      setTimeout(() => {
-        setIsDialogOpen(false);
-        resetForm();
-        window.location.reload();
-      }, 1200);
+      return;
     }
+
+    setJustSaved(true);
+    setMessage({
+      type: 'success',
+      text: dialogMode === 'add' ? 'Product created successfully!' : 'Product updated successfully!',
+    });
+    setTimeout(() => {
+      setIsDialogOpen(false);
+      window.location.reload();
+    }, 1200);
   };
 
   // Delete product action
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
   const handleDelete = async (productId: string) => {
+    if (deletingId) return;
     if (!confirm('Are you sure you want to delete this product? This action is permanent.')) return;
-    const res = await deleteProduct(productId);
+    setDeletingId(productId);
+    const res = await runAction(() => deleteProduct(productId));
     if (res.error) {
+      setDeletingId(null);
       alert(res.error);
-    } else {
-      window.location.reload();
+      return;
     }
+    window.location.reload();
   };
 
   const [togglingStock, setTogglingStock] = React.useState<string | null>(null);
 
   const handleStockToggle = async (prod: ProductWithImages) => {
+    if (togglingStock) return;
     setTogglingStock(prod.id);
-    const res = await toggleProductStock(prod.id, !prod.inStock);
-    setTogglingStock(null);
+    const res = await toggleProductStock(prod.id, !prod.inStock).catch(() => ({
+      error: "We couldn't reach Seyon. Check your connection and try again.",
+    }));
     if (res.error) {
+      setTogglingStock(null);
       alert(res.error);
-    } else {
-      window.location.reload();
+      return;
     }
+    window.location.reload();
   };
 
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
@@ -610,8 +636,14 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
             </div>
 
             <DialogFooter>
-              <Button type="submit" disabled={isLoading || formData.images.length === 0} className="w-full">
-                {isLoading
+              <Button
+                type="submit"
+                disabled={isLoading || justSaved || formData.images.length === 0}
+                className="w-full"
+              >
+                {justSaved
+                  ? (dialogMode === 'add' ? 'Product created' : 'Product saved')
+                  : isLoading
                   ? (dialogMode === 'add' ? 'Creating Product...' : 'Saving Product...')
                   : (dialogMode === 'add' ? 'Deploy Listing' : 'Save Product Details')}
               </Button>
