@@ -83,12 +83,12 @@ export default async function StorePage({ params }: StorePageProps) {
     logger.error('Analytics record error for shop view', err, { shopId: shop.id });
   });
 
-  // Compute Review Statistics
-  const reviewCount = shop.reviews.length;
-  const averageRating =
-    reviewCount > 0
-      ? shop.reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviewCount
-      : 0;
+  // Read the stored aggregates rather than summing the loaded reviews. Two
+  // separately-derived answers to "what is this shop rated" could disagree —
+  // the marketplace filter uses Shop.averageRating, so a page computing its
+  // own number could show 3.2 on a shop the "4+ stars" filter had matched.
+  const reviewCount = shop.reviewCount;
+  const averageRating = shop.averageRating;
 
   const activeProducts = shop.products;
 

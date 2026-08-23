@@ -125,12 +125,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
     logger.error('Error fetching related products', error, { productId: product.id, category: product.category });
   }
 
-  // Compute Review Statistics
-  const reviewCount = shop.reviews.length;
-  const averageRating =
-    reviewCount > 0
-      ? shop.reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviewCount
-      : 0;
+  // Read the stored aggregates rather than summing the loaded reviews. Two
+  // separately-derived answers to "what is this shop rated" could disagree —
+  // the marketplace filter uses Shop.averageRating, so a page computing its
+  // own number could show 3.2 on a shop the "4+ stars" filter had matched.
+  const reviewCount = shop.reviewCount;
+  const averageRating = shop.averageRating;
 
   // Schema.org structured data injection
   const jsonLd = generateProductJSONLD(product, shop, { averageRating, reviewCount });

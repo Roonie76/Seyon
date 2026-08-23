@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
+import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getAdminDashboardStats } from '@/actions/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,8 @@ interface PopularProduct {
 
 export default async function AdminPage() {
   const session = await auth();
-  if (!session || !session.user || session.user.role !== Role.ADMIN) {
+  // Role is re-read from the database: the JWT claim can be up to 30 days stale.
+  if (!(await isCurrentUserAdmin())) {
     redirect('/');
   }
 

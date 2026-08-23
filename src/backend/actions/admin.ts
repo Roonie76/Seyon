@@ -15,11 +15,29 @@ const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
 const ReportStatusSchema = z.nativeEnum(ReportStatus);
 
+/**
+ * Admin authorisation, checked against the database rather than the token.
+ *
+ * `session.user.role` is a JWT claim written at sign-in and only refreshed on
+ * an explicit session update. Trusting it alone meant a demoted admin kept
+ * full admin powers until their token expired — up to 30 days. The extra read
+ * is one indexed lookup on a handful of privileged routes.
+ */
 async function verifyAdminAuth() {
   const session = await auth();
-  if (!session || !session.user || session.user.role !== Role.ADMIN) {
+  if (!session?.user?.id) {
     throw new Error('Forbidden: Admin authorization required');
   }
+
+  const current = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (current?.role !== Role.ADMIN) {
+    throw new Error('Forbidden: Admin authorization required');
+  }
+
   return session;
 }
 

@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     // Batch queries — two total DB round-trips
     const [products, shops] = await Promise.all([
       db.product.findMany({
-        where: { id: { in: productIds } },
+        where: { id: { in: productIds }, status: 'ACTIVE' },
         select: {
           id: true,
           title: true,
@@ -209,7 +209,10 @@ export async function POST(req: NextRequest) {
         name: shop.name,
         slug: shop.slug,
         logo: shop.logo,
-        whatsapp: shop.whatsapp,
+        // The number is only handed out when an order can actually be placed.
+        // It is public on the storefront either way, but a suspended or paused
+        // seller has no reason to be reachable through this endpoint.
+        whatsapp: checkoutAllowed ? shop.whatsapp : '',
         checkoutAllowed,
         checkoutBlockedReason,
       };
@@ -221,7 +224,19 @@ export async function POST(req: NextRequest) {
       if (response.products[item.productId]) continue;
 
       const product = productMap.get(item.productId);
-      if (!product) {
+      // A product the buyer cannot see is reported as missing rather than
+      // described. This endpoint is unauthenticated, so returning the title
+      // and price of a DRAFT or ARCHIVED listing to anyone holding an id
+      // leaked catalogue the seller has not published.
+      if (!product || product.status !== 'ACTIVE') {
+        response.missing.products.push(item.productId);
+        continue;
+      }
+
+      // The cart is client-side state and the pairing is client-supplied, so
+      // a tampered or stale cart could attach one seller's product to another
+      // seller's WhatsApp number. Refuse the pairing rather than trust it.
+      if (product.shopId !== item.shopId) {
         response.missing.products.push(item.productId);
         continue;
       }
@@ -229,10 +244,7 @@ export async function POST(req: NextRequest) {
       let checkoutAllowed = true;
       let checkoutBlockedReason: string | null = null;
 
-      if (product.status !== 'ACTIVE') {
-        checkoutAllowed = false;
-        checkoutBlockedReason = `Product is ${product.status.toLowerCase()}.`;
-      } else if (!product.inStock) {
+      if (!product.inStock) {
         checkoutAllowed = false;
         checkoutBlockedReason = 'This product is currently sold out.';
       }

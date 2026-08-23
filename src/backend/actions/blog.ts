@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { isCurrentUserAdmin } from '../lib/is-admin';
 import { db } from '@/lib/db';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -29,7 +30,7 @@ const BlogPostInputSchema = z.object({
 
 async function verifyAdminAuth() {
   const session = await auth();
-  if (!session || !session.user || session.user.role !== Role.ADMIN) {
+  if (!(await isCurrentUserAdmin())) {
     throw new Error('Forbidden: Admin authorization required');
   }
   return session;

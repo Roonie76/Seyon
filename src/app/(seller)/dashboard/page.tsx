@@ -87,12 +87,10 @@ export default async function DashboardPage() {
     logger.error('Error loading analytics for dashboard page', error, { shopId: shop.id });
   }
 
-  // Calculate rating stats
-  const reviewCount = shop.reviews.length;
-  const averageRating =
-    reviewCount > 0
-      ? shop.reviews.reduce((acc: number, r) => acc + r.rating, 0) / reviewCount
-      : 0;
+  // Same stored aggregates the buyer-facing pages read, so a seller never sees
+  // a different rating from the one shoppers see.
+  const reviewCount = shop.reviewCount;
+  const averageRating = shop.averageRating;
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 bg-background text-foreground animate-fade-in">

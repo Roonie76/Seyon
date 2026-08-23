@@ -7,6 +7,7 @@ import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { notify } from '../lib/notify';
 import { revalidatePath } from 'next/cache';
 import { logger } from '../lib/logger';
+import { recomputeShopRatingSafe } from '../lib/shop-ratings';
 
 export async function createReview(shopId: string, rawData: unknown) {
   try {
@@ -98,24 +99,9 @@ export async function createReview(shopId: string, rawData: unknown) {
         });
     const isUpdate = Boolean(existingReview);
 
-    // Recalculate and cache averageRating and reviewCount for the Shop
-    try {
-      const shopReviews = await db.review.findMany({
-        where: { shopId },
-        select: { rating: true },
-      });
-      const count = shopReviews.length;
-      const avg = count > 0 ? shopReviews.reduce((sum, r) => sum + r.rating, 0) / count : 0.0;
-      await db.shop.update({
-        where: { id: shopId },
-        data: {
-          averageRating: avg,
-          reviewCount: count,
-        },
-      });
-    } catch (err) {
-      logger.error('Failed to update cached shop review aggregates', err, { shopId });
-    }
+    // Single helper, used by every path that changes a review, so the cached
+    // aggregates cannot drift from the reviews they summarise.
+    await recomputeShopRatingSafe(shopId);
 
     // Notify the seller (fire-and-forget; never blocks the response)
     db.user
