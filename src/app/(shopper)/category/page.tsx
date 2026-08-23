@@ -13,7 +13,11 @@ export const metadata: Metadata = {
     'Explore all product categories on Seyon. Find fashion, electronics, beauty, home goods, crafts, and more from independent sellers.',
 };
 
-export const revalidate = 60;
+// Rendered per request: the shopper layout's Navbar calls auth(), which reads
+// cookies and makes every route in this group dynamic regardless. The previous
+// `export const revalidate` was therefore inert AND harmful — on the two /store
+// routes it turned notFound() into a soft 404 (HTTP 200 with not-found copy),
+// so search engines kept indexing deleted products.
 
 // Rotating Hero Banner Configurations
 interface BannerConfig {

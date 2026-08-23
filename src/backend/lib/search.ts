@@ -71,17 +71,29 @@ export async function searchProductIds(params: ProductSearchParams): Promise<Pro
 
   const offset = (Math.max(1, page) - 1) * perPage;
 
-  const rows = await db.$queryRaw<{ id: string; total: bigint }[]>(Prisma.sql`
-    SELECT p."id", COUNT(*) OVER() AS total
-    FROM "Product" p
-    JOIN "Shop" s ON s."id" = p."shopId"
-    WHERE ${Prisma.join(conditions, ' AND ')}
-    ORDER BY ${orderBy}
-    LIMIT ${perPage} OFFSET ${offset}
-  `);
+  // The total is counted separately rather than with COUNT(*) OVER(). The
+  // window function only yields a value on rows that come back, so any page
+  // past the end reported a total of 0 — which made the pagination controls
+  // claim there were no results at all rather than "you have gone too far".
+  const [rows, totalRows] = await Promise.all([
+    db.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT p."id"
+      FROM "Product" p
+      JOIN "Shop" s ON s."id" = p."shopId"
+      WHERE ${Prisma.join(conditions, ' AND ')}
+      ORDER BY ${orderBy}
+      LIMIT ${perPage} OFFSET ${offset}
+    `),
+    db.$queryRaw<{ total: bigint }[]>(Prisma.sql`
+      SELECT COUNT(*)::bigint AS total
+      FROM "Product" p
+      JOIN "Shop" s ON s."id" = p."shopId"
+      WHERE ${Prisma.join(conditions, ' AND ')}
+    `),
+  ]);
 
   return {
     ids: rows.map((r) => r.id),
-    total: rows.length > 0 ? Number(rows[0].total) : 0,
+    total: totalRows.length > 0 ? Number(totalRows[0].total) : 0,
   };
 }

@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
 import { logger } from '@/backend/lib/logger';
+import { parsePage, parsePriceRange, parseRating } from '@/shared/lib/search-params';
 
 /**
  * Canonical product type returned by shopper queries.
@@ -114,6 +115,9 @@ export async function fetchShopperProducts(
     rating = '',
   } = params;
 
+  // Every one of these arrives from the URL and cannot be trusted.
+  const safePage = parsePage(String(page));
+
   let products: ShopperProduct[] = [];
   let discoveryProducts: ShopperProduct[] = [];
   let totalProducts = 0;
@@ -121,10 +125,7 @@ export async function fetchShopperProducts(
   try {
     if (query) {
       // --- Full-text search path (page.tsx L293-L339) ---
-      const parsedMin = parseFloat(minPrice);
-      const parsedMax = parseFloat(maxPrice);
-      const minVal = !isNaN(parsedMin) ? Math.max(0, parsedMin) : undefined;
-      const maxVal = !isNaN(parsedMax) ? Math.max(0, parsedMax) : undefined;
+      const { min: minVal, max: maxVal } = parsePriceRange(minPrice, maxPrice);
       const searchSort: ProductSearchSort =
         sort === 'price-asc' || sort === 'price-desc' || sort === 'newest' ? sort : 'relevance';
 
@@ -136,9 +137,9 @@ export async function fetchShopperProducts(
         minPrice: minVal,
         maxPrice: maxVal,
         sort: searchSort,
-        page,
+        page: safePage,
         perPage: itemsPerPage,
-        rating: rating ? parseFloat(rating) : undefined,
+        rating: parseRating(rating),
       });
 
       const found = await db.product.findMany({
@@ -186,23 +187,20 @@ export async function fetchShopperProducts(
         filterConditions.inStock = true;
       }
 
-      if (minPrice || maxPrice) {
-        const parsedMin = parseFloat(minPrice);
-        const parsedMax = parseFloat(maxPrice);
+      const { min: minVal, max: maxVal } = parsePriceRange(minPrice, maxPrice);
+      if (minVal !== undefined || maxVal !== undefined) {
         const priceFilter: Prisma.FloatFilter = {};
-        if (!isNaN(parsedMin)) priceFilter.gte = Math.max(0, parsedMin);
-        if (!isNaN(parsedMax)) priceFilter.lte = Math.max(0, parsedMax);
+        if (minVal !== undefined) priceFilter.gte = minVal;
+        if (maxVal !== undefined) priceFilter.lte = maxVal;
         filterConditions.price = priceFilter;
       }
 
-      if (rating) {
-        const ratingVal = parseFloat(rating);
-        if (!isNaN(ratingVal)) {
-          filterConditions.shop = {
-            ...(filterConditions.shop as Prisma.ShopWhereInput),
-            averageRating: { gte: ratingVal },
-          };
-        }
+      const ratingVal = parseRating(rating);
+      if (ratingVal !== undefined) {
+        filterConditions.shop = {
+          ...(filterConditions.shop as Prisma.ShopWhereInput),
+          averageRating: { gte: ratingVal },
+        };
       }
 
       let orderBy: Prisma.ProductOrderByWithRelationInput[] = [
@@ -217,7 +215,7 @@ export async function fetchShopperProducts(
           where: filterConditions,
           include: PRODUCT_INCLUDE,
           orderBy,
-          skip: (page - 1) * itemsPerPage,
+          skip: (safePage - 1) * itemsPerPage,
           take: itemsPerPage,
         }),
         db.product.count({

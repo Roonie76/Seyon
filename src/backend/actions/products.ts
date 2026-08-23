@@ -306,60 +306,102 @@ export async function updateProduct(productId: string, rawData: unknown) {
         ? (compareAtPrice - price) / compareAtPrice
         : null;
 
-    const titleChanged = title !== product.title;
+    // The slug is fixed at creation and never changes on rename. Renaming used
+    // to rewrite it, which silently broke every link the seller had already
+    // shared — WhatsApp messages, QR codes, Instagram bios, search results —
+    // with no redirect behind them. A stale-but-working URL beats a pretty
+    // dead one, and sellers edit titles far more often than they would want
+    // their address to move.
 
     // Update product inside a database transaction. Storage cleanup happens
     // only AFTER this commits — deleting files first meant a rolled-back
     // transaction left rows pointing at images that no longer existed.
     const updatedProduct = await withSlugRetry(
-      (candidateSlug) =>
+      () =>
         db.$transaction(async (tx) => {
-          // The version check again, inside the transaction, so a concurrent
-          // save that landed between the read above and here is still caught.
-          if (expectedUpdatedAt) {
-            const expected = new Date(expectedUpdatedAt);
-            if (!Number.isNaN(expected.getTime())) {
-              const fresh = await tx.product.findUnique({
-                where: { id: parsedProductId.data },
-                select: { updatedAt: true },
+          const scalars = {
+            title,
+            slug: product.slug,
+            description,
+            price,
+            compareAtPrice: compareAtPrice ?? null,
+            discountPercent,
+            category,
+            options: options || null,
+            inStock,
+            status,
+            ...themeUpdate,
+          };
+
+          // The version check lives in the WHERE of the write itself, not in a
+          // preceding SELECT. Under READ COMMITTED, two concurrent saves both
+          // pass a separate SELECT and both then write — which is exactly how
+          // one tab's price change disappeared while both were told it saved.
+          // updateMany takes the row lock and re-evaluates the predicate
+          // against the committed row, so the second writer matches 0 rows.
+          const expected = expectedUpdatedAt ? new Date(expectedUpdatedAt) : null;
+          const guarded = expected && !Number.isNaN(expected.getTime());
+
+          const res = await tx.product.updateMany({
+            where: {
+              id: parsedProductId.data,
+              ...(guarded ? { updatedAt: expected } : {}),
+            },
+            data: scalars,
+          });
+
+          if (res.count === 0) {
+            const stillExists = await tx.product.findUnique({
+              where: { id: parsedProductId.data },
+              select: { id: true },
+            });
+            throw new Error(stillExists ? CONFLICT_ERROR : 'Product not found');
+          }
+
+          // Images are reconciled by URL rather than deleted and recreated.
+          // Wholesale replacement handed every surviving image a new id on
+          // every save, so any client holding image ids — the reorder action,
+          // most obviously — failed with "Unauthorized image update" after an
+          // unrelated edit somewhere else in the form.
+          const existing = await tx.productImage.findMany({
+            where: { productId: parsedProductId.data },
+            select: { id: true, url: true },
+          });
+          const existingByUrl = new Map(existing.map((img) => [img.url, img.id]));
+          const desiredUrls = new Set(images.map((img) => img.url));
+
+          const removedIds = existing
+            .filter((img) => !desiredUrls.has(img.url))
+            .map((img) => img.id);
+          if (removedIds.length > 0) {
+            await tx.productImage.deleteMany({ where: { id: { in: removedIds } } });
+          }
+
+          for (const [idx, img] of images.entries()) {
+            const displayOrder = img.displayOrder ?? idx;
+            const isPrimary = img.isPrimary ?? idx === 0;
+            const keptId = existingByUrl.get(img.url);
+            if (keptId) {
+              await tx.productImage.update({
+                where: { id: keptId },
+                data: { displayOrder, isPrimary },
               });
-              if (!fresh) throw new Error('Product not found');
-              if (fresh.updatedAt.getTime() !== expected.getTime()) {
-                throw new Error(CONFLICT_ERROR);
-              }
+              // A duplicate of the same URL later in the list must not reuse
+              // the id we have just claimed.
+              existingByUrl.delete(img.url);
+            } else {
+              await tx.productImage.create({
+                data: { productId: parsedProductId.data, url: img.url, displayOrder, isPrimary },
+              });
             }
           }
 
-          await tx.productImage.deleteMany({
-            where: { productId: parsedProductId.data },
-          });
-
-          return await tx.product.update({
+          const fresh = await tx.product.findUnique({
             where: { id: parsedProductId.data },
-            data: {
-              title,
-              slug: titleChanged ? candidateSlug : product.slug,
-              description,
-              price,
-              compareAtPrice: compareAtPrice ?? null,
-              discountPercent,
-              category,
-              options: options || null,
-              inStock,
-              status,
-              images: {
-                create: images.map((img, idx) => ({
-                  url: img.url,
-                  displayOrder: img.displayOrder ?? idx,
-                  isPrimary: img.isPrimary ?? (idx === 0),
-                })),
-              },
-              ...themeUpdate,
-            },
-            include: {
-              images: true,
-            },
+            include: { images: true },
           });
+          if (!fresh) throw new Error('Product not found');
+          return fresh;
         }),
       product.shopId,
       title,

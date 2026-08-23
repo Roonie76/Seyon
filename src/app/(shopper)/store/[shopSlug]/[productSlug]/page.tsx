@@ -47,7 +47,11 @@ export async function generateMetadata({ params }: ProductPageProps) {
     where: {
       slug: resolvedParams.productSlug,
       status: 'ACTIVE',
-      shop: { slug: resolvedParams.shopSlug, isSuspended: false, isPaused: false },
+      // A paused shop still resolves: the page has a "currently away" state and
+      // disables the order CTA. Filtering paused shops out here made that
+      // branch dead code and served buyers a 404 for a link that will work
+      // again next week.
+      shop: { slug: resolvedParams.shopSlug, isSuspended: false },
     },
     include: {
       images: { orderBy: { displayOrder: 'asc' } },
@@ -67,7 +71,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     where: {
       slug: productSlug,
       status: 'ACTIVE',
-      shop: { slug: shopSlug, isSuspended: false, isPaused: false },
+      shop: { slug: shopSlug, isSuspended: false },
     },
     include: {
       images: { orderBy: { displayOrder: 'asc' } },
@@ -369,4 +373,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   );
 }
 
-export const revalidate = 300;
+// Rendered per request: the shopper layout's Navbar calls auth(), which reads
+// cookies and makes every route in this group dynamic regardless. The previous
+// `export const revalidate` was therefore inert AND harmful — on the two /store
+// routes it turned notFound() into a soft 404 (HTTP 200 with not-found copy),
+// so search engines kept indexing deleted products.
