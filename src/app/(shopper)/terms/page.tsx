@@ -8,6 +8,7 @@ import { PrivacySection } from '../privacy/_components/privacy-section';
 import { PrivacyTable } from '../privacy/_components/privacy-table';
 import { PrivacyCallout } from '../privacy/_components/privacy-callout';
 import { PrivacyContactCard } from '../privacy/_components/privacy-contact-card';
+import { GrievanceOfficerBlock } from '@/frontend/components/shared/grievance-officer-block';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | Seyon',
@@ -394,27 +395,8 @@ export default function TermsPage() {
                 </p>
               </div>
 
-              <div>
-                <h3 className="font-bold text-zinc-950 text-xs mb-1">Grievance Officer:</h3>
-                <ul className="list-none space-y-1 text-zinc-600 pl-0">
-                  <li>[Name]</li>
-                  <li>[Designation]</li>
-                  <li>Email: [Email — e.g. grievance@seyon.in]</li>
-                  <li>[Postal address, if required]</li>
-                </ul>
-                <p className="italic text-zinc-500 font-semibold text-[11px] border-l-2 border-zinc-200 pl-3 mt-2">
-                  *[Required under the DPDP Act, 2023: a Grievance Officer must be a named individual, not just a role inbox, before this policy is published.]*
-                </p>
-              </div>
+              <GrievanceOfficerBlock />
             </div>
-
-            <p className="italic text-zinc-500 font-semibold text-[11px] border-t border-zinc-200/60 pt-4 mt-6">
-              *This document reflects how Seyon actually operates today, based on confirmed facts: all payments happen 
-              outside the platform, and suspended storefronts are hidden immediately. Sections marked with callouts 
-              require legal counsel before publication — particularly Section 7 (Marketplace Rules), Section 17 
-              (Limitation of Liability), and Section 19 (Governing Law), since these define Seyon&apos;s legal exposure 
-              and should not be finalized from product-team drafting alone.*
-            </p>
           </PrivacySection>
 
           {/* Mobile contact card display (only visible on mobile/tablet at the end of the text) */}

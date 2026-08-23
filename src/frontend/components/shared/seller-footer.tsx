@@ -154,6 +154,9 @@ export async function SellerFooter() {
                 <Link href="/about" className="hover:text-white transition-colors">About</Link>
               </li>
               <li>
+                <Link href="/returns" className="hover:text-white transition-colors">Returns &amp; Refunds</Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>

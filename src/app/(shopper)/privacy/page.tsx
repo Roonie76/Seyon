@@ -8,6 +8,8 @@ import { PrivacyTable } from './_components/privacy-table';
 import { PrivacyComparison } from './_components/privacy-comparison';
 import { PrivacyCallout } from './_components/privacy-callout';
 import { PrivacyContactCard } from './_components/privacy-contact-card';
+import { GrievanceOfficerBlock } from '@/frontend/components/shared/grievance-officer-block';
+import { ConsentPreference } from '@/frontend/components/shared/consent-preference';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | Seyon',
@@ -63,7 +65,7 @@ export default function PrivacyPage() {
                 'Your email is never shown publicly.',
                 'Your public storefront is separate from your private account information.',
                 'You decide which social profiles, if any, appear on your storefront.',
-                'You can request deletion of your account at any time.',
+                'You can download all your data, or delete your account, from My Account.',
                 "We don't have access to your WhatsApp conversations with buyers or sellers.",
                 'This page explains exactly what information we collect and why.',
               ]}
@@ -221,9 +223,12 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="mt-4">
-              You can manage non-essential cookies through your browser settings. Turning off essential cookies 
-              may prevent parts of Seyon from working correctly.
+              Analytics are off until you turn them on, and you can change your mind here at any
+              time. Essential cookies can&apos;t be turned off from here — without them you
+              can&apos;t stay signed in — but your browser settings can block them, at the cost
+              of parts of Seyon no longer working.
             </p>
+            <ConsentPreference />
           </PrivacySection>
 
           {/* Section 6: Data Sharing */}
@@ -333,7 +338,9 @@ export default function PrivacyPage() {
               <div>
                 <h3 className="font-bold text-zinc-950 text-xs mb-0.5">Access your information</h3>
                 <p className="text-zinc-600">
-                  Request a copy of the personal information associated with your Seyon account.
+                  Download a copy of everything associated with your Seyon account, as a JSON
+                  file, from the <strong>My Account</strong> page. No request or waiting
+                  period — the file is generated on the spot.
                 </p>
               </div>
 
@@ -347,17 +354,21 @@ export default function PrivacyPage() {
               <div>
                 <h3 className="font-bold text-zinc-950 text-xs mb-0.5">Withdraw consent</h3>
                 <p className="text-zinc-600">
-                  Where we rely on your consent to process your information, you may withdraw it at any time. This may 
-                  affect your ability to use certain features.
+                  Where we rely on your consent to process your information, you may withdraw it
+                  at any time. Product analytics is the only thing on Seyon that runs on consent,
+                  and the control for it is in section 5 above. Turning it off does not affect
+                  anything else you can do here.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-bold text-zinc-950 text-xs mb-0.5">Delete your account</h3>
                 <p className="text-zinc-600">
-                  Request deletion of your account. Once approved, we delete or anonymize your personal information, 
-                  except where we&apos;re required to retain certain data for legal, regulatory, fraud-prevention, or 
-                  security purposes.
+                  Delete your account yourself from the <strong>My Account</strong> page. It is
+                  not a request and not a soft flag: your account, your storefront, every
+                  product and image on it, your reviews and your wishlist are removed
+                  immediately and permanently. Traffic counts we keep for aggregate statistics
+                  stop being linked to you.
                 </p>
               </div>
 
@@ -378,7 +389,9 @@ export default function PrivacyPage() {
             </div>
 
             <p className="mt-4">
-              To exercise any of these rights, contact us at <a href="mailto:privacy@seyon.in" className="text-[#A77F3A] hover:underline font-bold">privacy@seyon.in</a>.
+              Access and deletion are self-serve on the <strong>My Account</strong> page. For
+              anything else — correction, nomination, or a concern — contact us at{' '}
+              <a href="mailto:privacy@seyon.in" className="text-[#A77F3A] hover:underline font-bold">privacy@seyon.in</a>.
             </p>
 
             <blockquote className="border-l-2 border-amber-500 bg-[#FCFAF7] p-3 text-[11px] font-semibold text-zinc-700 italic rounded-r-lg mt-4">
@@ -423,18 +436,7 @@ export default function PrivacyPage() {
                 </p>
               </div>
 
-              <div>
-                <h3 className="font-bold text-zinc-950 text-xs mb-1">Grievance Officer:</h3>
-                <ul className="list-none space-y-1 text-zinc-600 pl-0">
-                  <li>[Name]</li>
-                  <li>[Designation]</li>
-                  <li>Email: [Email — e.g. grievance@seyon.in]</li>
-                  <li>[Postal address, if required]</li>
-                </ul>
-                <p className="italic text-zinc-500 font-semibold text-[11px] border-l-2 border-zinc-200 pl-3 mt-2">
-                  *[Required under the DPDP Act, 2023: a Grievance Officer must be a named individual, not just a role inbox, before this policy is published.]*
-                </p>
-              </div>
+              <GrievanceOfficerBlock />
 
               <div>
                 <p className="font-semibold">
@@ -446,9 +448,6 @@ export default function PrivacyPage() {
               </div>
             </div>
 
-            <p className="italic text-zinc-500 font-semibold text-[11px] border-t border-zinc-200/60 pt-4 mt-6">
-              *This policy is written to be clear and specific to how Seyon actually works today. It should be reviewed by qualified legal counsel familiar with the Digital Personal Data Protection Act, 2023 before publication, particularly the Data Sharing, Data Retention, and Grievance Officer sections marked above.*
-            </p>
           </PrivacySection>
 
           {/* Mobile contact card display (only visible on mobile/tablet at the end of the text) */}
