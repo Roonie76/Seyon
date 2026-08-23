@@ -6,15 +6,22 @@
  * across all Vercel instances). When credentials are missing or Redis errors
  * out, falls back to the original in-memory Map sliding-window limiter.
  *
- * Visibility:
- *  - Missing credentials in production → SECURITY WARNING via logger.warn
- *  - Redis errors mid-request → tagged logger.error (RATE_LIMIT_REDIS_FALLBACK)
- *  - Missing credentials in dev/test → silent (zero-setup local experience)
+ * Backend order:
+ *  1. Upstash Redis when configured — fastest, keeps load off Postgres
+ *  2. Postgres otherwise — shared across every instance, so the limits are
+ *     real without any extra infrastructure
+ *  3. In-memory only in dev/test, where a single process is the whole world
+ *
+ * Step 2 is the important one. The in-memory Map used to be the only
+ * fallback, and on Vercel each warm instance kept its own tally — so a limit
+ * of 5/minute was really 5 × the number of warm instances, reset on every cold
+ * start. Nothing in production should depend on that.
  */
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { logger } from './logger';
+import { dbRateLimit } from './db-rate-limit';
 
 export interface RateLimitResult {
   success: boolean;
@@ -81,10 +88,10 @@ function getRedis(): Redis | null {
     if (process.env.NODE_ENV === 'production' && !_prodWarningEmitted) {
       _prodWarningEmitted = true;
       logger.warn(
-        'SECURITY WARNING: Upstash Redis connection parameters ' +
-        '(UPSTASH_REDIS_REST_URL/TOKEN) are missing in production! ' +
-        'Rate limiting is running on non-shared in-memory storage, ' +
-        'which is not serverless-safe.'
+        'Upstash Redis is not configured (UPSTASH_REDIS_REST_URL/TOKEN). ' +
+        'Rate limiting is using the Postgres backend, which is correct across ' +
+        'instances but adds a write per limited request. Configure Upstash to ' +
+        'move that load off the database.'
       );
     }
   }
@@ -114,6 +121,39 @@ function getRateLimiter(prefix: string, limit: number, windowMs: number): Rateli
   return limiter;
 }
 
+/**
+ * Single-process memory is only trustworthy where there is only one process.
+ * Anywhere else, fall through to the database.
+ */
+function shouldUseMemoryFallback(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}
+
+async function fallbackRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+  now: number
+): Promise<RateLimitResult> {
+  if (shouldUseMemoryFallback()) {
+    return localRateLimit(key, limit, windowMs, now);
+  }
+
+  try {
+    return await dbRateLimit(key, limit, windowMs, now);
+  } catch (err) {
+    // A limiter that throws must not take down the request it is protecting.
+    // Failing open is the lesser evil for view tracking and search
+    // suggestions; the error is loud so it does not pass unnoticed.
+    logger.error('RATE_LIMIT_DB_FAILED: database rate limiter unavailable', err, {
+      key,
+      limit,
+      windowMs,
+    });
+    return localRateLimit(key, limit, windowMs, now);
+  }
+}
+
 export async function rateLimit(
   key: string,
   limit: number,
@@ -124,7 +164,7 @@ export async function rateLimit(
   const limiter = getRateLimiter(prefix, limit, windowMs);
 
   if (!limiter) {
-    return localRateLimit(key, limit, windowMs, now);
+    return fallbackRateLimit(key, limit, windowMs, now);
   }
 
   try {
@@ -138,12 +178,11 @@ export async function rateLimit(
     };
   } catch (err) {
     logger.error(
-      'RATE_LIMIT_REDIS_FALLBACK: Redis rate limiter failed, ' +
-      'falling back to local memory storage',
+      'RATE_LIMIT_REDIS_FALLBACK: Redis rate limiter failed, falling back',
       err,
       { key, prefix, limit, windowMs }
     );
-    return localRateLimit(key, limit, windowMs, now);
+    return fallbackRateLimit(key, limit, windowMs, now);
   }
 }
 
@@ -171,6 +210,12 @@ export const RATE_LIMITS = {
   SUGGESTIONS: { limit: 30, windowMs: 60_000 },
   /** Public analytics events (views, WhatsApp taps), keyed by IP. */
   ANALYTICS_EVENT: { limit: 60, windowMs: 60_000 },
+  /**
+   * Data-export requests, keyed by user id. A legal right, so the limit is
+   * generous — but the query is expensive and reads everything about a person,
+   * so it should not be loopable.
+   */
+  ACCOUNT_EXPORT: { limit: 5, windowMs: 86_400_000 },
 } as const;
 
 /** Test-only: reset in-memory state and force lazy Redis re-evaluation. */

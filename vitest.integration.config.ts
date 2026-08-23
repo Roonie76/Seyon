@@ -18,6 +18,18 @@ export default mergeConfig(
     test: {
       // Node, not jsdom: these talk to Postgres, not the DOM.
       environment: 'node',
+      // Point the APPLICATION's Prisma client at the test database too.
+      // Without this, code under test writes to the real DATABASE_URL while
+      // the test harness reads the test database, and assertions silently
+      // measure the wrong rows.
+      env: {
+        DATABASE_URL:
+          process.env.TEST_DATABASE_URL ||
+          'postgresql://postgres@127.0.0.1:5432/seyon_test?schema=public',
+        DIRECT_URL:
+          process.env.TEST_DATABASE_URL ||
+          'postgresql://postgres@127.0.0.1:5432/seyon_test?schema=public',
+      },
       include: ['tests/integration/**/*.integration.ts'],
       exclude: ['**/node_modules/**', '**/.next/**', 'tests/e2e/**'],
       // Shared database: no parallel file execution.
