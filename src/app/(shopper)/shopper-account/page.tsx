@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getUserProfile } from '@/backend/actions/user-profile';
 import { ProfileEditor } from '@/components/shared/profile-editor';
+import { AccountDataControls } from '@/frontend/components/shared/account-data-controls';
 
 export const metadata = {
   title: 'My Account | Seyon',
@@ -17,6 +18,7 @@ export default async function ShopperAccountPage() {
   return (
     <section className="min-h-[calc(100vh-4rem)] bg-white py-10 px-4 sm:px-6">
       <ProfileEditor user={user} type="shopper" />
+      <AccountDataControls email={user.email} />
     </section>
   );
 }
