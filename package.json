@@ -14,7 +14,8 @@
     "db:indexes": "tsx prisma/apply-indexes.ts",
     "typecheck": "tsc --noEmit",
     "security-scan": "npx tsx scripts/owasp-scan.ts",
-    "test:regression": "vitest run --config vitest.regression.config.ts"
+    "test:regression": "vitest run --config vitest.regression.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
