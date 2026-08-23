@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';

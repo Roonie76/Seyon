@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 
 interface ProductGalleryProps {
   images: { id: string; url: string; isPrimary: boolean }[];

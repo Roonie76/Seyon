@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { History } from 'lucide-react';
 
 const STORAGE_KEY = 'seyon_recently_viewed';

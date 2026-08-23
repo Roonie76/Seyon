@@ -1,6 +1,6 @@
 import * as React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { ProductCard } from '@/components/shared/product-card';

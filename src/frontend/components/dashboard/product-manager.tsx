@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import NextImage from 'next/image';
+import { SafeImage as NextImage } from '@/components/shared/safe-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
 import { BackButton } from '@/components/shared/back-button';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';

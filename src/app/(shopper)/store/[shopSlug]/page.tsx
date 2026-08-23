@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { getShopBySlug } from '@/actions/shops';
 import { trackEventInternal } from '@/backend/lib/analytics';
 import { generateStoreMetadata, generateStoreJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';

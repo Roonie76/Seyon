@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getWishlistProducts } from '@/actions/wishlist';
