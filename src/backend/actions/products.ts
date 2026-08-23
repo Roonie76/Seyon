@@ -6,24 +6,137 @@ import { ProductSchema, ReorderImagesSchema } from '@/lib/zod-schemas';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { deleteFile } from '@/lib/supabase';
+import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { revalidateShopSurface } from '@/shared/lib/cache';
 import { extractDominantColor } from '../lib/color/extractDominant';
 import { generateTheme } from '../lib/color/generateTheme';
+import { slugify } from '@/shared/lib/slugify';
+import { safeFetchImage } from '../lib/safe-image-fetch';
+import { isAllowedImageUrl, IMAGE_URL_ERROR } from '@/shared/lib/image-hosts';
+import { toUserMessage, isUniqueViolation, CONFLICT_ERROR } from '../lib/action-errors';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
-// Helper to make title into slug
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-'); // Replace multiple - with single -
+/**
+ * Pick a slug that is free within the shop.
+ *
+ * This is still check-then-insert, so it stays a race — the difference is that
+ * the caller now retries on the unique-constraint violation instead of handing
+ * the loser a raw Prisma exception. `excludeId` keeps a product from colliding
+ * with itself on rename.
+ */
+async function allocateSlug(
+  shopId: string,
+  title: string,
+  excludeId?: string,
+  attempt = 0
+): Promise<string> {
+  const base = slugify(title);
+  const candidates: string[] = [base];
+  for (let i = 1; i <= 50; i++) candidates.push(`${base}-${i}`);
+
+  const taken = await db.product.findMany({
+    where: {
+      shopId,
+      slug: { in: candidates },
+      ...(excludeId ? { NOT: { id: excludeId } } : {}),
+    },
+    select: { slug: true },
+  });
+  const used = new Set(taken.map((p) => p.slug));
+
+  const free = candidates.find((c) => !used.has(c));
+  if (free) {
+    // On a retry, jump past the contended range rather than fighting for it.
+    return attempt === 0 ? free : `${base}-${Date.now().toString(36)}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+/**
+ * Run a write that carries a generated slug, retrying once on the unique
+ * violation two concurrent saves can produce. Without this, whichever request
+ * loses the race gets a raw Prisma error.
+ */
+async function withSlugRetry<T>(
+  write: (slug: string) => Promise<T>,
+  shopId: string,
+  title: string,
+  excludeId?: string
+): Promise<T> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const slug = await allocateSlug(shopId, title, excludeId, attempt);
+    try {
+      return await write(slug);
+    } catch (err) {
+      if (attempt < 2 && isUniqueViolation(err)) continue;
+      throw err;
+    }
+  }
+  // Unreachable: the loop either returns or throws.
+  throw new Error('Could not allocate a unique product address');
+}
+
+/**
+ * Delete product image files, but only ones this shop is entitled to remove.
+ *
+ * Image URLs on a product are seller-supplied, so without this check a seller
+ * could attach a competitor's public image URL to their own product, delete
+ * the product, and destroy the competitor's file. Two guards:
+ *   - the storage path must sit under this shop's prefix (new uploads), and
+ *   - no product outside this shop may still reference the URL (legacy files
+ *     uploaded before the prefix existed).
+ */
+async function deleteOwnedFiles(urls: string[], shopId: string): Promise<void> {
+  if (urls.length === 0) return;
+
+  const referencedElsewhere = await db.productImage.findMany({
+    where: { url: { in: urls }, product: { shopId: { not: shopId } } },
+    select: { url: true },
+  });
+  const blocked = new Set(referencedElsewhere.map((r) => r.url));
+
+  for (const url of urls) {
+    if (blocked.has(url)) {
+      logger.warn('Skipped deleting an image referenced by another shop', { url, shopId });
+      continue;
+    }
+    try {
+      await deleteFile(url, 'products', storagePrefixForShop(shopId));
+    } catch (err) {
+      // Storage cleanup is best-effort; an orphaned file is not worth failing
+      // an otherwise successful save.
+      logger.warn('Storage cleanup failed', {
+        url,
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+}
+
+/**
+ * Derive the storefront theme from a product image.
+ *
+ * Decoration only — it must never be able to fail or stall a save. The fetch
+ * is host-restricted, deadline-bound and size-capped (see safeFetchImage); a
+ * malformed image previously held this action open for 115 seconds and threw
+ * an unhandled rejection out of node-vibrant's internal stream.
+ */
+async function extractTheme(url: string): Promise<ReturnType<typeof generateTheme> | null> {
+  try {
+    const buffer = await safeFetchImage(url);
+    if (!buffer) return null;
+    const dominantColor = await extractDominantColor(buffer);
+    return dominantColor ? generateTheme(dominantColor) : null;
+  } catch (err) {
+    logger.warn('Colour theme extraction failed; continuing without a theme', {
+      url,
+      reason: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
 }
 
 async function verifyShopOwnership(shopId: string) {
@@ -72,50 +185,16 @@ export async function createProduct(shopId: string, rawData: unknown) {
     }
 
     const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
-    
-    // Base slug
-    const slug = slugify(title);
-    
-    // Handle collisions
-    let counter = 0;
-    let finalSlug = slug;
-    while (true) {
-      const match = await db.product.findUnique({
-        where: {
-          shopId_slug: {
-            shopId: parsedShopId.data,
-            slug: finalSlug,
-          },
-        },
-      });
-      if (!match) break;
-      counter++;
-      finalSlug = `${slug}-${counter}`;
-    }
 
-    // Process color extraction
-    let theme: ReturnType<typeof generateTheme> | null = null;
-    if (images && images.length > 0) {
-      try {
-        const response = await fetch(images[0].url);
-        if (response.ok) {
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const dominantColor = await extractDominantColor(buffer);
-          if (dominantColor) {
-            theme = generateTheme(dominantColor);
-          }
-        }
-      } catch (err) {
-        logger.error('Failed to extract color theme during product creation', err);
-      }
-    }
+    const theme = images && images.length > 0 ? await extractTheme(images[0].url) : null;
 
     const discountPercent =
       compareAtPrice && compareAtPrice > price
         ? (compareAtPrice - price) / compareAtPrice
         : null;
 
-    const product = await db.product.create({
+    const product = await withSlugRetry((finalSlug) =>
+      db.product.create({
       data: {
         shopId: parsedShopId.data,
         title,
@@ -146,14 +225,14 @@ export async function createProduct(shopId: string, rawData: unknown) {
       include: {
         images: true,
       },
-    });
+      })
+    , parsedShopId.data, title);
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
     return { success: true, product };
   } catch (error) {
-    logger.error('Error creating product', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'createProduct', shopId }) };
   }
 }
 
@@ -181,36 +260,17 @@ export async function updateProduct(productId: string, rawData: unknown) {
       return { error: validated.error.issues[0].message };
     }
 
-    const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
-    
-    // Determine if slug needs updating
-    let finalSlug = product.slug;
-    if (title !== product.title) {
-      const slug = slugify(title);
-      let counter = 0;
-      finalSlug = slug;
-      while (true) {
-        const match = await db.product.findFirst({
-          where: {
-            shopId: product.shopId,
-            slug: finalSlug,
-            NOT: { id: parsedProductId.data },
-          },
-        });
-        if (!match) break;
-        counter++;
-        finalSlug = `${slug}-${counter}`;
+    const { title, description, price, compareAtPrice, category, options, inStock, status, images, expectedUpdatedAt } = validated.data;
+
+    // Optimistic concurrency. When the client tells us which version it was
+    // editing, refuse the write if the row moved underneath it — otherwise two
+    // tabs saving different fields silently overwrite each other and both are
+    // told it worked.
+    if (expectedUpdatedAt) {
+      const expected = new Date(expectedUpdatedAt);
+      if (!Number.isNaN(expected.getTime()) && product.updatedAt.getTime() !== expected.getTime()) {
+        return { error: CONFLICT_ERROR, conflict: true as const };
       }
-    }
-
-    // Delete removed images in storage
-    const newUrls = new Set(images.map((img) => img.url));
-    const urlsToDelete = product.images
-      .filter((img) => !newUrls.has(img.url))
-      .map((img) => img.url);
-
-    for (const url of urlsToDelete) {
-      await deleteFile(url, 'products');
     }
 
     // Determine if we need to re-extract theme
@@ -227,26 +287,17 @@ export async function updateProduct(productId: string, rawData: unknown) {
     const oldPrimaryUrl = product.images.find((img: { isPrimary: boolean }) => img.isPrimary)?.url || product.images[0]?.url;
 
     if (newPrimaryUrl && (newPrimaryUrl !== oldPrimaryUrl || !product.themeExtractedAt)) {
-      try {
-        const response = await fetch(newPrimaryUrl);
-        if (response.ok) {
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const dominantColor = await extractDominantColor(buffer);
-          if (dominantColor) {
-            const lightTheme = generateTheme(dominantColor);
-            themeUpdate = {
-              themeBg: lightTheme.bg,
-              themeSurface: lightTheme.surface,
-              themeAccent: lightTheme.accent,
-              themeAccentStrong: lightTheme.accentStrong,
-              themeText: lightTheme.text,
-              themeMuted: lightTheme.muted,
-              themeExtractedAt: new Date(),
-            };
-          }
-        }
-      } catch (err) {
-        logger.error('Failed to extract color theme during product update', err);
+      const theme = await extractTheme(newPrimaryUrl);
+      if (theme) {
+        themeUpdate = {
+          themeBg: theme.bg,
+          themeSurface: theme.surface,
+          themeAccent: theme.accent,
+          themeAccentStrong: theme.accentStrong,
+          themeText: theme.text,
+          themeMuted: theme.muted,
+          themeExtractedAt: new Date(),
+        };
       }
     }
 
@@ -255,53 +306,87 @@ export async function updateProduct(productId: string, rawData: unknown) {
         ? (compareAtPrice - price) / compareAtPrice
         : null;
 
-    // Update product inside a database transaction
-    const updatedProduct = await db.$transaction(async (tx) => {
-      // Clear current images mapping in DB
-      await tx.productImage.deleteMany({
-        where: { productId: parsedProductId.data },
-      });
+    const titleChanged = title !== product.title;
 
-      // Update product record
-      return await tx.product.update({
-        where: { id: parsedProductId.data },
-        data: {
-          title,
-          slug: finalSlug,
-          description,
-          price,
-          compareAtPrice: compareAtPrice ?? null,
-          discountPercent,
-          category,
-          options: options || null,
-          inStock,
-          status,
-          images: {
-            create: images.map((img, idx) => ({
-              url: img.url,
-              displayOrder: img.displayOrder ?? idx,
-              isPrimary: img.isPrimary ?? (idx === 0),
-            })),
-          },
-          ...themeUpdate,
-        },
-        include: {
-          images: true,
-        },
-      });
-    });
+    // Update product inside a database transaction. Storage cleanup happens
+    // only AFTER this commits — deleting files first meant a rolled-back
+    // transaction left rows pointing at images that no longer existed.
+    const updatedProduct = await withSlugRetry(
+      (candidateSlug) =>
+        db.$transaction(async (tx) => {
+          // The version check again, inside the transaction, so a concurrent
+          // save that landed between the read above and here is still caught.
+          if (expectedUpdatedAt) {
+            const expected = new Date(expectedUpdatedAt);
+            if (!Number.isNaN(expected.getTime())) {
+              const fresh = await tx.product.findUnique({
+                where: { id: parsedProductId.data },
+                select: { updatedAt: true },
+              });
+              if (!fresh) throw new Error('Product not found');
+              if (fresh.updatedAt.getTime() !== expected.getTime()) {
+                throw new Error(CONFLICT_ERROR);
+              }
+            }
+          }
+
+          await tx.productImage.deleteMany({
+            where: { productId: parsedProductId.data },
+          });
+
+          return await tx.product.update({
+            where: { id: parsedProductId.data },
+            data: {
+              title,
+              slug: titleChanged ? candidateSlug : product.slug,
+              description,
+              price,
+              compareAtPrice: compareAtPrice ?? null,
+              discountPercent,
+              category,
+              options: options || null,
+              inStock,
+              status,
+              images: {
+                create: images.map((img, idx) => ({
+                  url: img.url,
+                  displayOrder: img.displayOrder ?? idx,
+                  isPrimary: img.isPrimary ?? (idx === 0),
+                })),
+              },
+              ...themeUpdate,
+            },
+            include: {
+              images: true,
+            },
+          });
+        }),
+      product.shopId,
+      title,
+      parsedProductId.data
+    );
+
+    // Storage cleanup, post-commit and scoped to files this shop owns.
+    const keptUrls = new Set(images.map((img) => img.url));
+    const removed = product.images.filter((img) => !keptUrls.has(img.url)).map((img) => img.url);
+    await deleteOwnedFiles(removed, product.shopId);
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidateShopSurface(shop.slug, updatedProduct.slug, updatedProduct.category);
     revalidatePath('/dashboard/products');
     return { success: true, product: updatedProduct };
   } catch (error) {
-    logger.error('Error updating product', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    if (error instanceof Error && error.message === CONFLICT_ERROR) {
+      return { error: CONFLICT_ERROR, conflict: true as const };
+    }
+    return { error: toUserMessage(error, { action: 'updateProduct', productId }) };
   }
 }
 
-const QuickAddSchema = z.array(z.string().url('Invalid image URL')).min(1, 'At least one image required').max(12, 'Maximum 12 images per quick-add');
+const QuickAddSchema = z
+  .array(z.string().refine(isAllowedImageUrl, IMAGE_URL_ERROR))
+  .min(1, 'At least one image required')
+  .max(12, 'Maximum 12 images per quick-add');
 
 /**
  * Bulk onboarding helper: every uploaded image becomes a DRAFT product the
@@ -328,28 +413,15 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
     }
 
     const created = [];
-    for (const [idx, url] of validated.data.entries()) {
-      const baseSlug = `untitled-product-${Date.now()}-${idx}`;
-      
-      let theme: ReturnType<typeof generateTheme> | null = null;
-      try {
-        const response = await fetch(url);
-        if (response.ok) {
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const dominantColor = await extractDominantColor(buffer);
-          if (dominantColor) {
-            theme = generateTheme(dominantColor);
-          }
-        }
-      } catch (err) {
-        logger.error('Failed to extract color theme during quick add', err);
-      }
+    for (const url of validated.data) {
+      const theme = await extractTheme(url);
 
-      const product = await db.product.create({
+      const product = await withSlugRetry((slug) =>
+        db.product.create({
         data: {
           shopId: parsedShopId.data,
           title: 'Untitled product',
-          slug: baseSlug,
+          slug,
           description: null,
           price: 0,
           discountPercent: null,
@@ -368,15 +440,17 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
           themeExtractedAt: theme ? new Date() : null,
         },
         select: { id: true },
-      });
+        }),
+        parsedShopId.data,
+        'Untitled product'
+      );
       created.push(product.id);
     }
 
     revalidatePath('/dashboard/products');
     return { success: true, count: created.length };
   } catch (error) {
-    logger.error('Error in quick-add products', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'quickAddProducts', shopId }) };
   }
 }
 
@@ -407,8 +481,7 @@ export async function toggleProductStock(productId: string, inStock: boolean) {
     revalidatePath('/dashboard/products');
     return { success: true, inStock: updated.inStock };
   } catch (error) {
-    logger.error('Error toggling product stock', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'toggleProductStock', productId }) };
   }
 }
 
@@ -430,22 +503,19 @@ export async function deleteProduct(productId: string) {
 
     const { shop } = await verifyShopOwnership(product.shopId);
 
-    // Delete images from Supabase Storage
-    for (const img of product.images) {
-      await deleteFile(img.url, 'products');
-    }
-
-    // Delete product from DB
+    // Database first. Storage cleanup afterwards, so a failed delete cannot
+    // leave a live product pointing at files that no longer exist.
     await db.product.delete({
       where: { id: parsedProductId.data },
     });
+
+    await deleteOwnedFiles(product.images.map((img) => img.url), product.shopId);
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
     return { success: true };
   } catch (error) {
-    logger.error('Error deleting product', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'deleteProduct', productId }) };
   }
 }
 
@@ -497,7 +567,6 @@ export async function reorderProductImages(productId: string, reorderedImages: u
 
     return { success: true };
   } catch (error) {
-    logger.error('Error reordering images', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'reorderProductImages', productId }) };
   }
 }

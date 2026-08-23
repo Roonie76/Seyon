@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { deleteFile } from '@/lib/supabase';
+import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { ShopSchema } from '@/lib/zod-schemas';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { Role } from '@prisma/client';
@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
+import { toUserMessage, CONFLICT_ERROR } from '../lib/action-errors';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
@@ -84,9 +85,7 @@ export async function createShop(rawData: unknown) {
     revalidatePath('/dashboard');
     return { success: true, shop };
   } catch (error) {
-    logger.error('Error creating shop', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return { error: errorMessage };
+    return { error: toUserMessage(error, { action: 'createShop' }) };
   }
 }
 
@@ -118,6 +117,18 @@ export async function updateShop(shopId: string, rawData: unknown) {
     const validated = ShopSchema.safeParse(rawData);
     if (!validated.success) {
       return { error: validated.error.issues[0].message };
+    }
+
+    // Optimistic concurrency: refuse the write if the row moved since the
+    // client read it, rather than silently overwriting the other editor.
+    if (validated.data.expectedUpdatedAt) {
+      const expected = new Date(validated.data.expectedUpdatedAt);
+      if (
+        !Number.isNaN(expected.getTime()) &&
+        existingShop.updatedAt.getTime() !== expected.getTime()
+      ) {
+        return { error: CONFLICT_ERROR, conflict: true as const };
+      }
     }
 
     // If slug changed, verify uniqueness
@@ -153,9 +164,7 @@ export async function updateShop(shopId: string, rawData: unknown) {
     revalidatePath('/dashboard');
     return { success: true, shop: updatedShop };
   } catch (error) {
-    logger.error('Error updating shop', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return { error: errorMessage };
+    return { error: toUserMessage(error, { action: 'updateShop', shopId }) };
   }
 }
 
@@ -179,21 +188,7 @@ export async function deleteShop() {
       return { error: 'You do not own a storefront' };
     }
 
-    // Best-effort storage cleanup; DB rows cascade via Prisma relations.
     const imageUrls = shop.products.flatMap((p) => p.images.map((img) => img.url));
-    for (const url of imageUrls) {
-      try {
-        await deleteFile(url, 'products');
-      } catch {
-        // Orphaned files are acceptable; never block deletion on storage
-      }
-    }
-    if (shop.logo) {
-      try { await deleteFile(shop.logo, 'logos'); } catch { /* best-effort */ }
-    }
-    if (shop.banner) {
-      try { await deleteFile(shop.banner, 'banners'); } catch { /* best-effort */ }
-    }
 
     await db.$transaction(async (tx) => {
       await tx.shop.delete({ where: { id: shop.id } });
@@ -204,6 +199,23 @@ export async function deleteShop() {
       });
     });
 
+    // Storage cleanup only after the database delete has committed. Doing it
+    // first meant a failed transaction left a live shop with dead image URLs.
+    const prefix = storagePrefixForShop(shop.id);
+    for (const url of imageUrls) {
+      try {
+        await deleteFile(url, 'products', prefix);
+      } catch {
+        // Orphaned files are acceptable; never block deletion on storage
+      }
+    }
+    if (shop.logo) {
+      try { await deleteFile(shop.logo, 'logos', prefix); } catch { /* best-effort */ }
+    }
+    if (shop.banner) {
+      try { await deleteFile(shop.banner, 'banners', prefix); } catch { /* best-effort */ }
+    }
+
     revalidateShopSurface(shop.slug);
     revalidateMarketplace();
     revalidatePath('/sell');
@@ -212,8 +224,7 @@ export async function deleteShop() {
     logger.info('Storefront deleted by owner', { shopId: shop.id, slug: shop.slug });
     return { success: true };
   } catch (error) {
-    logger.error('Error deleting shop', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'deleteShop' }) };
   }
 }
 
@@ -242,8 +253,7 @@ export async function toggleShopPause(isPaused: boolean) {
     revalidatePath('/dashboard');
     return { success: true, isPaused: updated.isPaused };
   } catch (error) {
-    logger.error('Error toggling shop pause', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    return { error: toUserMessage(error, { action: 'toggleShopPause' }) };
   }
 }
 

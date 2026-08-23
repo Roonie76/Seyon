@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { notify } from '../lib/notify';
-import { deleteFile } from '@/lib/supabase';
+import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
@@ -250,19 +250,20 @@ export async function deleteProductAction(productId: string) {
 
     if (!product) return { error: 'Product not found' };
 
-    // Clean up Supabase storage first (best-effort; never block DB delete on storage)
+    // Delete database records first; storage cleanup afterwards, so a failed
+    // delete cannot leave a live product pointing at removed files.
+    await db.product.delete({
+      where: { id: parsedProductId.data },
+    });
+
+    const prefix = storagePrefixForShop(product.shopId);
     for (const img of product.images) {
       try {
-        await deleteFile(img.url, 'products');
+        await deleteFile(img.url, 'products', prefix);
       } catch {
         // Orphaned files are acceptable; log happens inside deleteFile
       }
     }
-
-    // Delete database records
-    await db.product.delete({
-      where: { id: parsedProductId.data },
-    });
 
     revalidateMarketplace();
 
