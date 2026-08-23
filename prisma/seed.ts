@@ -2,7 +2,57 @@ import 'dotenv/config';
 import { Role, ProductStatus, ReportStatus, AnalyticsEventType } from '@prisma/client';
 import { db as prisma } from '../src/backend/lib/db';
 
+/**
+ * This script TRUNCATES every table before seeding. It must never be able to
+ * run against a hosted database by accident — `prisma migrate reset`, an IDE
+ * "run seed" button, or a stale DATABASE_URL are all one keystroke away.
+ *
+ * The target must either be a local database, or the operator must name it
+ * explicitly:  SEED_CONFIRM=<database name> npx prisma db seed
+ */
+function assertSafeSeedTarget(): void {
+  const url = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+  if (!url) throw new Error('Refusing to seed: no DATABASE_URL is set.');
+
+  let host = '';
+  let database = '';
+  try {
+    const parsed = new URL(url);
+    host = parsed.hostname.toLowerCase();
+    database = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+  } catch {
+    throw new Error('Refusing to seed: DATABASE_URL is not a valid connection string.');
+  }
+
+  const isLocal =
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host === 'host.docker.internal' ||
+    host === 'db' ||
+    host === 'postgres';
+
+  if (isLocal) return;
+
+  if (process.env.SEED_CONFIRM && process.env.SEED_CONFIRM === database) {
+    console.warn(
+      `\n⚠  Seeding NON-LOCAL database "${database}" on ${host} — every table will be wiped.\n`
+    );
+    return;
+  }
+
+  throw new Error(
+    `Refusing to seed a non-local database.\n` +
+      `  host:     ${host}\n` +
+      `  database: ${database}\n\n` +
+      `This script deletes every User, Shop, Product, Review, Report and Analytics row.\n` +
+      `Point DATABASE_URL at your local Postgres (see docker-compose.yml), or, if you\n` +
+      `really mean it, re-run with SEED_CONFIRM=${database}.`
+  );
+}
+
 async function main() {
+  assertSafeSeedTarget();
   console.log('Seeding database...');
 
   // 1. Clean existing records
