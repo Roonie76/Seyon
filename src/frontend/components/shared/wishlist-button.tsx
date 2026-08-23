@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toggleWishlistItem } from '@/actions/wishlist';
+import { track } from '@/frontend/lib/events';
 import { cn } from '@/lib/utils';
 
 interface WishlistButtonProps {
@@ -31,6 +32,7 @@ export function WishlistButton({
 
     try {
       const res = await toggleWishlistItem(productId);
+      if (res.success) track('product_wishlisted', { productId, added: Boolean(res.added) });
       if (res.success) {
         setIsWishlisted(!!res.added);
       } else if (res.error && res.error.includes('Unauthorized')) {

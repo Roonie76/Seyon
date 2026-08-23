@@ -10,6 +10,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { createProduct, updateProduct, deleteProduct, toggleProductStock, quickAddProducts } from '@/actions/products';
 import { runAction } from '@/frontend/lib/run-action';
+import { track } from '@/frontend/lib/events';
 import { Product, ProductImage, ProductStatus } from '@prisma/client';
 import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap, Share2, Check } from 'lucide-react';
 
@@ -195,6 +196,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     } catch (err) {
       const errMessage = err instanceof Error ? err.message : 'Error uploading files';
       setMessage({ type: 'error', text: errMessage });
+      track('upload_failed', { reason: errMessage.slice(0, 80) });
     } finally {
       setImageUploading(false);
     }
@@ -243,8 +245,17 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
       // until the reload, so the success window cannot be double-submitted.
       setIsLoading(false);
       setMessage({ type: 'error', text: res.error });
+      track('product_create_failed', { mode: dialogMode, reason: res.error.slice(0, 80) });
       return;
     }
+
+    track(dialogMode === 'add' ? 'product_created' : 'product_published', {
+      category: formData.category,
+      status: formData.status,
+      imageCount: formData.images.length,
+      hasDescription: formData.description.trim().length > 0,
+      hasOptions: formData.options.trim().length > 0,
+    });
 
     setJustSaved(true);
     setMessage({

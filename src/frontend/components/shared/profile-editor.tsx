@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Camera, Save, Loader2, User, Mail, Phone, Shield, CalendarDays, Check, MapPin } from 'lucide-react';
+import { Camera, Save, Loader2, User, Mail, Phone, Shield, CalendarDays, Check, MapPin, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { updateUserProfile, updateUserAddress } from '@/backend/actions/user-profile';
 import { BackButton } from '@/components/shared/back-button';
 
@@ -384,6 +385,19 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
               </>
             )}
           </button>
+
+          {/* Sign Out Button */}
+          <div className="pt-3 border-t border-zinc-100">
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              style={{ backgroundColor: '#DA0000' }}
+              className="w-full flex items-center justify-center gap-2 rounded-lg text-white font-extrabold text-xs uppercase tracking-wider py-3 shadow-xs hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer"
+            >
+              <LogOut className="h-4 w-4 stroke-[2.5]" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     </div>

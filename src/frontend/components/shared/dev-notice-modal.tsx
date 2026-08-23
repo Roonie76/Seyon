@@ -4,6 +4,19 @@ import * as React from 'react';
 import { useStorageValue, notifyStorageChanged } from '@/frontend/lib/browser-store';
 
 const NOTICE_KEY = 'seyon_dev_notice_seen';
+
+/**
+ * Whether the development notice has been dismissed.
+ *
+ * Exported because the consent banner has to wait its turn: both are
+ * first-visit interruptions, and this modal renders a full-screen backdrop at
+ * z-100, so a banner underneath it is not merely ugly — it is unclickable, and
+ * consent nobody can give is not consent. Verified by an end-to-end test that
+ * failed exactly this way before the banner was sequenced behind it.
+ */
+export function useDevNoticeAcknowledged(): boolean {
+  return useStorageValue(() => localStorage.getItem(NOTICE_KEY) === 'true', true);
+}
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -11,10 +24,7 @@ export function DevNoticeModal() {
   // Acknowledgement lives in localStorage. Subscribing keeps the server render
   // and the first client render identical (closed), then reveals the notice
   // without the extra render pass a mount effect would cause.
-  const acknowledged = useStorageValue(
-    () => localStorage.getItem(NOTICE_KEY) === 'true',
-    true
-  );
+  const acknowledged = useDevNoticeAcknowledged();
   const isOpen = !acknowledged;
 
   const handleClose = () => {

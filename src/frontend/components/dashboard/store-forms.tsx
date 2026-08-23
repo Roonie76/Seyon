@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { createShop, updateShop, toggleShopPause, deleteShop } from '@/actions/shops';
 import { runAction } from '@/frontend/lib/run-action';
+import { track } from '@/frontend/lib/events';
 import { asciiSlug } from '@/shared/lib/slugify';
 import { confirmWhatsappVerification, requestWhatsappVerification } from '@/backend/actions/whatsapp';
 import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound, Trash2 } from 'lucide-react';
@@ -73,6 +74,8 @@ export function StoreOnboardingForm() {
       setMessage({ type: 'error', text: res.error });
       return;
     }
+
+    track('shop_created', { hasLogo: Boolean(formData.logo), city: formData.city || null });
 
     // Stays disabled through the redirect so the form cannot be submitted twice.
     setMessage({ type: 'success', text: 'Store successfully created! Redirecting...' });
@@ -433,6 +436,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
       return;
     }
 
+    track('whatsapp_verified');
     setWhatsappVerifiedAt(new Date());
     setVerificationCode('');
     setMessage({ type: 'success', text: 'WhatsApp number verified.' });

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, PackageX, ShoppingCart, Check, ArrowRight, Info, ShieldCheck, Plus, Minus } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
+import { track } from '@/frontend/lib/events';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
 import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget, CartItem } from './store-cart';
 
@@ -176,6 +177,8 @@ export function ProductCTA({
     setShowGuidelines(false);
     try {
       await trackEvent(shopId, 'WHATSAPP_CLICK', productId);
+      // The moment that matters: a buyer actually reaching out to a seller.
+      track('whatsapp_tapped', { shopId, productId: productId ?? null });
     } catch (error) {
       console.error('Analytics tracking failed:', error);
     }
@@ -330,7 +333,8 @@ export function ProductCTA({
         shopName={shopName}
         whatsappNumber={whatsappNumber}
       />
-      {/* Guidelines Modal Pop-up */}
+
+      {/* Guidelines Modal Pop-up */}
       {showGuidelines && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs select-none">
           <div className="bg-white border border-zinc-200 rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl space-y-4 animate-in fade-in-50 zoom-in-95 duration-200">
