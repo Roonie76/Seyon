@@ -1,12 +1,28 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-function htmlRedirect(url: string): NextResponse {
+/** Escape for an HTML attribute or text node. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function htmlRedirect(rawUrl: string): NextResponse {
+  // The URL is built from request-controlled path and query. WHATWG URL
+  // encoding happens to neutralise the dangerous characters today, which is
+  // not a property worth depending on — both interpolation sites are escaped
+  // for their own context instead.
+  const url = escapeHtml(rawUrl);
+  const jsUrl = JSON.stringify(rawUrl).replace(/</g, '\\u003c');
   const html = `<!DOCTYPE html>
 <html>
   <head>
     <meta http-equiv="refresh" content="0; url=${url}" />
-    <script>window.location.replace("${url}");</script>
+    <script>window.location.replace(${jsUrl});</script>
     <title>Redirecting...</title>
   </head>
   <body>

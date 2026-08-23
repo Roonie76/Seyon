@@ -59,8 +59,13 @@ export async function POST(req: NextRequest) {
     const publicUrl = await uploadFile(file, bucket);
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
+    // The real error is logged, never returned. Echoing error.message handed
+    // clients internal detail — module resolution failures, storage provider
+    // messages, stack-adjacent strings — for no user benefit.
     logger.error('File upload controller error', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Upload failed. Please try again, or use a different image.' },
+      { status: 500 }
+    );
   }
 }

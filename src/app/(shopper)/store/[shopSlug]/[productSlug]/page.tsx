@@ -59,7 +59,12 @@ export async function generateMetadata({ params }: ProductPageProps) {
     },
   });
 
-  if (!product) return { title: 'Product Not Found' };
+  // See the storefront route for the full note: a missing product renders the
+  // not-found UI but still answers 200. noindex is what stops search engines
+  // holding on to deleted product URLs, and it works regardless of status.
+  if (!product) {
+    return { title: 'Product Not Found', robots: { index: false, follow: false } };
+  }
   return generateProductMetadata(product, product.shop);
 }
 

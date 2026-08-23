@@ -41,11 +41,31 @@ interface StorePageProps {
   params: Promise<{ shopSlug: string }>;
 }
 
+/**
+ * KNOWN ISSUE (F-15, partially mitigated): this route answers a missing shop
+ * with the correct not-found UI but an HTTP 200, not a 404.
+ *
+ * The page does call notFound(); the status is simply already committed by
+ * then. Three candidate causes were tested and ruled out by rebuilding and
+ * re-measuring: `export const revalidate` (removed — it was inert anyway,
+ * since the shopper Navbar's auth() call makes every route in this group
+ * dynamic), the route's `loading.tsx` Suspense boundary (temporarily removed —
+ * still 200), and moving notFound() into generateMetadata (still 200).
+ * Sibling routes without an awaited database read (/help/nope) and with
+ * generateStaticParams (/blog/nope) both return a correct 404.
+ *
+ * The consequence that actually matters — search engines indexing deleted
+ * storefronts — is handled below with an explicit noindex, which does not
+ * depend on the status code. The status itself is left as an open item.
+ */
 export async function generateMetadata({ params }: StorePageProps) {
   const resolvedParams = await params;
   const shop = await getShopBySlug(resolvedParams.shopSlug);
   if (!shop || shop.isSuspended) {
-    return { title: 'Storefront Not Found' };
+    return {
+      title: 'Storefront Not Found',
+      robots: { index: false, follow: false },
+    };
   }
   return generateStoreMetadata(shop);
 }
