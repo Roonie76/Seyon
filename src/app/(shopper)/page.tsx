@@ -50,7 +50,7 @@ const getHeroFeaturedProduct = unstable_cache(
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-        shop: { select: { name: true, slug: true, isVerified: true, logo: true } },
+        shop: { select: { name: true, slug: true, isVerified: true, logo: true, averageRating: true, reviewCount: true } },
       },
     });
     if (p) return p;
@@ -61,7 +61,7 @@ const getHeroFeaturedProduct = unstable_cache(
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-        shop: { select: { name: true, slug: true, isVerified: true, logo: true } },
+        shop: { select: { name: true, slug: true, isVerified: true, logo: true, averageRating: true, reviewCount: true } },
       },
     });
   },
@@ -444,6 +444,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const heroPrice = heroProduct?.price || 2499;
   const heroShopName = heroProduct?.shop?.name || 'Aura Scents';
   const heroProductUrl = heroProduct ? `/store/${heroProduct.shop.slug}/${heroProduct.slug}` : '#';
+  // Real rating for the listing shown in the hero mockup, or null.
+  const heroShopReviewCount = heroProduct?.shop?.reviewCount ?? 0;
+  const heroShopRating =
+    heroShopReviewCount > 0 && heroProduct?.shop?.averageRating
+      ? heroProduct.shop.averageRating
+      : null;
 
   // Get Hero reel stats from the Demo Data Service
   const heroStats = getHeroReelStats();
@@ -684,18 +690,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">No Image</div>
                   )}
-                  <span className="absolute top-2 left-2 z-10 gold-pill-badge text-[7px] px-1.5 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider shadow-sm">
-                    Bestseller
-                  </span>
+                  {/* No "Bestseller" claim: nothing in the data supports it. */}
                 </div>
                 
                 <div className="flex flex-col text-left px-1">
-                  {/* Rating element */}
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[8px] font-extrabold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
-                      ⭐ 4.9 <span className="text-zinc-450 font-medium normal-case">(124 reviews)</span>
-                    </span>
-                  </div>
+                  {/* Rating element — the mockup shows a real listing, so it
+                      shows that listing's real rating or nothing at all. */}
+                  {heroShopRating != null && (
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <span className="text-[8px] font-extrabold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                        ⭐ {heroShopRating.toFixed(1)} <span className="text-zinc-450 font-medium normal-case">({heroShopReviewCount} reviews)</span>
+                      </span>
+                    </div>
+                  )}
                   
                   <span className="text-[11px] font-bold text-zinc-950 leading-tight truncate group-hover:text-[#A77F3A] transition-colors">
                     {heroTitle}
@@ -801,17 +808,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               const presentation = getCreatorPresentation(prod.shop);
               const bgImg = prod.images?.[0]?.url || '';
               
-              // Custom static labels matching the mockup design
-              const labels = [
-                { title: 'A crochet seller from Kerala', desc: 'Handmade with love' },
-                { title: 'A perfume creator from Mumbai', desc: 'Luxury fragrances' },
-                { title: 'A resin artist from Jaipur', desc: 'One of a kind pieces' },
-                { title: 'A home decor brand from Hyderabad', desc: 'Minimal. Aesthetic. Timeless.' },
-                { title: 'An art studio from Pune', desc: 'Posters & wall art' }
-              ];
+              // Real seller and listing. The previous version mapped a fixed
+              // list of invented captions ("A crochet seller from Kerala") onto
+              // whatever products came back, describing real shops as things
+              // they are not.
+              const label = { title: prod.shop.name, desc: prod.title };
               
-              const label = labels[idx % labels.length];
-
               return (
                 <Link
                   key={prod.id}
@@ -844,17 +846,21 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         {label.desc}
                       </span>
                     </div>
-                    {/* Small green verified badge */}
-                    <span className="bg-emerald-500 text-white rounded-full p-1 leading-none shadow-md scale-90 flex items-center justify-center shrink-0">
-                      <Check className="h-2.5 w-2.5 text-white stroke-[4]" />
-                    </span>
+                    {/* Verified tick only for genuinely verified sellers */}
+                    {prod.shop.isVerified && (
+                      <span className="bg-emerald-500 text-white rounded-full p-1 leading-none shadow-md scale-90 flex items-center justify-center shrink-0">
+                        <Check className="h-2.5 w-2.5 text-white stroke-[4]" />
+                      </span>
+                    )}
                   </div>
 
-                  {/* Bottom: Location Pin */}
-                  <div className="relative flex items-center gap-1 text-white mt-auto z-10">
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping mr-0.5" />
-                    <span className="text-[10px] font-bold tracking-wide uppercase">{presentation.location}</span>
-                  </div>
+                  {/* Bottom: Location Pin — only when the seller gave a city */}
+                  {presentation.location && (
+                    <div className="relative flex items-center gap-1 text-white mt-auto z-10">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping mr-0.5" />
+                      <span className="text-[10px] font-bold tracking-wide uppercase">{presentation.location}</span>
+                    </div>
+                  )}
                 </Link>
               );
             })}
@@ -915,20 +921,28 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         )}
                       </h3>
                       
-                      {/* Rating block */}
+                      {/* Rating block — real reviews only; never a placeholder */}
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
-                          ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-400 font-medium normal-case">({shop.reviewCount || 100})</span>
-                        </span>
+                        {presentation.rating != null ? (
+                          <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                            ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-400 font-medium normal-case">({shop.reviewCount})</span>
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
+                            New seller
+                          </span>
+                        )}
                       </div>
 
                       {/* Trust metrics */}
-                      <p className="text-[10px] text-zinc-450 mt-3 font-semibold flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        {presentation.trustTag}
-                      </p>
+                      {presentation.trustTag && (
+                        <p className="text-[10px] text-zinc-450 mt-3 font-semibold flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {presentation.trustTag}
+                        </p>
+                      )}
                       <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
-                        {presentation.location} • {shop._count.products} Products
+                        {presentation.location ? `${presentation.location} • ` : ''}{shop._count.products} Products
                       </p>
                     </div>
 
@@ -1276,9 +1290,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                       <h3 className="font-serif text-base font-bold text-zinc-950 truncate max-w-full leading-tight group-hover:text-[#A77F3A] transition-colors">
                         {shop.name}
                       </h3>
-                      <span className="text-[9px] text-[#A77F3A] mt-1 uppercase tracking-wider font-extrabold flex items-center gap-0.5">
-                        ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-300 font-medium font-sans">|</span> {presentation.location}
-                      </span>
+                      {(presentation.rating != null || presentation.location) && (
+                        <span className="text-[9px] text-[#A77F3A] mt-1 uppercase tracking-wider font-extrabold flex items-center gap-0.5">
+                          {presentation.rating != null && <>⭐ {presentation.rating.toFixed(1)}</>}
+                          {presentation.rating != null && presentation.location && (
+                            <span className="text-zinc-300 font-medium font-sans">|</span>
+                          )}
+                          {presentation.location}
+                        </span>
+                      )}
                       <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-2.5 bg-zinc-50 border border-zinc-100 px-2.5 py-0.5 rounded-full">
                         {shop._count.products} Listings
                       </span>

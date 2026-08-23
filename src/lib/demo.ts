@@ -1,18 +1,26 @@
 /**
  * Seyon Social Commerce Demo Data Service
- * Centralizes development-only social proof and trust metrics.
- * 
+ * Centralises development-only social proof and trust metrics.
+ *
  * CRITICAL GUARDRAIL:
  * All placeholders are only enabled when process.env.NODE_ENV === 'development'.
- * In production, they return empty or real data to prevent placeholder leaks.
+ * In production every field is either real or NULL — never invented.
+ *
+ * The production branch used to still default to 4.8 stars, "Mumbai" and a
+ * blanket "Verified Creator" tag, so a brand-new shop with no reviews, no city
+ * and isVerified = false was presented to buyers as an established, verified,
+ * 4.8-rated seller. Callers must now handle null and render nothing.
  */
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 export interface CreatorPresentation {
-  rating: number;
-  location: string;
-  trustTag: string;
+  /** Real average rating, or null when the shop has no reviews yet. */
+  rating: number | null;
+  /** Real seller city, or null when they have not provided one. */
+  location: string | null;
+  /** Only set when something true can be said about the seller. */
+  trustTag: string | null;
   orderCountLabel?: string;
 }
 
@@ -94,17 +102,28 @@ export function getCreatorPresentation(shop: {
   slug: string;
   city?: string | null;
   averageRating?: number;
+  reviewCount?: number;
+  isVerified?: boolean;
 }): CreatorPresentation {
-  const baseRating = shop.averageRating && shop.averageRating > 0 ? shop.averageRating : 4.8;
-  const baseLocation = shop.city || 'Mumbai';
+  const realRating =
+    shop.averageRating && shop.averageRating > 0 && (shop.reviewCount ?? 0) > 0
+      ? shop.averageRating
+      : null;
+  const realLocation = shop.city || null;
 
   if (!isDevelopment) {
+    // Production: nothing invented. A shop with no reviews shows no rating,
+    // a shop with no city shows no location, and only a genuinely verified
+    // seller carries a verification tag.
     return {
-      rating: baseRating,
-      location: baseLocation,
-      trustTag: 'Verified Creator'
+      rating: realRating,
+      location: realLocation,
+      trustTag: shop.isVerified ? 'Verified Creator' : null,
     };
   }
+
+  const baseRating = realRating ?? 4.8;
+  const baseLocation = realLocation ?? 'Mumbai';
 
   // Check if we have an explicit mapping by slug
   const slugLower = shop.slug.toLowerCase();

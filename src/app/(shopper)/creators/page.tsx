@@ -102,20 +102,28 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
                       )}
                     </h3>
                     
-                    {/* Rating block */}
+                    {/* Rating block — real reviews only; never a placeholder */}
                     <div className="flex items-center gap-1 mt-1.5">
-                      <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
-                        ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-455 font-medium normal-case">({shop.reviewCount || 100})</span>
-                      </span>
+                      {presentation.rating != null ? (
+                        <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                          ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-455 font-medium normal-case">({shop.reviewCount})</span>
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
+                          New seller
+                        </span>
+                      )}
                     </div>
 
                     {/* Trust metrics */}
-                    <p className="text-[10px] text-zinc-600 mt-3 font-semibold flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      {presentation.trustTag}
-                    </p>
+                    {presentation.trustTag && (
+                      <p className="text-[10px] text-zinc-600 mt-3 font-semibold flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        {presentation.trustTag}
+                      </p>
+                    )}
                     <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
-                      {presentation.location} • {shop._count.products} Products
+                      {presentation.location ? `${presentation.location} • ` : ''}{shop._count.products} Products
                     </p>
                   </div>
 
