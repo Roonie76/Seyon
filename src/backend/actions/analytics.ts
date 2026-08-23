@@ -4,12 +4,24 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Role, AnalyticsEventType } from '@prisma/client';
 import { z } from 'zod';
-import { trackEventInternal } from '../lib/analytics';
+import { trackEventInternal, isTrackingAllowed, type TrackResult } from '../lib/analytics';
 import { logger } from '../lib/logger';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
-export async function trackEvent(shopId: string, eventType: AnalyticsEventType, productId?: string) {
+export async function trackEvent(
+  shopId: string,
+  eventType: AnalyticsEventType,
+  productId?: string
+): Promise<TrackResult> {
+  // This action is reachable by anyone, so it is rate-limited per IP and bots
+  // are dropped before anything is written. Without that, a seller's dashboard
+  // numbers — and the WHATSAPP_CLICK rows the review gate reads — could be
+  // manufactured at will.
+  if (!(await isTrackingAllowed())) {
+    return { success: true, skipped: 'rate-limited' as const };
+  }
+
   // Attribute the event to the signed-in user when available. This powers
   // review gating: only buyers who actually contacted a seller may review them.
   let userId: string | null = null;
@@ -19,7 +31,11 @@ export async function trackEvent(shopId: string, eventType: AnalyticsEventType, 
   } catch {
     // Anonymous tracking is fine
   }
-  return trackEventInternal(shopId, eventType, productId, userId);
+  // WhatsApp taps are the buyer's own deliberate action, so they are recorded
+  // every time rather than deduplicated like passive page views.
+  return trackEventInternal(shopId, eventType, productId, userId, {
+    skipDedupe: eventType === 'WHATSAPP_CLICK',
+  });
 }
 
 export async function getShopAnalytics(shopId: string) {

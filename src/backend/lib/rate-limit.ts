@@ -169,6 +169,8 @@ export const RATE_LIMITS = {
   CART_VALIDATE: { limit: 30, windowMs: 60_000 },
   /** Search suggestions autocomplete endpoints, keyed by IP. */
   SUGGESTIONS: { limit: 30, windowMs: 60_000 },
+  /** Public analytics events (views, WhatsApp taps), keyed by IP. */
+  ANALYTICS_EVENT: { limit: 60, windowMs: 60_000 },
 } as const;
 
 /** Test-only: reset in-memory state and force lazy Redis re-evaluation. */

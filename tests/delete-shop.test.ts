@@ -22,6 +22,10 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }
 vi.mock('@/lib/supabase', () => ({
   uploadFile: vi.fn(),
   deleteFile: vi.fn().mockResolvedValue(undefined),
+  // Storage deletes are now scoped to the owning shop's namespace.
+  storagePrefixForShop: (shopId: string) => `shop_${shopId}`,
+  storagePrefixForUser: (userId: string) => `user_${userId}`,
+  storagePathFromUrl: () => null,
 }));
 
 describe('deleteShop', () => {
