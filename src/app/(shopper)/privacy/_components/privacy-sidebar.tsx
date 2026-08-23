@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useLocationHash } from '@/frontend/lib/browser-store';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -14,24 +15,26 @@ interface PrivacySidebarProps {
 }
 
 export function PrivacySidebar({ sections }: PrivacySidebarProps) {
-  const [activeId, setActiveId] = React.useState<string>('');
+  // The hash is read through a subscription rather than copied into state on
+  // mount, so it also tracks in-page navigation — previously the highlight was
+  // set once and never updated when the reader jumped to another section.
+  const hash = useLocationHash();
+  // Scroll position overrides the hash once the reader starts scrolling.
+  const [scrolledId, setScrolledId] = React.useState<string>('');
+  const activeId = scrolledId || hash || (sections.length > 0 ? sections[0].id : '');
 
   React.useEffect(() => {
-    // Determine initial active section from hash or default to first
-    const hash = window.location.hash.replace('#', '');
-    if (hash) {
-      setActiveId(hash);
-      const targetElement = document.getElementById(hash);
-      if (targetElement) {
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        setTimeout(() => {
-          targetElement.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-        }, 100);
-      }
-    } else if (sections.length > 0) {
-      setActiveId(sections[0].id);
-    }
+    if (!hash) return;
+    const targetElement = document.getElementById(hash);
+    if (!targetElement) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = setTimeout(() => {
+      targetElement.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [hash]);
 
+  React.useEffect(() => {
     const observerOptions = {
       root: null, // viewport
       rootMargin: '-10% 0px -75% 0px', // trigger when section is in top portion of screen
@@ -42,7 +45,7 @@ export function PrivacySidebar({ sections }: PrivacySidebarProps) {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const id = entry.target.id;
-          setActiveId(id);
+          setScrolledId(id);
           // Update URL hash without polluting browser history
           window.history.replaceState(null, '', `#${id}`);
         }
@@ -63,7 +66,7 @@ export function PrivacySidebar({ sections }: PrivacySidebarProps) {
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    setActiveId(id);
+    setScrolledId(id);
     window.history.replaceState(null, '', `#${id}`);
 
     const targetElement = document.getElementById(id);

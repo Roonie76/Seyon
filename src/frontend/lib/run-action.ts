@@ -18,6 +18,8 @@
  * an optional `error`, and callers always check `res.error` first.
  */
 
+import { broadcastDataChanged } from './live-sync';
+
 export const NETWORK_ERROR =
   "We couldn't reach Seyon. Check your connection and try again — nothing was saved.";
 
@@ -25,7 +27,12 @@ export async function runAction<T extends { error?: string }>(
   fn: () => Promise<T>
 ): Promise<T> {
   try {
-    return await fn();
+    const res = await fn();
+    // A successful mutation tells every other tab in this browser to reload,
+    // so a seller with the dashboard open in three tabs sees the change at
+    // once rather than waiting out the backstop poll.
+    if (!res?.error) broadcastDataChanged();
+    return res;
   } catch (err) {
     console.error('Server action failed', err);
     return { error: NETWORK_ERROR } as T;

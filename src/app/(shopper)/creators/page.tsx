@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { BackButton } from '@/components/shared/back-button';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { Check } from 'lucide-react';
@@ -26,7 +27,14 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
   const params = await searchParams;
   const sort = params.sort;
 
-  let creators: any[] = [];
+  type CreatorCard = Prisma.ShopGetPayload<{
+    include: {
+      products: { include: { images: true } };
+      _count: { select: { products: true } };
+    };
+  }>;
+
+  let creators: CreatorCard[] = [];
   try {
     creators = await db.shop.findMany({
       where: { isSuspended: false, isPaused: false },

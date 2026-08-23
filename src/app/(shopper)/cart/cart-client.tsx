@@ -99,8 +99,12 @@ export function CartClient() {
   }, []);
 
   React.useEffect(() => {
-    setIsMounted(true);
-    loadCart();
+    // Deferred to a microtask so the mount render is not immediately
+    // invalidated by a synchronous setState (react-hooks/set-state-in-effect).
+    queueMicrotask(() => {
+      setIsMounted(true);
+      loadCart();
+    });
 
     // Fetch profile address
     getUserProfile('shopper')
@@ -165,9 +169,11 @@ export function CartClient() {
   React.useEffect(() => {
     if (!isMounted) return;
     const hasItems = Object.keys(cartGroups).length > 0;
-    if (hasItems && !validation && !isValidating) {
-      validateCart(cartGroups);
-    }
+    if (!hasItems || validation || isValidating) return;
+    // validateCart sets state as it runs; scheduling it off the synchronous
+    // effect body keeps the cascade out of the commit phase.
+    const timer = setTimeout(() => validateCart(cartGroups), 0);
+    return () => clearTimeout(timer);
   }, [isMounted, cartGroups, validation, validateCart, isValidating]);
 
   // ── 3. Same-tab and Cross-tab events listener ──────────────────────
@@ -651,7 +657,7 @@ export function CartClient() {
                         Did you send the message to {shopVal?.name || 'the store'} on WhatsApp?
                       </p>
                       <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        Opening WhatsApp draft opens a message request but doesn't complete the order until sent.
+                        Opening WhatsApp draft opens a message request but doesn&rsquo;t complete the order until sent.
                       </p>
                       <div className="flex gap-2">
                         <Button 

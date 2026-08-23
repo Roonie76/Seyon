@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useStorageValue } from '@/frontend/lib/browser-store';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { WishlistButton } from './wishlist-button';
@@ -139,7 +140,6 @@ export function ProductCard({
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  const [cartQty, setCartQty] = React.useState(0);
 
   const getCartQuantity = React.useCallback(() => {
     const shopId = product.shopId || product.shop.id;
@@ -163,27 +163,11 @@ export function ProductCard({
     return existing ? existing.quantity : 0;
   }, [product]);
 
-  React.useEffect(() => {
-    setCartQty(getCartQuantity());
-
-    const handleCartUpdated = () => {
-      setCartQty(getCartQuantity());
-    };
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.startsWith('seyon_cart:') || e.key === 'seyon_cart_meta') {
-        setCartQty(getCartQuantity());
-      }
-    };
-
-    window.addEventListener('seyon-cart-updated', handleCartUpdated);
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('seyon-cart-updated', handleCartUpdated);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [getCartQuantity]);
+  // Cart quantity lives in localStorage, which is an external store — so it is
+  // subscribed to rather than copied into state on mount. Same listeners as
+  // before (same-tab custom event plus cross-tab `storage`), without the
+  // extra render pass on every mount of every card in the grid.
+  const cartQty = useStorageValue(getCartQuantity, 0);
 
   const handleUpdateQty = (change: number) => {
     const shopId = product.shopId || product.shop.id;

@@ -7,22 +7,22 @@ import type { HelpArticle } from '@/shared/data/help';
 
 export function HelpSearch({ articles }: { articles: HelpArticle[] }) {
   const [query, setQuery] = React.useState('');
-  const [results, setResults] = React.useState<HelpArticle[]>([]);
 
-  React.useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-
+  // Results are derived from the query, so they are computed during render
+  // rather than mirrored into state by an effect. The effect version rendered
+  // twice on every keystroke and briefly showed stale matches.
+  const results = React.useMemo<HelpArticle[]>(() => {
     const lowercaseQuery = query.toLowerCase().trim();
-    const filtered = articles.filter(
-      (article) =>
-        article.title.toLowerCase().includes(lowercaseQuery) ||
-        article.content.toLowerCase().includes(lowercaseQuery) ||
-        article.topic.toLowerCase().includes(lowercaseQuery)
-    );
-    setResults(filtered.slice(0, 5)); // Limit to top 5 matches
+    if (!lowercaseQuery) return [];
+
+    return articles
+      .filter(
+        (article) =>
+          article.title.toLowerCase().includes(lowercaseQuery) ||
+          article.content.toLowerCase().includes(lowercaseQuery) ||
+          article.topic.toLowerCase().includes(lowercaseQuery)
+      )
+      .slice(0, 5); // Limit to top 5 matches
   }, [query, articles]);
 
   return (

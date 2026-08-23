@@ -48,15 +48,36 @@ describe('searchProductIds', () => {
       perPage: 8,
     });
 
-    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
-    const sqlArg = mockQueryRaw.mock.calls[0][0] as { values: unknown[]; sql?: string; strings?: string[] };
-    // All user inputs must be parameterized, never interpolated
-    expect(sqlArg.values).toContain('mug');
-    expect(sqlArg.values).toContain('%mug%');
-    expect(sqlArg.values).toContain('Home & Living');
-    expect(sqlArg.values).toContain(10);
-    expect(sqlArg.values).toContain(100);
-    expect(sqlArg.values).toContain(16); // offset = (3-1)*8
+    // Two statements: the page of ids, and a separate COUNT for the total.
+    // COUNT(*) OVER() only produced a value on rows that came back, so any
+    // page past the end reported a total of 0 and the pagination controls
+    // claimed there were no results at all.
+    expect(mockQueryRaw).toHaveBeenCalledTimes(2);
+
+    // EVERY statement must bind user input, not interpolate it.
+    const calls = mockQueryRaw.mock.calls.map(
+      (c) => c[0] as { values: unknown[]; sql?: string; strings?: string[] }
+    );
+    for (const sqlArg of calls) {
+      expect(sqlArg.values).toContain('mug');
+      expect(sqlArg.values).toContain('%mug%');
+      expect(sqlArg.values).toContain('Home & Living');
+      expect(sqlArg.values).toContain(10);
+      expect(sqlArg.values).toContain(100);
+    }
+
+    // Pagination is bound on the statement that fetches the page.
+    expect(calls[0].values).toContain(16); // offset = (3-1)*8
+  });
+
+  it('reports the true total even on a page past the end', async () => {
+    // First call: the (empty) page of ids. Second: the count.
+    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: BigInt(42) }]);
+
+    const res = await searchProductIds({ query: 'mug', page: 999, perPage: 8 });
+
+    expect(res.ids).toEqual([]);
+    expect(res.total).toBe(42);
   });
 
   it('clamps page numbers below 1 to the first page', async () => {

@@ -1,23 +1,29 @@
 'use client';
 
 import * as React from 'react';
+import { useStorageValue, notifyStorageChanged } from '@/frontend/lib/browser-store';
+
+const NOTICE_KEY = 'seyon_dev_notice_seen';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function DevNoticeModal() {
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    // Check if the user has already acknowledged the notice
-    const hasSeenNotice = localStorage.getItem('seyon_dev_notice_seen');
-    if (!hasSeenNotice) {
-      setIsOpen(true);
-    }
-  }, []);
+  // Acknowledgement lives in localStorage. Subscribing keeps the server render
+  // and the first client render identical (closed), then reveals the notice
+  // without the extra render pass a mount effect would cause.
+  const acknowledged = useStorageValue(
+    () => localStorage.getItem(NOTICE_KEY) === 'true',
+    true
+  );
+  const isOpen = !acknowledged;
 
   const handleClose = () => {
-    localStorage.setItem('seyon_dev_notice_seen', 'true');
-    setIsOpen(false);
+    try {
+      localStorage.setItem(NOTICE_KEY, 'true');
+    } catch {
+      // Private mode or blocked storage: the notice simply shows again.
+    }
+    notifyStorageChanged();
   };
 
   if (!isOpen) return null;
