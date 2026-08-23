@@ -25,7 +25,9 @@ The remaining 2.5 is not more bug-fixing. It is four things: **the database has 
 - no rollback when a change goes wrong
 - `db push` silently drops columns it thinks are unused
 
-**Do this:** baseline the existing schema as an initial migration, then use `prisma migrate deploy` in CI from that point on.
+**Done.** Baselined as `00000000000000_init`, with `00000000000001_integrity_constraints` and `00000000000002_rate_limit_counter` on top. Verified: the three replay onto an empty database with no errors and `prisma migrate diff` reports no drift against the schema. What is left for you is the one-time `npx prisma migrate resolve --applied 00000000000000_init` against production, and switching the deploy step to `migrate deploy`.
+
+The original instructions, for reference:
 
 ```bash
 mkdir -p prisma/migrations/0_init
@@ -41,24 +43,23 @@ Then add `npx prisma migrate deploy` to the deploy step and stop running `db pus
 
 This got more load-bearing with the audit fixes: analytics dedupe and the public `trackEvent` guard both ride on the same limiter.
 
-**Do this:** create an Upstash Redis database (free tier is enough at launch), set both env vars in Vercel, redeploy. Twenty minutes.
+**Done in code, and Upstash is no longer required.** Waiting on an account to make the limits real was the wrong shape of fix — the database is already shared by every instance, so it now holds the counters: one upserted row per key per fixed window, atomic under concurrency. Memory is used only outside production. Upstash stays the preferred backend when configured, because it keeps this load off Postgres, and the boot check tells you it is missing rather than staying silent.
+
+Verified with 6 integration tests against a real Postgres, including 10 concurrent callers on one key admitting exactly 4.
 
 ### 0.3 The database is in the wrong hemisphere
 
 `DATABASE_URL` points at `aws-1-ap-northeast-2` — Seoul. For a marketplace aimed at Indian creators and buyers, every one of the several queries each page makes crosses roughly 150 ms of ocean, and every shopper route renders dynamically (see 2.1).
 
-**Do this:** move the Supabase project to `ap-south-1` (Mumbai), and pin Vercel functions to `bom1` with a `vercel.json`:
-
-```json
-{ "regions": ["bom1"] }
-```
-Migrating the project means a maintenance window, so it is much cheaper to do now than after you have sellers. Half a day including a restore test.
+**Half done.** `vercel.json` now pins functions to `bom1` and is committed. The Supabase project move to `ap-south-1` is still yours — it needs a maintenance window, and it is the half that actually removes the 150 ms, so do not stop at the config file. Much cheaper now than after you have sellers.
 
 ### 0.4 Analytics are not being collected
 
 `NEXT_PUBLIC_POSTHOG_KEY` is `mock-posthog...`; the client logs "PostHog Mock Initialized". You will launch blind — no funnel, no activation rate, no idea which step sellers abandon.
 
-**Do this:** real PostHog project key, and instrument the four events that matter before launch: `shop_created`, `product_published`, `product_viewed`, `whatsapp_tapped`. An hour.
+**Instrumented; the key is yours.** Eleven events are now defined and typed in one file so the same thing cannot be fired under three names — the seller funnel through to `product_published`, the buyer funnel through to `whatsapp_tapped`, and two friction events that tell you *why* the funnel leaks. They no-op safely when PostHog is not loaded, and they only fire after the visitor has consented.
+
+What remains is a real project key. The boot check warns when it is missing, so a deploy without one is loud rather than silent.
 
 ### 0.5 Backups you have actually restored
 
@@ -72,15 +73,20 @@ I am not a lawyer and this is not legal advice — treat it as a checklist to ta
 
 | Requirement | Where it comes from | Status |
 |---|---|---|
-| Named grievance officer with contact and response timelines | Consumer Protection (E-Commerce) Rules 2020 | **Missing** |
-| Seller's legal name, address and contact shown on the listing | Same | **Missing** — only a display name and WhatsApp number |
-| Return, refund and cancellation policy per listing | Same | **Missing** |
-| Country of origin on goods | Legal Metrology / e-commerce rules | **Missing** |
-| Consent before non-essential tracking (PostHog, Sentry) | DPDP Act 2023 | **Missing** — both load unconditionally |
-| Working account deletion and data export | DPDP Act 2023 (data-principal rights) | **Missing** — there is shop deletion, no account deletion |
+| Named grievance officer with contact and response timelines | Consumer Protection (E-Commerce) Rules 2020 | **Built, needs a name** — one source, one component, both legal pages, 48h/30d timelines stated; set `NEXT_PUBLIC_GRIEVANCE_NAME`/`_DESIGNATION`/`_EMAIL` and the boot warning goes away |
+| Return, refund and cancellation policy | Same | **Done** — `/returns`, linked from both footers |
+| Consent before non-essential tracking (PostHog, Sentry) | DPDP Act 2023 | **Done** — nothing loads until an explicit yes; reversible from the privacy policy |
+| Working account deletion and data export | DPDP Act 2023 (data-principal rights) | **Done** — both self-serve on My Account |
+| Seller's legal name, address and contact shown on the listing | Consumer Protection (E-Commerce) Rules 2020 | **Missing** — needs new schema and seller onboarding fields, so it is a product decision rather than a fix |
+| Country of origin on goods | Legal Metrology / e-commerce rules | **Missing** — same shape: a new product field and a form change |
 | Separate seller agreement, distinct from buyer Terms | Contractual hygiene | **Missing** |
-| Clear statement that Seyon does not process payments or fulfil orders | Liability | Partly — the preview modal says orders are not processed |
+| Clear statement that Seyon does not process payments or fulfil orders | Liability | **Improved** — `/returns` says it plainly and repeatedly, which is where a buyer looks when something has gone wrong |
 
+Two caveats worth stating rather than burying. The policy text is written to
+match what the product actually does, but it has not been read by anyone
+qualified in Indian consumer and data protection law, and it should be before
+launch. And the grievance officer has to be a person who will answer the mail;
+code can make the details impossible to forget, not supply them.
 The last one deserves emphasis. Seyon hands buyers to WhatsApp and never sees the transaction. That is a defensible model, but it must be stated plainly and repeatedly, because a buyer who gets scammed will come to you first.
 
 ### 0.7 Rotate the credentials that have been on a laptop
@@ -180,8 +186,8 @@ Scope for this pass was the 13 launch blockers, so these stayed as they are:
 
 | When | What | Rough effort |
 |---|---|---|
-| **This week** | Merge `fix/audit-2026-08`. Migration baseline (0.1), Upstash (0.2), PostHog key (0.4), rotate secrets (0.7). | 2–3 days |
-| **Next week** | DB region move + `vercel.json` (0.3), backup restore test (0.5), legal disclosures drafted (0.6), monitoring (1.6). | 3–4 days |
+| **This week** | Merge `fix/audit-2026-08`. Then: `migrate resolve --applied` against production (0.1), appoint the grievance officer (0.6), PostHog key (0.4), rotate secrets (0.7). Upstash is no longer needed. | 1 day |
+| **Next week** | Supabase project move to `ap-south-1` (0.3), backup restore test (0.5), legal review of the policy text (0.6), monitoring (1.6). | 2–3 days |
 | **Weeks 3–5** | Order records (1.1), inventory quantity (1.2), P2 fixes (1.4), CI additions (1.5). | 2–3 weeks |
 | **Before scale** | Seller verification (1.3), cost fixes, staging, abuse SLA. | ongoing |
 
