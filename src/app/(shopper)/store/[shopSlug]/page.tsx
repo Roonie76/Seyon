@@ -42,23 +42,29 @@ interface StorePageProps {
 }
 
 /**
- * KNOWN ISSUE (F-15, partially mitigated): this route answers a missing shop
- * with the correct not-found UI but an HTTP 200, not a 404.
+ * KNOWN ISSUE (F-15, mitigated): a missing shop renders the correct not-found
+ * UI but answers HTTP 200, not 404.
  *
- * The page does call notFound(); the status is simply already committed by
- * then. Three candidate causes were tested and ruled out by rebuilding and
- * re-measuring: `export const revalidate` (removed — it was inert anyway,
- * since the shopper Navbar's auth() call makes every route in this group
- * dynamic), the route's `loading.tsx` Suspense boundary (temporarily removed —
- * still 200), and moving notFound() into generateMetadata (still 200).
- * Sibling routes without an awaited database read (/help/nope) and with
- * generateStaticParams (/blog/nope) both return a correct 404.
+ * Isolated to this route segment, not to this page's code: a page containing
+ * nothing but `notFound()` returns 404 at the app root, inside the (shopper)
+ * group, under /help, and under /blog/[slug] — but 200 when placed under
+ * /store/[shopSlug]. Six candidate causes were each removed and re-measured
+ * with a fresh production build, and all six were ruled out:
  *
- * The consequence that actually matters — search engines indexing deleted
- * storefronts — is handled below with an explicit noindex, which does not
- * depend on the status code. The status itself is left as an open item.
- */
-export async function generateMetadata({ params }: StorePageProps) {
+ *   export const revalidate         removed  -> still 200
+ *   loading.tsx (Suspense boundary) removed  -> still 200
+ *   opengraph-image.tsx             removed  -> still 200
+ *   nested [productSlug] segment    removed  -> still 200
+ *   notFound() moved into generateMetadata   -> still 200
+ *   generateStaticParams added               -> still 200 (and turns the
+ *                                               route SSG, so it was reverted)
+ *
+ * The cause is somewhere in Next's routing for this segment and is not worth
+ * more time: the consequence that actually matters is search engines holding
+ * on to deleted storefronts, and that is handled below with an explicit
+ * noindex plus an X-Robots-Tag header, neither of which depends on the status
+ * code. Revisit on the next Next.js major.
+ */export async function generateMetadata({ params }: StorePageProps) {
   const resolvedParams = await params;
   const shop = await getShopBySlug(resolvedParams.shopSlug);
   if (!shop || shop.isSuspended) {
