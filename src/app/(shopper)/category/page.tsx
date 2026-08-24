@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { db } from '@/lib/db';
 import { BackButton } from '@/components/shared/back-button';
 import { generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
@@ -136,7 +137,7 @@ export default async function CategoryIndexPage() {
   try {
     const grouped = await db.product.groupBy({
       by: ['category'],
-      where: { status: 'ACTIVE', shop: { isSuspended: false, isPaused: false } },
+      where: { status: 'ACTIVE', shop: DISCOVERABLE_SHOP },
       _count: { id: true },
     });
     activeProductsGrouped = grouped as unknown as PrismaGroupResult[];

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { getShopBySlug } from '@/actions/shops';
+import { SellerLegalDetails } from '@/frontend/components/store/seller-legal-details';
 import { trackEventInternal } from '@/backend/lib/analytics';
 import { generateStoreMetadata, generateStoreJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { Card } from '@/components/ui/card';
@@ -332,6 +333,19 @@ export default async function StorePage({ params }: StorePageProps) {
             </Card>
           </div>
         </div>
+
+        {/* Required of a marketplace: who the buyer is actually dealing with. */}
+        <SellerLegalDetails
+          legalName={shop.owner.sellerKyc?.legalName ?? null}
+          kycStatus={shop.owner.sellerKyc?.status ?? null}
+          addressLine1={shop.owner.addressLine1}
+          addressLine2={shop.owner.addressLine2}
+          city={shop.owner.city}
+          state={shop.owner.state}
+          postalCode={shop.owner.postalCode}
+          country={shop.owner.country}
+          whatsapp={shop.whatsapp}
+        />
       </div>
     </div>
   );

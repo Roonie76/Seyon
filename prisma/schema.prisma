@@ -51,13 +51,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  shop          Shop?
-  reviews       Review[]
-  reports       Report[]
-  wishlist      Wishlist[]
-  analytics     Analytics[]
+  accounts    Account[]
+  sessions    Session[]
+  shop        Shop?
+  reviews     Review[]
+  reports     Report[]
+  wishlist    Wishlist[]
+  analytics   Analytics[]
+  sellerKyc   SellerKyc?
+  kycReviewed SellerKyc[] @relation("KycReviewer")
 }
 
 model Account {
@@ -96,37 +98,42 @@ model VerificationToken {
 }
 
 model Shop {
-  id          String   @id @default(cuid())
-  ownerId     String   @unique
-  name        String
-  slug        String   @unique
-  description String?
-  logo        String?
-  banner      String?
-  whatsapp    String
-  instagram   String?
-  telegram    String?
-  city        String?
-  region      String?
-  deliveryNote String?
-  isVerified  Boolean  @default(false)
-  isSuspended Boolean  @default(false)
-  isPaused    Boolean  @default(false)
+  id                 String    @id @default(cuid())
+  ownerId            String    @unique
+  name               String
+  slug               String    @unique
+  description        String?
+  logo               String?
+  banner             String?
+  whatsapp           String
+  instagram          String?
+  telegram           String?
+  city               String?
+  region             String?
+  deliveryNote       String?
+  isVerified         Boolean   @default(false)
+  isSuspended        Boolean   @default(false)
+  isPaused           Boolean   @default(false)
+  /// Discoverable in marketplace, search and sitemap. False until the
+  /// owner completes Tier 0 identity. A store is always reachable by
+  /// direct link so a seller can see their own work before verifying.
+  isListed           Boolean   @default(false)
   whatsappVerifiedAt DateTime?
-  averageRating Float    @default(0.0)
-  reviewCount   Int      @default(0)
-  isBeta      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  averageRating      Float     @default(0.0)
+  reviewCount        Int       @default(0)
+  isBeta             Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  products    Product[]
-  reviews     Review[]
-  reports     Report[]
-  analytics   Analytics[]
+  owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products              Product[]
+  reviews               Review[]
+  reports               Report[]
+  analytics             Analytics[]
   whatsappVerifications WhatsappVerification[]
 
   @@index([isSuspended])
+  @@index([isListed])
 }
 
 model WhatsappVerification {
@@ -138,38 +145,38 @@ model WhatsappVerification {
   attempts   Int       @default(0)
   createdAt  DateTime  @default(now())
 
-  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId, expiresAt])
 }
 
 model Product {
-  id          String        @id @default(cuid())
-  shopId      String
-  title       String
-  slug        String
-  description String?
-  price       Float
-  compareAtPrice Float?
-  category    String
-  options     String?
-  inStock     Boolean       @default(true)
-  status      ProductStatus @default(ACTIVE)
-  isBeta      Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  themeBg            String?
-  themeSurface       String?
-  themeAccent        String?
-  themeAccentStrong  String?
-  themeText          String?
-  themeMuted         String?
-  themeExtractedAt   DateTime?
-  discountPercent    Float?
+  id                String        @id @default(cuid())
+  shopId            String
+  title             String
+  slug              String
+  description       String?
+  price             Float
+  compareAtPrice    Float?
+  category          String
+  options           String?
+  inStock           Boolean       @default(true)
+  status            ProductStatus @default(ACTIVE)
+  isBeta            Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  themeBg           String?
+  themeSurface      String?
+  themeAccent       String?
+  themeAccentStrong String?
+  themeText         String?
+  themeMuted        String?
+  themeExtractedAt  DateTime?
+  discountPercent   Float?
 
-  shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  images      ProductImage[]
-  analytics   Analytics[]
+  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  images       ProductImage[]
+  analytics    Analytics[]
   wishlistedBy Wishlist[]
 
   @@unique([shopId, slug])
@@ -182,13 +189,13 @@ model Product {
 }
 
 model ProductImage {
-  id           String   @id @default(cuid())
+  id           String  @id @default(cuid())
   productId    String
   url          String
-  displayOrder Int      @default(0)
-  isPrimary    Boolean  @default(false)
+  displayOrder Int     @default(0)
+  isPrimary    Boolean @default(false)
 
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, displayOrder])
 }
@@ -201,8 +208,8 @@ model Review {
   comment   String
   createdAt DateTime @default(now())
 
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([shopId, userId])
   @@index([shopId, createdAt])
@@ -216,8 +223,8 @@ model Report {
   status    ReportStatus @default(OPEN)
   createdAt DateTime     @default(now())
 
-  shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
 }
@@ -230,9 +237,9 @@ model Analytics {
   eventType AnalyticsEventType
   createdAt DateTime           @default(now())
 
-  shop      Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  product   Product?           @relation(fields: [productId], references: [id], onDelete: SetNull)
-  user      User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shop    Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([shopId, eventType, createdAt])
   @@index([productId, eventType])
@@ -256,14 +263,14 @@ model BlogPost {
   slug            String   @unique
   title           String
   excerpt         String
-  cover           String   // URL of high-end cover image
+  cover           String // URL of high-end cover image
   author          String   @default("Seyon Team")
   date            DateTime @default(now())
   category        String
   tags            String[]
   readingTime     Int      @default(1)
   featured        Boolean  @default(false)
-  featuredProduct String?  // Slug of bound marketplace product
+  featuredProduct String? // Slug of bound marketplace product
   seoTitle        String?
   seoDescription  String?
   seoKeywords     String[]
@@ -277,22 +284,100 @@ model BlogPost {
 
 /**
  * Distributed rate-limit counters.
- *
  * The limiter previously fell back to a per-process in-memory Map whenever
  * Upstash was unconfigured — which on Vercel means every warm instance keeps
  * its own tally, so "5 login attempts per minute" was really 5 x however many
  * instances happened to be warm, reset on every cold start. That made the
  * limits decorative in exactly the environment they matter in.
- *
  * The database is already shared across every instance, so it can hold the
  * counters. Upstash is still used when configured (it is faster and keeps this
  * load off Postgres); this is the fallback that actually works.
  */
 model RateLimitCounter {
-  /** Bucket key: "<prefix>:<subject>:<window start>". */
+  /**
+   * Bucket key: "<prefix>:<subject>:<window start>".
+   */
   key       String   @id
   count     Int      @default(0)
   expiresAt DateTime
 
   @@index([expiresAt])
+}
+
+/// Seller identity, held to the minimum the law actually requires of a
+/// marketplace that never touches a payment.
+///
+/// Seyon is not a payment aggregator, so the RBI KYC directions do not apply.
+/// What does apply is the Consumer Protection (E-Commerce) Rules 2020: a
+/// seller's legal name, principal address and contact must be shown to buyers,
+/// and the seller must undertake that their listings are accurate.
+///
+/// The full identifier is never stored. Only its last four characters (so a
+/// seller can recognise which document is on file) and a salted hash (so the
+/// same PAN opening five stores under five accounts is detectable). Document
+/// images live in a private bucket and are deleted once a decision is made:
+/// the decision is the record worth keeping, the image is only liability.
+model SellerKyc {
+  id     String    @id @default(cuid())
+  userId String    @unique
+  tier   KycTier   @default(TIER_0)
+  status KycStatus @default(NOT_STARTED)
+
+  // Tier 0 — no documents, required before a store is discoverable
+  legalName          String?
+  undertakingAt      DateTime?
+  /// Which revision of the undertaking text was accepted, so a later rewrite
+  /// does not silently claim a seller agreed to words they never saw.
+  undertakingVersion String?
+
+  // Tier 1 — reviewed by a human, earns the verified badge
+  idType            KycIdType?
+  /// Last four characters only. The full number is never written to a column.
+  idLast4           String?
+  /// Salted SHA-256 of the full identifier. Duplicate detection only.
+  idHash            String?
+  /// Key in the private kyc-documents bucket. Nulled after a decision.
+  documentPath      String?
+  documentDeletedAt DateTime?
+
+  // Tier 2 — only where the seller is over the GST threshold
+  gstin String?
+
+  reviewedById    String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("KycReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([idHash])
+}
+
+enum KycTier {
+  TIER_0
+  TIER_1
+  TIER_2
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum KycIdType {
+  PAN
+  PASSPORT
+  DRIVING_LICENCE
+  VOTER_ID
+  /// Masked Aadhaar only. The full Aadhaar number is never accepted or stored:
+  /// the Aadhaar Act restricts holding it, and a bucket of Aadhaar images is a
+  /// categorically worse breach than a bucket of product photos.
+  AADHAAR_MASKED
 }

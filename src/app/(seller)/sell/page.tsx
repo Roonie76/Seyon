@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { SafeImage as NextImage } from '@/components/shared/safe-image';
@@ -80,7 +81,7 @@ export default async function HomePage() {
 
   try {
     popularShops = await db.shop.findMany({
-      where: { isSuspended: false, isPaused: false },
+      where: DISCOVERABLE_SHOP,
       take: 3,
       include: {
         products: { where: { status: 'ACTIVE' } },
@@ -89,7 +90,7 @@ export default async function HomePage() {
     });
 
     popularProducts = await db.product.findMany({
-      where: { status: 'ACTIVE', shop: { isSuspended: false, isPaused: false } },
+      where: { status: 'ACTIVE', shop: DISCOVERABLE_SHOP },
       take: 4,
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },

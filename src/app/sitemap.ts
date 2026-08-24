@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/site';
 import { logger } from '@/backend/lib/logger';
@@ -34,14 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const shops = await db.shop.findMany({
-      where: { isSuspended: false, isPaused: false },
+      where: DISCOVERABLE_SHOP,
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
       take: 5000, // sitemap cap; move to generateSitemaps (sitemap index) beyond this
     });
 
     const products = await db.product.findMany({
-      where: { status: 'ACTIVE', shop: { isSuspended: false, isPaused: false } },
+      where: { status: 'ACTIVE', shop: DISCOVERABLE_SHOP },
       select: { slug: true, updatedAt: true, shop: { select: { slug: true } } },
       orderBy: { updatedAt: 'desc' },
       take: 40000, // stay under the 50k URLs-per-sitemap limit
@@ -63,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const categories = await db.product.groupBy({
       by: ['category'],
-      where: { status: 'ACTIVE', shop: { isSuspended: false, isPaused: false } },
+      where: { status: 'ACTIVE', shop: DISCOVERABLE_SHOP },
     });
     categoryUrls = categories.map((c) => ({
       url: `${baseUrl}/category/${encodeURIComponent(c.category.toLowerCase())}`,

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
@@ -37,7 +38,7 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
   let creators: CreatorCard[] = [];
   try {
     creators = await db.shop.findMany({
-      where: { isSuspended: false, isPaused: false },
+      where: DISCOVERABLE_SHOP,
       include: {
         products: {
           where: { status: 'ACTIVE' },

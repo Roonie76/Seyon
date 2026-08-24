@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { unstable_cache } from 'next/cache';
@@ -25,7 +26,7 @@ const getJustDiscovered = unstable_cache(
     return db.product.findMany({
       where: {
         status: 'ACTIVE',
-        shop: { isSuspended: false, isPaused: false },
+        shop: DISCOVERABLE_SHOP,
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
@@ -46,7 +47,7 @@ const getHeroFeaturedProduct = unstable_cache(
       where: {
         slug: 'mystic-oud-eau-de-parfum',
         status: 'ACTIVE',
-        shop: { isSuspended: false, isPaused: false },
+        shop: DISCOVERABLE_SHOP,
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
@@ -57,7 +58,7 @@ const getHeroFeaturedProduct = unstable_cache(
     return db.product.findFirst({
       where: {
         status: 'ACTIVE',
-        shop: { isSuspended: false, isPaused: false },
+        shop: DISCOVERABLE_SHOP,
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
@@ -73,7 +74,7 @@ const getHeroFeaturedProduct = unstable_cache(
 const getFeaturedCreators = unstable_cache(
   async () => {
     let shops = await db.shop.findMany({
-      where: { isSuspended: false, isPaused: false, isVerified: true },
+      where: { ...DISCOVERABLE_SHOP, isVerified: true },
       include: {
         products: {
           where: { status: 'ACTIVE' },
@@ -89,8 +90,7 @@ const getFeaturedCreators = unstable_cache(
     if (shops.length < 5) {
       const extraShops = await db.shop.findMany({
         where: {
-          isSuspended: false,
-          isPaused: false,
+          ...DISCOVERABLE_SHOP,
           id: { notIn: shops.map((s) => s.id) },
         },
         include: {
@@ -119,7 +119,7 @@ const getTrendingProducts = unstable_cache(
     return db.product.findMany({
       where: {
         status: 'ACTIVE',
-        shop: { isSuspended: false, isPaused: false },
+        shop: DISCOVERABLE_SHOP,
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
@@ -137,7 +137,7 @@ const getTrendingProducts = unstable_cache(
 const getRecentlyAddedStores = unstable_cache(
   async () => {
     return db.shop.findMany({
-      where: { isSuspended: false, isPaused: false },
+      where: DISCOVERABLE_SHOP,
       include: {
         products: {
           where: { status: 'ACTIVE' },

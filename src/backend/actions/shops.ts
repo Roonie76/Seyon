@@ -274,6 +274,17 @@ export async function getShopBySlug(slug: string) {
           emailVerified: true,
           phone: true,
           createdAt: true,
+          // Seller identity, shown publicly because the Consumer Protection
+          // (E-Commerce) Rules 2020 require a marketplace to display each
+          // seller's legal name and principal geographic address. Nothing else
+          // about the owner is exposed here — no email, no account id.
+          addressLine1: true,
+          addressLine2: true,
+          city: true,
+          state: true,
+          postalCode: true,
+          country: true,
+          sellerKyc: { select: { legalName: true, status: true } },
         },
       },
       products: {

@@ -216,6 +216,12 @@ export const RATE_LIMITS = {
    * so it should not be loopable.
    */
   ACCOUNT_EXPORT: { limit: 5, windowMs: 86_400_000 },
+  /**
+   * Identity submissions, keyed by user id. Low on purpose: each one costs a
+   * reviewer's time, and a seller resubmitting ten times in an hour is either
+   * confused or probing.
+   */
+  KYC_SUBMIT: { limit: 5, windowMs: 3_600_000 },
 } as const;
 
 /** Test-only: reset in-memory state and force lazy Redis re-evaluation. */

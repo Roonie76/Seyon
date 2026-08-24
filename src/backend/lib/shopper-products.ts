@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { Prisma } from '@prisma/client';
 import { searchProductIds, ProductSearchSort } from '@/backend/lib/search';
 import { logger } from '@/backend/lib/logger';
@@ -41,7 +42,7 @@ export async function fetchShopperCategoriesAndCities(): Promise<CategoriesAndCi
     by: ['category'],
     where: {
       status: 'ACTIVE',
-      shop: { isSuspended: false, isPaused: false },
+      shop: DISCOVERABLE_SHOP,
     },
     _count: {
       id: true,
@@ -55,7 +56,7 @@ export async function fetchShopperCategoriesAndCities(): Promise<CategoriesAndCi
     .sort((a, b) => b.count - a.count);
 
   const cityRows = await db.shop.findMany({
-    where: { isSuspended: false, isPaused: false, city: { not: null } },
+    where: { ...DISCOVERABLE_SHOP, city: { not: null } },
     select: { city: true },
     distinct: ['city'],
     take: 100,
@@ -157,7 +158,7 @@ export async function fetchShopperProducts(
           where: {
             id: { notIn: products.map((product) => product.id) },
             status: 'ACTIVE',
-            shop: { isSuspended: false, isPaused: false },
+            shop: DISCOVERABLE_SHOP,
           },
           include: PRODUCT_INCLUDE,
           orderBy: [{ inStock: 'desc' }, { createdAt: 'desc' }],
@@ -168,7 +169,7 @@ export async function fetchShopperProducts(
       // --- Prisma filter path (page.tsx L340-L399) ---
       const filterConditions: Prisma.ProductWhereInput = {
         status: 'ACTIVE',
-        shop: { isSuspended: false, isPaused: false },
+        shop: DISCOVERABLE_SHOP,
       };
 
       if (category) {
@@ -177,8 +178,7 @@ export async function fetchShopperProducts(
 
       if (city) {
         filterConditions.shop = {
-          isSuspended: false,
-          isPaused: false,
+          ...DISCOVERABLE_SHOP,
           city: { equals: city, mode: 'insensitive' },
         };
       }

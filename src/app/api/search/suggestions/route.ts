@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { db } from '@/lib/db';
 import { rateLimit, RATE_LIMITS } from '@/backend/lib/rate-limit';
 
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       db.product.findMany({
         where: {
           status: 'ACTIVE',
-          shop: { isSuspended: false, isPaused: false },
+          shop: DISCOVERABLE_SHOP,
           category: { contains: trimmedQuery, mode: 'insensitive' },
         },
         select: { category: true },
@@ -44,8 +45,7 @@ export async function GET(request: NextRequest) {
       }),
       db.shop.findMany({
         where: {
-          isSuspended: false,
-          isPaused: false,
+          ...DISCOVERABLE_SHOP,
           name: { contains: trimmedQuery, mode: 'insensitive' },
         },
         select: { name: true, slug: true },
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       db.product.findMany({
         where: {
           status: 'ACTIVE',
-          shop: { isSuspended: false, isPaused: false },
+          shop: DISCOVERABLE_SHOP,
           title: { contains: trimmedQuery, mode: 'insensitive' },
         },
         select: {
