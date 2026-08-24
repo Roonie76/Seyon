@@ -5,19 +5,10 @@ import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getAdminDashboardStats } from '@/actions/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AdminModeration } from '@/components/admin/admin-moderation';
-import { Role, Report, Shop } from '@prisma/client';
+import { OpenComplaints, type OpenComplaintRow } from '@/components/admin/open-complaints';
+import { Role } from '@prisma/client';
 import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText, Flag, KeyRound } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
-
-type AdminReport = Report & {
-  shop: { name: string; slug: string };
-  user: { name: string | null; email: string | null };
-};
-
-type AdminStore = Shop & {
-  owner: { email: string | null };
-};
 
 interface PopularShop {
   name: string;
@@ -42,20 +33,21 @@ export default async function AdminPage() {
   const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
 
   // Load admin stats
-  let stats = { totalSellers: 0, totalProducts: 0, totalStores: 0, dailySignups: 0, reportsCount: 0 };
-  let reports: AdminReport[] = [];
+  let stats = {
+    totalSellers: 0, totalProducts: 0, totalStores: 0,
+    dailySignups: 0, reportsCount: 0, overdueComplaints: 0,
+  };
+  let reports: OpenComplaintRow[] = [];
   let popularShops: PopularShop[] = [];
   let popularProducts: PopularProduct[] = [];
-  let allStores: AdminStore[] = [];
 
   try {
     const res = await getAdminDashboardStats();
     if (res.success && res.stats) {
       stats = res.stats;
-      reports = res.reports as AdminReport[];
+      reports = res.reports as OpenComplaintRow[];
       popularShops = res.popularShops as PopularShop[];
       popularProducts = res.popularProducts as PopularProduct[];
-      allStores = res.allStores as AdminStore[];
     }
   } catch (error) {
     logger.error('Error fetching admin page stats', error);
@@ -154,7 +146,11 @@ export default async function AdminPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Interactive Moderation Lists */}
         <div className="lg:col-span-2">
-          <AdminModeration reports={reports} allStores={allStores} buyerMarketUrl={buyerMarketUrl} />
+          <OpenComplaints
+            rows={reports}
+            total={stats.reportsCount}
+            overdueCount={stats.overdueComplaints}
+          />
         </div>
 
         {/* Analytics Highlights */}

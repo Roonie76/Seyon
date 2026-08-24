@@ -11,11 +11,11 @@ import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 import { recordAdminAction, ADMIN_ACTIONS } from '../lib/admin-audit';
 import { requireAdmin } from '../lib/require-admin';
+import { ACK_DEADLINE_HOURS } from '@/shared/lib/complaints';
 import { issueNotice, emailNotice } from '../lib/notices';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
-const ReportStatusSchema = z.nativeEnum(ReportStatus);
 
 /**
  * Admin authorisation now lives in `lib/require-admin`, because moderation,
@@ -35,18 +35,21 @@ export async function getAdminDashboardStats() {
       totalStores,
       reports,
       dailySignups,
+      overdueComplaints,
+      openComplaints,
     ] = await Promise.all([
       db.user.count({ where: { role: Role.SELLER } }),
       db.product.count(),
       db.shop.count(),
+      // A preview, not a queue. /admin/reports is the queue, with the SLA
+      // clocks and the actions; this is the ten oldest so the landing page can
+      // say what is waiting. Oldest first, because a list sorted newest-first
+      // is how the oldest complaint becomes the one nobody reaches.
       db.report.findMany({
         where: { status: { in: [ReportStatus.OPEN, ReportStatus.UNDER_REVIEW] } },
-        include: {
-          shop: { select: { name: true, slug: true } },
-          user: { select: { name: true, email: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 200, // bound the moderation queue view
+        include: { shop: { select: { name: true, slug: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: 10,
       }),
       // Count signups in the last 24h
       db.user.count({
@@ -56,6 +59,14 @@ export async function getAdminDashboardStats() {
           },
         },
       }),
+      // Past the 48-hour acknowledgement deadline and still unacknowledged.
+      db.report.count({
+        where: {
+          acknowledgedAt: null,
+          createdAt: { lt: new Date(Date.now() - ACK_DEADLINE_HOURS * 3_600_000) },
+        },
+      }),
+      db.report.count({ where: { status: { in: [ReportStatus.OPEN, ReportStatus.UNDER_REVIEW] } } }),
     ]);
 
     // Calculate most viewed stores (grouped in DB or count analytics)
@@ -105,13 +116,19 @@ export async function getAdminDashboardStats() {
       })
     );
 
-    const allStoresList = await db.shop.findMany({
-      include: {
-        owner: { select: { email: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 500, // bound the admin table; add pagination before shop count approaches this
-    });
+    // The overdue flag is decided here, against one instant, rather than in the
+    // page: calling Date.now() while rendering is both impure and gives each
+    // row a slightly different clock.
+    const ackCutoff = Date.now() - ACK_DEADLINE_HOURS * 3_600_000;
+    const reportPreview = reports.map((r) => ({
+      id: r.id,
+      category: r.category,
+      reason: r.reason,
+      createdAt: r.createdAt,
+      overdue: r.acknowledgedAt === null && r.createdAt.getTime() < ackCutoff,
+      shopName: r.shop.name,
+      shopSlug: r.shop.slug,
+    }));
 
     return {
       success: true,
@@ -120,12 +137,12 @@ export async function getAdminDashboardStats() {
         totalProducts,
         totalStores,
         dailySignups,
-        reportsCount: reports.length,
+        reportsCount: openComplaints,
+        overdueComplaints,
       },
-      reports,
+      reports: reportPreview,
       popularShops,
       popularProducts,
-      allStores: allStoresList,
     };
   } catch (error) {
     logger.error('Error fetching admin dashboard stats', error);
@@ -247,50 +264,19 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean, re
   }
 }
 
-export async function resolveReportAction(reportId: string, status: ReportStatus) {
-  try {
-    const parsedReportId = IdParamSchema.safeParse(reportId);
-    if (!parsedReportId.success) {
-      return { error: 'Invalid report ID format' };
-    }
-
-    const parsedStatus = ReportStatusSchema.safeParse(status);
-    if (!parsedStatus.success) {
-      return { error: 'Invalid status type' };
-    }
-
-    const { actorId } = await verifyAdminAuth();
-
-    const report = await db.report.update({
-      where: { id: parsedReportId.data },
-      data: { status: parsedStatus.data },
-      include: { shop: true, user: { select: { email: true } } },
-    });
-
-    // Notify the reporter when their report reaches a final state (fire-and-forget)
-    if (report.user?.email && parsedStatus.data === 'RESOLVED') {
-      notify({
-        to: report.user.email,
-        subject: `Update on your report about "${report.shop.name}"`,
-        text: `Thanks for helping keep Seyon safe. Your report about the storefront "${report.shop.name}" has been reviewed and resolved by our moderation team.`,
-      }).catch(() => undefined);
-    }
-
-    await recordAdminAction({
-      actorId,
-      action: ADMIN_ACTIONS.RESOLVE_REPORT,
-      targetType: 'Report',
-      targetId: report.id,
-      metadata: { status: parsedStatus.data, shopSlug: report.shop.slug },
-    });
-
-    revalidateShopSurface(report.shop.slug);
-    revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
-    return { success: true };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
-  }
-}
+/**
+ * `resolveReportAction` was removed.
+ *
+ * It set `status = 'RESOLVED'` and nothing else, which the
+ * `Report_terminal_has_resolved_at` constraint rejects outright — a complaint
+ * cannot reach a terminal state without a disposal timestamp, and it could not
+ * be disposed of before it was acknowledged. Its only caller was the old
+ * `AdminModeration` panel, which is gone too.
+ *
+ * Use `acknowledgeComplaintAction` and `closeComplaintAction` in
+ * `actions/complaints.ts`: they stamp both timestamps, require a note that the
+ * reporter is sent, and distinguish "we acted" from "we found nothing".
+ */
 
 export async function deleteProductAction(productId: string, reason?: string) {
   try {

@@ -74,6 +74,33 @@ test.afterAll(async () => {
   await page?.close();
 });
 
+/* ---------------------------------------------------- the admin landing page */
+
+test('the landing page previews the queue instead of duplicating it', async () => {
+  await ready(page, `${BASE}/admin`);
+
+  const panel = page.getByTestId('open-complaints');
+  await expect(panel).toBeVisible({ timeout: 20000 });
+
+  // One complaint is seeded three days old and unacknowledged. This test runs
+  // first in the file for that reason: the complaints tests below acknowledge
+  // and close it, and a serial suite executes in file order.
+  await expect(page.getByTestId('open-complaints-overdue')).toContainText('48-hour');
+  await expect(page.getByTestId('open-complaint-row').first()).toBeVisible();
+
+  // The old panel carried its own Resolve and Suspend buttons. Its Resolve set
+  // a terminal status with no disposal timestamp, which the database now
+  // refuses outright, and its Suspend sent no reason, which the action refuses.
+  // Both jobs belong to the dedicated screens, so the landing page links there
+  // and offers no controls of its own.
+  await expect(page.getByRole('button', { name: /^resolve$/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^suspend$/i })).toHaveCount(0);
+
+  await page.getByTestId('open-complaints-link').click();
+  await page.waitForURL(/\/admin\/reports/, { timeout: 20000 });
+  await expect(page.getByTestId('complaint-row').first()).toBeVisible({ timeout: 20000 });
+});
+
 /* ------------------------------------------------------------------ reviews */
 
 test('a review cannot be hidden without a reason', async () => {
