@@ -9,6 +9,8 @@ import { trackEvent } from '@/actions/analytics';
 import { runAction } from '@/frontend/lib/run-action';
 import { createReview } from '@/actions/reviews';
 import { createReport } from '@/actions/reports';
+import { ReportCategory } from '@prisma/client';
+import { REPORT_CATEGORY_LABELS } from '@/shared/lib/complaints';
 
 interface WhatsAppButtonProps {
   shopId: string;
@@ -163,6 +165,10 @@ interface ReportModalProps {
 }
 
 export function ReportModal({ shopId }: ReportModalProps) {
+  // A category is asked for because "reason" as free text cannot be counted or
+  // escalated: four counterfeit complaints against one store is a pattern, and
+  // it is invisible if all four are prose.
+  const [category, setCategory] = React.useState<ReportCategory>(ReportCategory.OTHER);
   const [reason, setReason] = React.useState('');
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -173,14 +179,18 @@ export function ReportModal({ shopId }: ReportModalProps) {
     setIsLoading(true);
     setMessage(null);
 
-    const result = await runAction(() => createReport(shopId, { reason }));
+    const result = await runAction(() => createReport(shopId, { category, reason }));
     setIsLoading(false);
 
     if (result.error) {
       setMessage({ type: 'error', text: result.error });
     } else {
-      setMessage({ type: 'success', text: 'Storefront has been reported. Admins are reviewing.' });
+      setMessage({
+        type: 'success',
+        text: 'Report filed. A moderator will acknowledge it within 48 hours and you will be emailed when it is closed.',
+      });
       setReason('');
+      setCategory(ReportCategory.OTHER);
       setTimeout(() => {
         setIsOpen(false);
         setMessage(null);
@@ -211,6 +221,23 @@ export function ReportModal({ shopId }: ReportModalProps) {
               {message.text}
             </div>
           )}
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="report-category" className="text-sm font-semibold text-foreground/90">
+              What is wrong?
+            </label>
+            <select
+              id="report-category"
+              data-testid="report-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ReportCategory)}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {Object.values(ReportCategory).map((c) => (
+                <option key={c} value={c}>{REPORT_CATEGORY_LABELS[c]}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-foreground/90">Reason for Report</label>

@@ -73,11 +73,10 @@ test('store search finds a store by name, owner email and phone number', async (
 test('the status filter narrows to unlisted stores', async () => {
   await go(page, `${BASE}/admin/stores?status=unlisted`);
   await page.waitForLoadState('load');
-  // The seeded store is listed, so filtering to unlisted must exclude it —
-  // and with nothing left the table is not rendered at all, which is why this
-  // asserts on the empty state rather than on an absent row.
-  await expect(page.getByTestId('store-row')).toHaveCount(0);
-  await expect(page.getByTestId('store-empty')).toBeVisible();
+  // Assert about *this* store rather than about the table being empty. Other
+  // suites create their own unlisted fixtures, and a count-based assertion here
+  // made this test pass or fail depending on which file Playwright ran first.
+  await expect(page.getByText('Admin Test Store')).toHaveCount(0);
 
   // ...and the same filter set to "listed" finds it again, so the assertion
   // above is about the filter rather than about the search being broken.

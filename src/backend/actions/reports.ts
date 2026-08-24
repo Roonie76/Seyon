@@ -43,6 +43,7 @@ export async function createReport(shopId: string, rawData: unknown) {
       data: {
         shopId,
         userId,
+        category: validated.data.category,
         reason: validated.data.reason,
       },
     });

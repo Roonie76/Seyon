@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import { logger } from './logger';
+import { PUBLIC_REVIEW } from './shop-visibility';
 
 /**
  * Single source of truth for a shop's rating.
@@ -22,13 +23,21 @@ export interface ShopRating {
   reviewCount: number;
 }
 
-/** Recalculate and persist the cached aggregates for one shop. */
+/**
+ * Recalculate and persist the cached aggregates for one shop.
+ *
+ * Hidden reviews are excluded. That single `where` clause is what makes review
+ * moderation work at all: hiding a defamatory one-star review has to move the
+ * rating, or hiding it accomplishes nothing a seller cares about — and every
+ * moderator would go on deleting rows instead, which is the behaviour this is
+ * meant to replace.
+ */
 export async function recomputeShopRating(
   shopId: string,
   client: Prisma.TransactionClient | typeof db = db
 ): Promise<ShopRating> {
   const agg = await client.review.aggregate({
-    where: { shopId },
+    where: { shopId, ...PUBLIC_REVIEW },
     _avg: { rating: true },
     _count: { _all: true },
   });

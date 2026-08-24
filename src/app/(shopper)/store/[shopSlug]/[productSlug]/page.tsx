@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { PUBLIC_REVIEW } from '@/backend/lib/shop-visibility';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
@@ -83,7 +84,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       shop: {
         include: {
           owner: { select: { emailVerified: true, phone: true, createdAt: true } },
-          reviews: true,
+          // Hidden reviews do not count towards the rating, so they must not be
+          // rendered next to it either.
+          reviews: { where: PUBLIC_REVIEW },
           reports: {
             where: { status: 'OPEN' },
             select: { id: true }, // Prevent leaking PII of reports to the frontend

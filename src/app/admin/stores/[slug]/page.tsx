@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getStoreDetail } from '@/backend/actions/admin-stores';
+import { getShopReviewsForModeration } from '@/backend/actions/moderation';
+import { getShopNotices } from '@/backend/actions/notices';
 import { StoreActions, DeleteProductButton } from '@/frontend/components/admin/store-actions';
+import { ReviewModeration } from '@/frontend/components/admin/review-moderation';
+import { UnderReviewControl, StoreNotices } from '@/frontend/components/admin/store-notices';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +30,15 @@ export default async function AdminStoreDetailPage({
     );
   }
   const s = res.data;
+
+  // Reviews and notices are fetched here rather than folded into
+  // getStoreDetail: both are their own moderation surfaces with their own
+  // authorisation, and one query returning everything about a store was how
+  // the old admin dashboard ended up loading the entire marketplace.
+  const [reviewRes, noticeRes] = await Promise.all([
+    getShopReviewsForModeration(s.id),
+    getShopNotices(s.id),
+  ]);
 
   return (
     <section className="min-h-[calc(100vh-4rem)] bg-white px-4 py-10 sm:px-6">
@@ -57,6 +70,25 @@ export default async function AdminStoreDetailPage({
         </div>
 
         <StoreActions shopId={s.id} slug={s.slug} isVerified={s.isVerified} isSuspended={s.isSuspended} />
+
+        <UnderReviewControl
+          shopId={s.id}
+          isUnderReview={s.isUnderReview}
+          reason={s.underReviewReason}
+          since={s.underReviewSince}
+        />
+
+        {'error' in reviewRes ? (
+          <p role="alert" className="text-xs font-semibold text-red-600">{reviewRes.error}</p>
+        ) : (
+          <ReviewModeration reviews={reviewRes.data} />
+        )}
+
+        {'error' in noticeRes ? (
+          <p role="alert" className="text-xs font-semibold text-red-600">{noticeRes.error}</p>
+        ) : (
+          <StoreNotices shopId={s.id} notices={noticeRes.data} />
+        )}
 
         <div className="rounded-xl border border-zinc-200 p-4">
           <h2 className="mb-3 text-sm font-bold text-zinc-950">

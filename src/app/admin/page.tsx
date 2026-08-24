@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AdminModeration } from '@/components/admin/admin-moderation';
 import { Role, Report, Shop } from '@prisma/client';
-import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText } from 'lucide-react';
+import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText, Flag, KeyRound } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
 
 type AdminReport = Report & {
@@ -76,6 +76,16 @@ export default async function AdminPage() {
         <Link href="/admin/stores">
           <Button variant="outline" className="gap-2">
             <Store size={16} /> Stores
+          </Button>
+        </Link>
+        <Link href="/admin/reports">
+          <Button variant="outline" className="gap-2" data-testid="nav-complaints">
+            <Flag size={16} /> Complaints
+          </Button>
+        </Link>
+        <Link href="/admin/access">
+          <Button variant="outline" className="gap-2" data-testid="nav-access">
+            <KeyRound size={16} /> Access
           </Button>
         </Link>
         <Link href="/admin/kyc">

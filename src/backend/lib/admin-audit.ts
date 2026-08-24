@@ -29,6 +29,13 @@ export const ADMIN_ACTIONS = {
   DELETE_PRODUCT: 'DELETE_PRODUCT',
   DELETE_SHOP: 'DELETE_SHOP',
   RESOLVE_REPORT: 'RESOLVE_REPORT',
+  ACKNOWLEDGE_REPORT: 'ACKNOWLEDGE_REPORT',
+  REJECT_REPORT: 'REJECT_REPORT',
+  HIDE_REVIEW: 'HIDE_REVIEW',
+  UNHIDE_REVIEW: 'UNHIDE_REVIEW',
+  MARK_UNDER_REVIEW: 'MARK_UNDER_REVIEW',
+  CLEAR_UNDER_REVIEW: 'CLEAR_UNDER_REVIEW',
+  SEND_NOTICE: 'SEND_NOTICE',
   GRANT_ADMIN: 'GRANT_ADMIN',
   REVOKE_ADMIN: 'REVOKE_ADMIN',
   CHANGE_ROLE: 'CHANGE_ROLE',
@@ -39,13 +46,26 @@ export const ADMIN_ACTIONS = {
 
 export type AdminActionName = (typeof ADMIN_ACTIONS)[keyof typeof ADMIN_ACTIONS];
 
-/** Mirrors the database CHECK. Keep the two in step. */
+/**
+ * Mirrors the database CHECK. Keep the two in step — there is an integration
+ * test that fails if they drift.
+ *
+ * The test for membership is not "is this dangerous" but "does someone lose
+ * something they would want explained". Hiding a review takes away a buyer's
+ * published words and moves a seller's rating; putting a store under review
+ * removes its reach. Both qualify. Un-hiding and clearing a review do not:
+ * they restore the default, and demanding an essay to undo a mistake just
+ * means mistakes stay uncorrected.
+ */
 const REQUIRES_REASON = new Set<string>([
   ADMIN_ACTIONS.SUSPEND_SHOP,
   ADMIN_ACTIONS.DELETE_PRODUCT,
   ADMIN_ACTIONS.DELETE_SHOP,
   ADMIN_ACTIONS.GRANT_ADMIN,
   ADMIN_ACTIONS.REVOKE_ADMIN,
+  ADMIN_ACTIONS.HIDE_REVIEW,
+  ADMIN_ACTIONS.MARK_UNDER_REVIEW,
+  ADMIN_ACTIONS.REJECT_REPORT,
 ]);
 
 export function actionRequiresReason(action: string): boolean {
@@ -55,7 +75,7 @@ export function actionRequiresReason(action: string): boolean {
 export interface AuditInput {
   actorId: string;
   action: AdminActionName;
-  targetType: 'Shop' | 'Product' | 'User' | 'Report' | 'SellerKyc';
+  targetType: 'Shop' | 'Product' | 'User' | 'Report' | 'SellerKyc' | 'Review' | 'Notice';
   targetId: string;
   reason?: string | null;
   metadata?: Prisma.InputJsonValue;

@@ -58,6 +58,7 @@ export function SellerLegalDetails({
 
   return (
     <section
+      data-testid="seller-details"
       aria-labelledby="seller-details-heading"
       className="mt-10 rounded-xl border border-zinc-200 bg-zinc-50/60 p-5"
     >

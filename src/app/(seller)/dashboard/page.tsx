@@ -12,8 +12,9 @@ import { ShareStoreCard } from '@/components/dashboard/share-store';
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 import { LiveRefresh } from '@/components/dashboard/live-refresh';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
-import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart, Bell } from 'lucide-react';
 import { Shop, Review, Report } from '@prisma/client';
+import { unreadNoticeCount } from '@/backend/lib/notices';
 import { logger } from '@/backend/lib/logger';
 
 type DashboardShop = Shop & {
@@ -58,6 +59,10 @@ export default async function DashboardPage() {
   } catch (error) {
     logger.error('Error fetching dashboard shop', error, { userId: user.id });
   }
+
+  // A notice the seller never opens is the same as one never sent, so the count
+  // is on the dashboard rather than only behind a link.
+  const unreadNotices = shop ? await unreadNoticeCount(shop.id) : 0;
 
   // 1. Render onboarding if user has no shop
   if (!shop) {
@@ -128,6 +133,19 @@ export default async function DashboardPage() {
           <Link href={`${buyerMarketUrl}/store/${shop.slug}`} target="_blank">
             <Button variant="outline" className="gap-1.5 text-xs">
               <ExternalLink size={14} /> Visit Storefront
+            </Button>
+          </Link>
+          <Link href="/notices">
+            <Button variant="outline" className="gap-1.5 text-xs" data-testid="dashboard-notices-link">
+              <Bell size={14} /> Notices
+              {unreadNotices > 0 ? (
+                <span
+                  data-testid="dashboard-notices-badge"
+                  className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
+                >
+                  {unreadNotices}
+                </span>
+              ) : null}
             </Button>
           </Link>
           <Link href="/dashboard/products">
@@ -235,12 +253,24 @@ export default async function DashboardPage() {
                 <p className="text-xs text-muted-foreground text-center py-6">No buyer reviews received yet.</p>
               ) : (
                 shop.reviews.map((rev) => (
-                  <div key={rev.id} className="p-3 bg-zinc-50 rounded-lg border border-zinc-100 text-xs">
+                  <div
+                    key={rev.id}
+                    data-testid={rev.isHidden ? 'dashboard-review-hidden' : 'dashboard-review'}
+                    className={`p-3 rounded-lg border text-xs ${
+                      rev.isHidden ? 'bg-zinc-100 border-zinc-200 opacity-70' : 'bg-zinc-50 border-zinc-100'
+                    }`}
+                  >
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-bold text-foreground">{rev.user.name || 'Anonymous User'}</span>
                       <RatingsStars rating={rev.rating} size={10} />
                     </div>
                     <p className="text-muted-foreground leading-relaxed">{rev.comment}</p>
+                    {rev.isHidden ? (
+                      <p className="mt-2 rounded bg-white/70 p-2 text-[10px] font-semibold text-zinc-600">
+                        Hidden by the Seyon team, and not counted towards your rating.
+                        {rev.hiddenReason ? ` Reason: ${rev.hiddenReason}` : ''}
+                      </p>
+                    ) : null}
                     <span className="text-[10px] text-muted-foreground/60 block mt-2 text-right">
                       {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>

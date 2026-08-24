@@ -96,8 +96,13 @@ test('completing Tier 0 lists the store and publishes seller details', async ({ 
   // And the storefront publishes who the buyer is dealing with.
   await go(page, `${BASE}/store/${SHOP_SLUG}`);
   await expect(page.getByRole('heading', { name: 'Seller details' })).toBeVisible();
-  await expect(page.getByText('Priya Raman')).toBeVisible();
-  await expect(page.getByText(/Chennai/)).toBeVisible();
+  // Scoped to the seller-details block. The shop's own city is also "Chennai"
+  // and is rendered in the storefront header, so an unscoped match would pass
+  // on the wrong element and tell us nothing about whether the legally
+  // required seller address is published at all.
+  const details = page.getByTestId('seller-details');
+  await expect(details).toContainText('Priya Raman');
+  await expect(details).toContainText('Chennai');
   // Street address is withheld by default; only the locality is published.
   await expect(page.getByText('14 Kadambur Street')).toHaveCount(0);
 });

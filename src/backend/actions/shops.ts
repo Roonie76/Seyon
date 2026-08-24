@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 import { toUserMessage, CONFLICT_ERROR } from '../lib/action-errors';
+import { PUBLIC_REVIEW } from '../lib/shop-visibility';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 
@@ -296,6 +297,11 @@ export async function getShopBySlug(slug: string) {
         },
       },
       reviews: {
+        // Hidden reviews are excluded here as well as from the rating. One that
+        // still appeared on the storefront would make hiding it pointless; one
+        // that appeared but was not counted would make the displayed rating
+        // look wrong to anyone adding the stars up themselves.
+        where: PUBLIC_REVIEW,
         orderBy: { createdAt: 'desc' },
         include: {
           user: {

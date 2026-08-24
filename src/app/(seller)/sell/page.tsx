@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
+import { DISCOVERABLE_SHOP, PUBLIC_REVIEW } from '@/backend/lib/shop-visibility';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { SafeImage as NextImage } from '@/components/shared/safe-image';
@@ -85,7 +85,7 @@ export default async function HomePage() {
       take: 3,
       include: {
         products: { where: { status: 'ACTIVE' } },
-        reviews: true,
+        reviews: { where: PUBLIC_REVIEW },
       },
     });
 

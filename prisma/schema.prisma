@@ -22,6 +22,37 @@ enum ReportStatus {
   OPEN
   UNDER_REVIEW
   RESOLVED
+  /// Looked at and found unfounded. Deliberately distinct from RESOLVED, which
+  /// means something was actually done. Collapsing the two makes it impossible
+  /// to tell "we fixed it" from "there was nothing to fix" — and the second is
+  /// the one a wrongly-reported seller is entitled to hear.
+  REJECTED
+}
+
+/// What a complaint is actually about.
+///
+/// `Report.reason` is free text: fine for the reporter, useless for everyone
+/// after them, because it cannot be counted, filtered or escalated. A category
+/// turns "this store has had four counterfeit reports this month" into a query
+/// rather than a reading exercise.
+enum ReportCategory {
+  COUNTERFEIT
+  PROHIBITED_ITEM
+  FRAUD_OR_SCAM
+  MISLEADING_LISTING
+  OFFENSIVE_CONTENT
+  IMPERSONATION
+  NON_DELIVERY
+  OTHER
+}
+
+/// The kinds of thing a marketplace formally tells a seller.
+enum NoticeKind {
+  WARNING
+  POLICY_VIOLATION
+  INFORMATION_REQUEST
+  SUSPENSION
+  REINSTATEMENT
 }
 
 enum AnalyticsEventType {
@@ -61,6 +92,13 @@ model User {
   sellerKyc    SellerKyc?
   kycReviewed  SellerKyc[]   @relation("KycReviewer")
   adminActions AdminAction[] @relation("AdminActor")
+
+  // Moderation trails. All SetNull or Restrict rather than Cascade: deleting an
+  // admin account must never quietly erase the record of what they decided.
+  hiddenReviews       Review[] @relation("ReviewModerator")
+  acknowledgedReports Report[] @relation("ReportAcknowledger")
+  noticesSent         Notice[] @relation("NoticeAuthor")
+  shopsPlacedUnderReview Shop[] @relation("ShopUnderReviewBy")
 }
 
 model Account {
@@ -119,6 +157,20 @@ model Shop {
   /// owner completes Tier 0 identity. A store is always reachable by
   /// direct link so a seller can see their own work before verifying.
   isListed           Boolean   @default(false)
+  /// Under investigation, silently.
+  ///
+  /// A store here drops out of discovery — marketplace, search, categories,
+  /// sitemap, homepage rails — but stays reachable by direct link and keeps
+  /// working normally for anyone who already has it. No banner, no badge.
+  ///
+  /// That combination is deliberate. Suspension is a verdict and the seller is
+  /// told; "under review" is a question, and a public "this store is under
+  /// review" would convict a seller on the strength of an accusation that may
+  /// well be false — while also warning a genuine fraudster to move on.
+  isUnderReview      Boolean   @default(false)
+  underReviewReason  String?
+  underReviewSince   DateTime?
+  underReviewById    String?
   whatsappVerifiedAt DateTime?
   averageRating      Float     @default(0.0)
   reviewCount        Int       @default(0)
@@ -127,14 +179,17 @@ model Shop {
   updatedAt          DateTime  @updatedAt
 
   owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  underReviewBy         User?                  @relation("ShopUnderReviewBy", fields: [underReviewById], references: [id], onDelete: SetNull)
   products              Product[]
   reviews               Review[]
   reports               Report[]
+  notices               Notice[]
   analytics             Analytics[]
   whatsappVerifications WhatsappVerification[]
 
   @@index([isSuspended])
   @@index([isListed])
+  @@index([isUnderReview])
 }
 
 model WhatsappVerification {
@@ -209,25 +264,95 @@ model Review {
   comment   String
   createdAt DateTime @default(now())
 
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Moderation without destruction.
+  ///
+  /// Before this the only way to deal with a defamatory or fake review was to
+  /// delete the row. That silently rewrote the shop's rating, left no record of
+  /// what had been said, and gave neither the seller nor the reviewer anything
+  /// to appeal. A hidden review stops counting towards the rating and stops
+  /// being shown, and is still there to look at when someone disputes it.
+  isHidden     Boolean   @default(false)
+  hiddenAt     DateTime?
+  hiddenReason String?
+  hiddenById   String?
+
+  shop     Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hiddenBy User? @relation("ReviewModerator", fields: [hiddenById], references: [id], onDelete: SetNull)
 
   @@unique([shopId, userId])
   @@index([shopId, createdAt])
+  @@index([shopId, isHidden, createdAt])
+  @@index([isHidden, createdAt])
 }
 
 model Report {
-  id        String       @id @default(cuid())
+  id        String         @id @default(cuid())
   shopId    String
   userId    String
+  category  ReportCategory @default(OTHER)
   reason    String
-  status    ReportStatus @default(OPEN)
-  createdAt DateTime     @default(now())
+  status    ReportStatus   @default(OPEN)
+  createdAt DateTime       @default(now())
 
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The SLA clock.
+  ///
+  /// The Consumer Protection (E-Commerce) Rules 2020 require a marketplace to
+  /// acknowledge a consumer complaint within 48 hours and dispose of it within
+  /// one month. Without these columns the question "did we acknowledge this in
+  /// time" has no answer at all — not a bad answer, no answer — which is the
+  /// worst possible position to be in when someone asks.
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  resolvedAt       DateTime?
+  /// What was actually done, or why nothing was. Shown to the reporter.
+  resolutionNote   String?
+
+  shop           Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user           User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  acknowledgedBy User? @relation("ReportAcknowledger", fields: [acknowledgedById], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+  @@index([shopId, status])
+  @@index([category, createdAt])
+  /// Drives the "overdue for acknowledgement" queue.
+  @@index([acknowledgedAt, createdAt])
+}
+
+/// A formal, durable message from the marketplace to a seller.
+///
+/// Suspension used to be communicated by a single fire-and-forget email through
+/// `notify()`, which no-ops entirely when RESEND_API_KEY is unset and silently
+/// swallows delivery failures otherwise. So the seller could be suspended and
+/// never told, and nothing anywhere recorded that we had tried. A notice is
+/// stored first and emailed second: the record does not depend on the email
+/// having worked.
+model Notice {
+  id      String     @id @default(cuid())
+  shopId  String
+  actorId String
+  kind    NoticeKind
+  subject String
+  body    String
+
+  /// Set when the seller is being asked for something, with a date by which.
+  requiresResponse Boolean   @default(false)
+  respondBy        DateTime?
+
+  sentAt      DateTime  @default(now())
+  /// When the email actually left, as distinct from when the notice was issued.
+  /// Null means the seller has the notice in their inbox but no email went out.
+  emailedAt   DateTime?
+  readAt      DateTime?
+  respondedAt DateTime?
+  response    String?
+
+  shop  Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  actor User @relation("NoticeAuthor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([shopId, sentAt])
+  @@index([shopId, readAt])
+  @@index([sentAt])
 }
 
 model Analytics {

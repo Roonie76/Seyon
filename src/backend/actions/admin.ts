@@ -1,6 +1,5 @@
 'use server';
 
-import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Role, ReportStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -11,49 +10,20 @@ import { notify } from '../lib/notify';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 import { recordAdminAction, ADMIN_ACTIONS } from '../lib/admin-audit';
-import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
+import { requireAdmin } from '../lib/require-admin';
+import { issueNotice, emailNotice } from '../lib/notices';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
 const ReportStatusSchema = z.nativeEnum(ReportStatus);
 
 /**
- * Admin authorisation, checked against the database rather than the token.
- *
- * `session.user.role` is a JWT claim written at sign-in and only refreshed on
- * an explicit session update. Trusting it alone meant a demoted admin kept
- * full admin powers until their token expired — up to 30 days. The extra read
- * is one indexed lookup on a handful of privileged routes.
+ * Admin authorisation now lives in `lib/require-admin`, because moderation,
+ * complaints, notices and access control all need exactly this check and four
+ * copies of an authorisation routine is four places for one of them to lose
+ * the database read.
  */
-async function verifyAdminAuth() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Forbidden: Admin authorization required');
-  }
-
-  const current = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
-
-  if (current?.role !== Role.ADMIN) {
-    throw new Error('Forbidden: Admin authorization required');
-  }
-
-  // A stolen admin session could otherwise suspend every store in the
-  // marketplace as fast as the network allows. Generous enough that no real
-  // reviewer will ever see it.
-  const rl = await rateLimit(
-    `admin-action:${session.user.id}`,
-    RATE_LIMITS.ADMIN_ACTION.limit,
-    RATE_LIMITS.ADMIN_ACTION.windowMs
-  );
-  if (!rl.success) {
-    throw new Error('Too many admin actions in a short time. Slow down and try again shortly.');
-  }
-
-  return { session, actorId: session.user.id as string };
-}
+const verifyAdminAuth = requireAdmin;
 
 export async function getAdminDashboardStats() {
   try {
@@ -222,7 +192,7 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean, re
       return { error: 'Give a reason for the suspension. The seller is told what it says.' };
     }
 
-    const shop = await db.$transaction(async (tx) => {
+    const { shop, noticeId } = await db.$transaction(async (tx) => {
       const updated = await tx.shop.update({
         where: { id: parsedShopId.data },
         data: { isSuspended },
@@ -239,21 +209,35 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean, re
         },
         tx
       );
-      return updated;
+
+      // The seller's copy, stored rather than emailed. This used to be a single
+      // fire-and-forget `notify()` call, which no-ops entirely when email is not
+      // configured — so a seller could lose their storefront and never be told,
+      // with nothing recording that we had tried.
+      const notice = await issueNotice(
+        {
+          shopId: updated.id,
+          actorId,
+          kind: isSuspended ? 'SUSPENSION' : 'REINSTATEMENT',
+          subject: isSuspended
+            ? `Your storefront "${updated.name}" has been suspended`
+            : `Your storefront "${updated.name}" has been reinstated`,
+          body: isSuspended
+            ? `Your storefront "${updated.name}" is no longer visible to buyers.\n\n` +
+              `Reason given by the reviewer:\n${reason?.trim()}\n\n` +
+              'If you believe this is a mistake, reply to this notice with anything that shows it.'
+            : `Your storefront "${updated.name}" is visible to buyers again.` +
+              (reason?.trim() ? `\n\nNote from the reviewer:\n${reason.trim()}` : ''),
+          requiresResponse: isSuspended,
+        },
+        tx
+      );
+
+      return { shop: updated, noticeId: notice.id };
     });
 
-    // Notify the owner (fire-and-forget)
-    if (shop.owner?.email) {
-      notify({
-        to: shop.owner.email,
-        subject: isSuspended
-          ? `Your storefront "${shop.name}" has been suspended`
-          : `Your storefront "${shop.name}" has been reinstated`,
-        text: isSuspended
-          ? `Your storefront "${shop.name}" on Seyon was suspended by a moderator and is no longer visible to buyers. If you believe this is a mistake, reply to this email.`
-          : `Good news — your storefront "${shop.name}" on Seyon has been reinstated and is visible to buyers again.`,
-      }).catch(() => undefined);
-    }
+    // Email is the convenience copy; the notice above is the record.
+    emailNotice(noticeId).catch(() => undefined);
 
     revalidateShopSurface(shop.slug);
     revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]

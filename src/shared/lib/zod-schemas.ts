@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProductStatus } from '@prisma/client';
+import { ProductStatus, ReportCategory } from '@prisma/client';
 import { isAllowedImageUrl, IMAGE_URL_ERROR } from './image-hosts';
 
 /**
@@ -143,6 +143,13 @@ export const ReviewSchema = z.object({
 });
 
 export const ReportSchema = z.object({
+  /**
+   * Defaulted rather than required so that an older client, or any existing
+   * caller that only sends `reason`, still files a valid report instead of
+   * failing validation — a complaint lost to a schema change is worse than a
+   * complaint filed as OTHER.
+   */
+  category: z.nativeEnum(ReportCategory).default(ReportCategory.OTHER),
   reason: TrimmedText(5, 1000, 'Reason'),
 });
 

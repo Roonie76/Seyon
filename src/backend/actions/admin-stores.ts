@@ -25,7 +25,9 @@ const PAGE_SIZE = 20;
 
 const SearchSchema = z.object({
   query: z.string().trim().max(120).optional(),
-  status: z.enum(['all', 'listed', 'unlisted', 'suspended', 'verified', 'unverified']).optional(),
+  status: z
+    .enum(['all', 'listed', 'unlisted', 'suspended', 'under_review', 'verified', 'unverified'])
+    .optional(),
   page: z.string().optional(),
 });
 
@@ -38,6 +40,9 @@ export interface AdminStoreRow {
   isVerified: boolean;
   isSuspended: boolean;
   isPaused: boolean;
+  isUnderReview: boolean;
+  underReviewReason: string | null;
+  underReviewSince: Date | null;
   whatsapp: string;
   createdAt: Date;
   productCount: number;
@@ -88,6 +93,7 @@ export async function searchStores(
       case 'listed': filters.push({ isListed: true }); break;
       case 'unlisted': filters.push({ isListed: false }); break;
       case 'suspended': filters.push({ isSuspended: true }); break;
+      case 'under_review': filters.push({ isUnderReview: true }); break;
       case 'verified': filters.push({ isVerified: true }); break;
       case 'unverified': filters.push({ isVerified: false }); break;
       default: break;
@@ -127,6 +133,9 @@ export async function searchStores(
           isVerified: s.isVerified,
           isSuspended: s.isSuspended,
           isPaused: s.isPaused,
+          isUnderReview: s.isUnderReview,
+          underReviewReason: s.underReviewReason,
+          underReviewSince: s.underReviewSince,
           whatsapp: s.whatsapp,
           createdAt: s.createdAt,
           productCount: s._count.products,
@@ -155,7 +164,6 @@ export interface AdminStoreDetail extends AdminStoreRow {
   ownerAddress: string | null;
   ownerJoinedAt: Date;
   products: { id: string; title: string; slug: string; price: number; status: string }[];
-  reviews: { id: string; rating: number; comment: string; createdAt: Date; authorName: string | null }[];
   reports: { id: string; reason: string; status: string; createdAt: Date }[];
   audit: AuditEntry[];
 }
@@ -185,11 +193,6 @@ export async function getStoreDetail(
           orderBy: { createdAt: 'desc' },
           select: { id: true, title: true, slug: true, price: true, status: true },
         },
-        reviews: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          select: { id: true, rating: true, comment: true, createdAt: true, user: { select: { name: true } } },
-        },
         reports: {
           orderBy: { createdAt: 'desc' },
           take: 20,
@@ -214,6 +217,9 @@ export async function getStoreDetail(
         isVerified: shop.isVerified,
         isSuspended: shop.isSuspended,
         isPaused: shop.isPaused,
+        isUnderReview: shop.isUnderReview,
+        underReviewReason: shop.underReviewReason,
+        underReviewSince: shop.underReviewSince,
         whatsapp: shop.whatsapp,
         createdAt: shop.createdAt,
         productCount: shop._count.products,
@@ -231,10 +237,6 @@ export async function getStoreDetail(
         kycStatus: shop.owner.sellerKyc?.status ?? null,
         legalName: shop.owner.sellerKyc?.legalName ?? null,
         products: shop.products,
-        reviews: shop.reviews.map((r) => ({
-          id: r.id, rating: r.rating, comment: r.comment, createdAt: r.createdAt,
-          authorName: r.user?.name ?? null,
-        })),
         reports: shop.reports,
         audit,
       },
