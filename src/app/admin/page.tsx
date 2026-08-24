@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OpenComplaints, type OpenComplaintRow } from '@/components/admin/open-complaints';
 import { Role } from '@prisma/client';
-import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText, Flag, KeyRound } from 'lucide-react';
+import { Users, ShoppingBag, Store, AlertTriangle, ShieldCheck, FileText, Flag, KeyRound, ScrollText } from 'lucide-react';
 import { logger } from '@/backend/lib/logger';
 
 interface PopularShop {
@@ -78,6 +78,11 @@ export default async function AdminPage() {
         <Link href="/admin/access">
           <Button variant="outline" className="gap-2" data-testid="nav-access">
             <KeyRound size={16} /> Access
+          </Button>
+        </Link>
+        <Link href="/admin/audit">
+          <Button variant="outline" className="gap-2" data-testid="nav-audit">
+            <ScrollText size={16} /> Audit log
           </Button>
         </Link>
         <Link href="/admin/kyc">

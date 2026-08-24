@@ -124,7 +124,16 @@ export default async function AdminComplaintsPage({
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-[10px] text-zinc-500">{r.createdAt.toLocaleString('en-IN')}</span>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-[10px] text-zinc-500">{r.createdAt.toLocaleString('en-IN')}</span>
+                      <Link
+                        href={`/admin/reports/${r.id}`}
+                        data-testid="complaint-open"
+                        className="text-[11px] font-bold text-[#A77F3A] hover:underline"
+                      >
+                        Open
+                      </Link>
+                    </div>
                   </div>
 
                   <p className="mt-2 whitespace-pre-wrap text-xs text-zinc-800">{r.reason}</p>

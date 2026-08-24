@@ -80,7 +80,13 @@ export default async function AdminAccessPage({
               <li key={u.id} data-testid="access-row" className="flex flex-wrap items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-bold text-zinc-950">{u.name ?? '(no name)'}</span>
+                    <Link
+                      href={`/admin/access/${u.id}`}
+                      data-testid="access-open"
+                      className="truncate text-sm font-bold text-zinc-950 hover:text-[#A77F3A] hover:underline"
+                    >
+                      {u.name ?? '(no name)'}
+                    </Link>
                     <span
                       data-testid="access-role"
                       className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${

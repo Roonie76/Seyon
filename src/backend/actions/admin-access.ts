@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { Role } from '@prisma/client';
+import { Role, KycStatus } from '@prisma/client';
 import { requireAdmin } from '../lib/require-admin';
 import { auditTrailFor, type AuditEntry } from '../lib/admin-audit';
 import { toUserMessage } from '../lib/action-errors';
@@ -139,5 +139,78 @@ export async function getAccountAudit(userId: string): Promise<{ data: AuditEntr
     return { data: await auditTrailFor('User', id.data) };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'getAccountAudit' }) };
+  }
+}
+
+export interface AccountDetail {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: Role;
+  createdAt: Date;
+  phone: string | null;
+  isSelf: boolean;
+  /** True while this is the only ADMIN — the account that cannot be demoted. */
+  isOnlyAdmin: boolean;
+  shop: { name: string; slug: string; isSuspended: boolean; isUnderReview: boolean } | null;
+  kycStatus: KycStatus | null;
+  reviewCount: number;
+  reportCount: number;
+  audit: AuditEntry[];
+}
+
+/**
+ * One account, and how it came to have the role it has.
+ *
+ * The overview lists who is an admin. It cannot say who made them one, when, or
+ * what reason was given — which is the only part that matters when an admin
+ * account turns up that nobody remembers creating.
+ */
+export async function getAccountDetail(
+  userId: string
+): Promise<{ data: AccountDetail } | { error: string }> {
+  try {
+    const { actorId } = await requireAdmin();
+
+    const id = z.string().cuid().safeParse(userId);
+    if (!id.success) return { error: 'Invalid user id.' };
+
+    const user = await db.user.findUnique({
+      where: { id: id.data },
+      select: {
+        id: true, name: true, email: true, role: true, createdAt: true, phone: true,
+        shop: { select: { name: true, slug: true, isSuspended: true, isUnderReview: true } },
+        sellerKyc: { select: { status: true } },
+        _count: { select: { reviews: true, reports: true } },
+      },
+    });
+    if (!user) return { error: 'Account not found.' };
+
+    // Reuses the existing history query rather than repeating it, so the two
+    // can never disagree about what counts as this account's history.
+    const auditRes = await getAccountAudit(user.id);
+    const audit = 'data' in auditRes ? auditRes.data : [];
+
+    const adminCount = user.role === Role.ADMIN ? await db.user.count({ where: { role: Role.ADMIN } }) : 0;
+
+    return {
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        phone: user.phone,
+        isSelf: user.id === actorId,
+        isOnlyAdmin: user.role === Role.ADMIN && adminCount <= 1,
+        shop: user.shop,
+        kycStatus: user.sellerKyc?.status ?? null,
+        reviewCount: user._count.reviews,
+        reportCount: user._count.reports,
+        audit,
+      },
+    };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'getAccountDetail' }) };
   }
 }

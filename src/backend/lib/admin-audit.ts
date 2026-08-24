@@ -164,3 +164,90 @@ export async function auditTrailFor(
     actorEmail: r.actor.email,
   }));
 }
+
+export interface AuditFilter {
+  actorId?: string;
+  action?: string;
+  targetType?: string;
+  /** Inclusive, interpreted in UTC. */
+  from?: Date;
+  to?: Date;
+  /** Opaque keyset cursor: the id of the last row on the previous page. */
+  cursor?: string;
+  take?: number;
+}
+
+export interface AuditPage {
+  rows: AuditEntry[];
+  /** Pass back as `cursor` to get the next page. Null when there are no more. */
+  nextCursor: string | null;
+  /** Distinct actors and actions present in the log, for the filter controls. */
+  actors: { id: string; name: string | null; email: string | null }[];
+}
+
+const MAX_TAKE = 100;
+
+/**
+ * Everything every admin did, newest first.
+ *
+ * `auditTrailFor` answers "what happened to this store". This answers "what has
+ * anyone been doing", which is the view you want after something surprising —
+ * an admin account nobody remembers creating, a seller certain they were
+ * suspended twice, a run of deletions at an odd hour.
+ *
+ * Paginated by keyset rather than offset. `createdAt` is not unique: several
+ * rows land in the same millisecond whenever one action writes more than one
+ * row, and offset paging silently skips rows when the ordering ties. The cursor
+ * is the last row's id, and the sort is (createdAt desc, id desc) so the order
+ * is total.
+ */
+export async function listAdminActions(filter: AuditFilter = {}): Promise<AuditPage> {
+  const take = Math.min(Math.max(filter.take ?? 50, 1), MAX_TAKE);
+
+  const where: Prisma.AdminActionWhereInput = {};
+  if (filter.actorId) where.actorId = filter.actorId;
+  if (filter.action) where.action = filter.action;
+  if (filter.targetType) where.targetType = filter.targetType;
+  if (filter.from || filter.to) {
+    where.createdAt = {
+      ...(filter.from ? { gte: filter.from } : {}),
+      ...(filter.to ? { lte: filter.to } : {}),
+    };
+  }
+
+  const [rows, actorRows] = await Promise.all([
+    db.adminAction.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      // One extra row, to know whether a next page exists without counting.
+      take: take + 1,
+      ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
+      include: { actor: { select: { name: true, email: true } } },
+    }),
+    // Who appears in the log at all — a short list, since admins are few.
+    db.adminAction.findMany({
+      distinct: ['actorId'],
+      select: { actorId: true, actor: { select: { name: true, email: true } } },
+      orderBy: { actorId: 'asc' },
+      take: 50,
+    }),
+  ]);
+
+  const hasMore = rows.length > take;
+  const page = hasMore ? rows.slice(0, take) : rows;
+
+  return {
+    rows: page.map((r) => ({
+      id: r.id,
+      action: r.action,
+      targetType: r.targetType,
+      targetId: r.targetId,
+      reason: r.reason,
+      createdAt: r.createdAt,
+      actorName: r.actor.name,
+      actorEmail: r.actor.email,
+    })),
+    nextCursor: hasMore ? page[page.length - 1].id : null,
+    actors: actorRows.map((a) => ({ id: a.actorId, name: a.actor.name, email: a.actor.email })),
+  };
+}
