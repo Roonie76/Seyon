@@ -222,6 +222,8 @@ export const RATE_LIMITS = {
    * confused or probing.
    */
   KYC_SUBMIT: { limit: 5, windowMs: 3_600_000 },
+  /** Any privileged admin action, keyed by admin id. A stolen session should not be able to suspend the whole marketplace. */
+  ADMIN_ACTION: { limit: 120, windowMs: 60_000 },
 } as const;
 
 /** Test-only: reset in-memory state and force lazy Redis re-evaluation. */

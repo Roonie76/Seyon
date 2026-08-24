@@ -10,6 +10,7 @@ import { logger } from '../lib/logger';
 import { toUserMessage } from '../lib/action-errors';
 import { signedKycDocumentUrl, deleteKycDocument } from '../lib/kyc-storage';
 import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
+import { recordAdminAction, recordAdminActionSafe, ADMIN_ACTIONS } from '../lib/admin-audit';
 
 /**
  * Admin side of seller identity.
@@ -137,11 +138,18 @@ export async function getKycDocumentUrl(
     const url = await signedKycDocumentUrl(kyc.documentPath);
     if (!url) return { error: 'The document could not be opened. It may already have been deleted.' };
 
-    logger.info('KYC document viewed', {
-      reviewerId: session?.user?.id,
-      subjectUserId: kyc.userId,
-      kycId: parsed.data,
-    });
+    // Who looked at whose identity document, and when. Observational rather
+    // than a mutation, so a failed audit write must not deny the reviewer the
+    // document — but it is still recorded.
+    if (session?.user?.id) {
+      await recordAdminActionSafe({
+        actorId: session.user.id,
+        action: ADMIN_ACTIONS.VIEW_KYC_DOCUMENT,
+        targetType: 'SellerKyc',
+        targetId: parsed.data,
+        metadata: { subjectUserId: kyc.userId },
+      });
+    }
 
     return { url };
   } catch (error) {
@@ -188,6 +196,19 @@ export async function approveKyc(
           data: { isVerified: true },
         });
       }
+
+      if (session?.user?.id) {
+        await recordAdminAction(
+          {
+            actorId: session.user.id,
+            action: ADMIN_ACTIONS.APPROVE_KYC,
+            targetType: 'SellerKyc',
+            targetId: kyc.id,
+            metadata: { subjectUserId: kyc.userId, idLast4: kyc.idLast4 },
+          },
+          tx
+        );
+      }
     });
 
     // After the transaction: a failed delete must not roll back an approval.
@@ -219,7 +240,8 @@ export async function rejectKyc(
     const kyc = await db.sellerKyc.findUnique({ where: { id: parsed.data.kycId } });
     if (!kyc) return { error: 'Case not found.' };
 
-    await db.sellerKyc.update({
+    await db.$transaction(async (tx) => {
+      await tx.sellerKyc.update({
       where: { id: kyc.id },
       data: {
         status: KycStatus.REJECTED,
@@ -229,6 +251,20 @@ export async function rejectKyc(
         documentPath: null,
         documentDeletedAt: kyc.documentPath ? new Date() : null,
       },
+      });
+      if (session?.user?.id) {
+        await recordAdminAction(
+          {
+            actorId: session.user.id,
+            action: ADMIN_ACTIONS.REJECT_KYC,
+            targetType: 'SellerKyc',
+            targetId: kyc.id,
+            reason: parsed.data.reason,
+            metadata: { subjectUserId: kyc.userId },
+          },
+          tx
+        );
+      }
     });
 
     if (kyc.documentPath) await deleteKycDocument(kyc.documentPath);

@@ -51,15 +51,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts    Account[]
-  sessions    Session[]
-  shop        Shop?
-  reviews     Review[]
-  reports     Report[]
-  wishlist    Wishlist[]
-  analytics   Analytics[]
-  sellerKyc   SellerKyc?
-  kycReviewed SellerKyc[] @relation("KycReviewer")
+  accounts     Account[]
+  sessions     Session[]
+  shop         Shop?
+  reviews      Review[]
+  reports      Report[]
+  wishlist     Wishlist[]
+  analytics    Analytics[]
+  sellerKyc    SellerKyc?
+  kycReviewed  SellerKyc[]   @relation("KycReviewer")
+  adminActions AdminAction[] @relation("AdminActor")
 }
 
 model Account {
@@ -380,4 +381,32 @@ enum KycIdType {
   /// the Aadhaar Act restricts holding it, and a bucket of Aadhaar images is a
   /// categorically worse breach than a bucket of product photos.
   AADHAAR_MASKED
+}
+
+/// Who did what, to whom, and why.
+///
+/// Suspending a store takes away a seller's livelihood and deleting a product
+/// destroys their work. Until now none of it was recorded: not the actor, not
+/// the time, not the reason. When a seller says "you suspended me unfairly"
+/// there was nothing to answer with.
+///
+/// `onDelete: Restrict` on the actor is deliberate. An admin who acted cannot
+/// later be deleted in a way that erases the record of what they did.
+model AdminAction {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  targetType String
+  targetId   String
+  /// Required for anything destructive. Enforced by the action, not by hope.
+  reason     String?
+  /// Before/after values, so a reversal can be reconstructed.
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation("AdminActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
 }

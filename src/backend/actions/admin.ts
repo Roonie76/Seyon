@@ -10,6 +10,8 @@ import { logger } from '../lib/logger';
 import { notify } from '../lib/notify';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
+import { recordAdminAction, ADMIN_ACTIONS } from '../lib/admin-audit';
+import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
@@ -38,7 +40,19 @@ async function verifyAdminAuth() {
     throw new Error('Forbidden: Admin authorization required');
   }
 
-  return session;
+  // A stolen admin session could otherwise suspend every store in the
+  // marketplace as fast as the network allows. Generous enough that no real
+  // reviewer will ever see it.
+  const rl = await rateLimit(
+    `admin-action:${session.user.id}`,
+    RATE_LIMITS.ADMIN_ACTION.limit,
+    RATE_LIMITS.ADMIN_ACTION.windowMs
+  );
+  if (!rl.success) {
+    throw new Error('Too many admin actions in a short time. Slow down and try again shortly.');
+  }
+
+  return { session, actorId: session.user.id as string };
 }
 
 export async function getAdminDashboardStats() {
@@ -160,22 +174,35 @@ export async function verifyShopAction(shopId: string, isVerified: boolean) {
       return { error: 'Invalid parameter type for verification status' };
     }
 
-    await verifyAdminAuth();
+    const { actorId } = await verifyAdminAuth();
 
-    const shop = await db.shop.update({
-      where: { id: parsedShopId.data },
-      data: { isVerified },
+    const shop = await db.$transaction(async (tx) => {
+      const updated = await tx.shop.update({
+        where: { id: parsedShopId.data },
+        data: { isVerified },
+      });
+      await recordAdminAction(
+        {
+          actorId,
+          action: isVerified ? ADMIN_ACTIONS.VERIFY_SHOP : ADMIN_ACTIONS.UNVERIFY_SHOP,
+          targetType: 'Shop',
+          targetId: updated.id,
+          metadata: { slug: updated.slug, isVerified },
+        },
+        tx
+      );
+      return updated;
     });
 
     revalidateShopSurface(shop.slug);
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
 
-export async function suspendShopAction(shopId: string, isSuspended: boolean) {
+export async function suspendShopAction(shopId: string, isSuspended: boolean, reason?: string) {
   try {
     const parsedShopId = IdParamSchema.safeParse(shopId);
     if (!parsedShopId.success) {
@@ -186,12 +213,33 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean) {
       return { error: 'Invalid parameter type for suspension status' };
     }
 
-    await verifyAdminAuth();
+    const { actorId } = await verifyAdminAuth();
 
-    const shop = await db.shop.update({
-      where: { id: parsedShopId.data },
-      data: { isSuspended },
-      include: { owner: { select: { email: true } } },
+    // Suspension takes away a seller's income. It does not happen without a
+    // stated reason — the seller is told, and support has to be able to
+    // defend the decision later.
+    if (isSuspended && !reason?.trim()) {
+      return { error: 'Give a reason for the suspension. The seller is told what it says.' };
+    }
+
+    const shop = await db.$transaction(async (tx) => {
+      const updated = await tx.shop.update({
+        where: { id: parsedShopId.data },
+        data: { isSuspended },
+        include: { owner: { select: { email: true } } },
+      });
+      await recordAdminAction(
+        {
+          actorId,
+          action: isSuspended ? ADMIN_ACTIONS.SUSPEND_SHOP : ADMIN_ACTIONS.UNSUSPEND_SHOP,
+          targetType: 'Shop',
+          targetId: updated.id,
+          reason: isSuspended ? reason : (reason ?? 'Reinstated'),
+          metadata: { slug: updated.slug, isSuspended },
+        },
+        tx
+      );
+      return updated;
     });
 
     // Notify the owner (fire-and-forget)
@@ -208,7 +256,7 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean) {
     }
 
     revalidateShopSurface(shop.slug);
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
@@ -227,7 +275,7 @@ export async function resolveReportAction(reportId: string, status: ReportStatus
       return { error: 'Invalid status type' };
     }
 
-    await verifyAdminAuth();
+    const { actorId } = await verifyAdminAuth();
 
     const report = await db.report.update({
       where: { id: parsedReportId.data },
@@ -244,22 +292,34 @@ export async function resolveReportAction(reportId: string, status: ReportStatus
       }).catch(() => undefined);
     }
 
+    await recordAdminAction({
+      actorId,
+      action: ADMIN_ACTIONS.RESOLVE_REPORT,
+      targetType: 'Report',
+      targetId: report.id,
+      metadata: { status: parsedStatus.data, shopSlug: report.shop.slug },
+    });
+
     revalidateShopSurface(report.shop.slug);
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
 }
 
-export async function deleteProductAction(productId: string) {
+export async function deleteProductAction(productId: string, reason?: string) {
   try {
     const parsedProductId = IdParamSchema.safeParse(productId);
     if (!parsedProductId.success) {
       return { error: 'Invalid product ID format' };
     }
 
-    await verifyAdminAuth();
+    const { actorId } = await verifyAdminAuth();
+
+    if (!reason?.trim()) {
+      return { error: 'Give a reason for deleting this product. It is destroying a seller\'s work.' };
+    }
 
     const product = await db.product.findUnique({
       where: { id: parsedProductId.data },
@@ -269,9 +329,22 @@ export async function deleteProductAction(productId: string) {
     if (!product) return { error: 'Product not found' };
 
     // Delete database records first; storage cleanup afterwards, so a failed
-    // delete cannot leave a live product pointing at removed files.
-    await db.product.delete({
-      where: { id: parsedProductId.data },
+    // delete cannot leave a live product pointing at removed files. The audit
+    // row is written in the same transaction as the delete, so a crash between
+    // them cannot lose the record of what happened.
+    await db.$transaction(async (tx) => {
+      await recordAdminAction(
+        {
+          actorId,
+          action: ADMIN_ACTIONS.DELETE_PRODUCT,
+          targetType: 'Product',
+          targetId: product.id,
+          reason,
+          metadata: { title: product.title, slug: product.slug, shopId: product.shopId },
+        },
+        tx
+      );
+      await tx.product.delete({ where: { id: parsedProductId.data } });
     });
 
     const prefix = storagePrefixForShop(product.shopId);
@@ -284,6 +357,7 @@ export async function deleteProductAction(productId: string) {
     }
 
     revalidateMarketplace();
+    revalidatePath('/admin', 'layout');
 
     return { success: true };
   } catch (error) {
@@ -291,7 +365,7 @@ export async function deleteProductAction(productId: string) {
   }
 }
 
-export async function updateUserRoleAction(userId: string, role: Role) {
+export async function updateUserRoleAction(userId: string, role: Role, reason?: string) {
   try {
     const parsedUserId = IdParamSchema.safeParse(userId);
     if (!parsedUserId.success) {
@@ -303,14 +377,89 @@ export async function updateUserRoleAction(userId: string, role: Role) {
       return { error: 'Invalid role' };
     }
 
-    await verifyAdminAuth();
+    const { actorId } = await verifyAdminAuth();
 
-    await db.user.update({
+    const target = await db.user.findUnique({
       where: { id: parsedUserId.data },
-      data: { role: parsedRole.data },
+      select: { id: true, role: true, email: true, name: true },
+    });
+    if (!target) return { error: 'User not found' };
+    if (target.role === parsedRole.data) return { success: true };
+
+    const grantingAdmin = parsedRole.data === Role.ADMIN;
+    const revokingAdmin = target.role === Role.ADMIN && parsedRole.data !== Role.ADMIN;
+
+    // You cannot demote yourself. With a single admin account this locked
+    // everyone out of the admin surface permanently, with no way back that did
+    // not involve a direct database write.
+    if (revokingAdmin && target.id === actorId) {
+      return {
+        error:
+          'You cannot remove your own admin access. Ask another admin to do it, so there is always someone who can get in.',
+      };
+    }
+
+    // Nor demote the last one, for the same reason by a different route.
+    if (revokingAdmin) {
+      const admins = await db.user.count({ where: { role: Role.ADMIN } });
+      if (admins <= 1) {
+        return {
+          error: 'That is the only admin account. Promote someone else first.',
+        };
+      }
+    }
+
+    // Privilege changes are the ones worth explaining. Granting admin without
+    // a stated reason is exactly what an attacker with a stolen session would
+    // do, and requiring a reason is what makes the audit row worth reading.
+    if ((grantingAdmin || revokingAdmin) && !reason?.trim()) {
+      return { error: 'Say why this person\'s admin access is changing.' };
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: parsedUserId.data },
+        data: { role: parsedRole.data },
+      });
+      await recordAdminAction(
+        {
+          actorId,
+          action: grantingAdmin
+            ? ADMIN_ACTIONS.GRANT_ADMIN
+            : revokingAdmin
+              ? ADMIN_ACTIONS.REVOKE_ADMIN
+              : ADMIN_ACTIONS.CHANGE_ROLE,
+          targetType: 'User',
+          targetId: target.id,
+          reason,
+          metadata: { from: target.role, to: parsedRole.data, email: target.email },
+        },
+        tx
+      );
     });
 
-    revalidatePath('/admin');
+    // Every existing admin is told when someone gains admin. A compromised
+    // session can still create a second admin, but it can no longer do it
+    // quietly, which is the property that actually matters at this size.
+    if (grantingAdmin) {
+      const admins = await db.user.findMany({
+        where: { role: Role.ADMIN, email: { not: null } },
+        select: { email: true },
+      });
+      for (const a of admins) {
+        if (!a.email) continue;
+        notify({
+          to: a.email,
+          subject: 'A new admin was added to Seyon',
+          text:
+            `${target.name ?? target.email ?? 'A user'} was granted admin access.\n\n` +
+            `Reason given: ${reason}\n\n` +
+            'If you did not expect this, treat it as a compromised account and revoke it now.',
+        }).catch(() => undefined);
+      }
+    }
+
+    revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
