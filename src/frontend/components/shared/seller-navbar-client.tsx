@@ -205,6 +205,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
               <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-zinc-600">
                 <Link href="/dashboard" className="hover:text-zinc-950 transition-colors py-1">Dashboard</Link>
                 <Link href="/dashboard/products" className="hover:text-zinc-950 transition-colors py-1">Products</Link>
+                <Link href="/verification" className="hover:text-zinc-950 transition-colors py-1">Verification</Link>
                 {user && user.role === 'ADMIN' && (
                   <Link href="/admin" className="hover:text-zinc-950 transition-colors py-1">Moderation</Link>
                 )}

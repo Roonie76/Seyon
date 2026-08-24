@@ -10,6 +10,7 @@ import { logger } from '../lib/logger';
 import { toUserMessage } from '../lib/action-errors';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { verifyIdentifier } from '../lib/kyc-provider';
+import { uploadKycDocument } from '../lib/kyc-storage';
 import { checkPan, checkGstin, normalisePan, normaliseGstin, lastFour } from '@/shared/lib/kyc';
 import { SELLER_UNDERTAKING_VERSION } from '@/shared/data/seller-undertaking';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
@@ -327,5 +328,59 @@ export async function submitTier1(
     return { success: true, status: KycStatus.PENDING_REVIEW };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'submitTier1' }) };
+  }
+}
+
+/**
+ * Attach the identity document to a pending case.
+ *
+ * Separate from `submitTier1` because a file upload and a form submit have
+ * different failure modes: a seller whose photo failed to upload should not
+ * lose the details they already typed.
+ */
+export async function uploadIdentityDocument(
+  formData: FormData
+): Promise<{ success: true; error?: undefined } | { error: string }> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { error: 'You must be signed in.' };
+    const userId = session.user.id;
+
+    const rl = await rateLimit(
+      `kyc-doc:${userId}`,
+      RATE_LIMITS.KYC_SUBMIT.limit,
+      RATE_LIMITS.KYC_SUBMIT.windowMs
+    );
+    if (!rl.success) return { error: 'Too many uploads. Please wait a little before trying again.' };
+
+    const file = formData.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return { error: 'Choose a file to upload.' };
+    }
+
+    const existing = await db.sellerKyc.findUnique({ where: { userId } });
+    if (!existing?.undertakingAt) {
+      return { error: 'Complete the basic details first.' };
+    }
+    if (existing.status === KycStatus.APPROVED) {
+      return { error: 'Your identity is already verified.' };
+    }
+
+    const path = await uploadKycDocument(userId, file);
+
+    await db.sellerKyc.update({
+      where: { userId },
+      data: { documentPath: path, documentDeletedAt: null },
+    });
+
+    logger.info('Identity document attached', { userId });
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error) {
+    // Upload helpers throw messages written for the seller, so surface them.
+    if (error instanceof Error && /8 MB|JPEG|not the image/.test(error.message)) {
+      return { error: error.message };
+    }
+    return { error: toUserMessage(error, { action: 'uploadIdentityDocument' }) };
   }
 }

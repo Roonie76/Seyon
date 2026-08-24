@@ -73,6 +73,11 @@ export default async function AdminPage() {
             Review buyer abuse reports, moderate storefront verification badges, and suspend fraudulent shops.
           </p>
         </div>
+        <Link href="/admin/kyc">
+          <Button variant="outline" className="gap-2">
+            <ShieldCheck size={16} /> Identity Review
+          </Button>
+        </Link>
         <Link href="/admin/blog">
           <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
             <FileText size={16} /> Manage Blog Stories
