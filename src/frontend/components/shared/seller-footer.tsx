@@ -1,3 +1,4 @@
+import { LEGAL_CONTACTS } from '@/shared/data/legal-entity';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 
@@ -46,7 +47,7 @@ export async function SellerFooter() {
             <Link href="/sell" className="hover:text-white transition-colors">
               Sell on Seyon
             </Link>
-            <a href="mailto:support@seyon.com" className="hover:text-white transition-colors">
+            <a href={`mailto:${LEGAL_CONTACTS.support}`} className="hover:text-white transition-colors">
               Help & Support
             </a>
             <Link href="/privacy" className="hover:text-white transition-colors">

@@ -7,6 +7,7 @@ import { recordAdminActionSafe, ADMIN_ACTIONS } from './admin-audit';
 import { systemActorId } from './system-actor';
 import { ACK_DEADLINE_HOURS, RESOLVE_DEADLINE_DAYS } from '@/shared/lib/complaints';
 import { Role } from '@prisma/client';
+import { SITE_URL } from '@/shared/lib/site';
 
 /**
  * The work that happens without anybody asking.
@@ -163,7 +164,7 @@ export async function sendSlaDigest(now = new Date()): Promise<JobResult> {
     select: { email: true },
   });
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? '';
+  const site = SITE_URL;
   const text =
     'Complaints needing attention on Seyon:\n\n' +
     `${overdueAck} past the ${ACK_DEADLINE_HOURS}-hour acknowledgement deadline\n` +

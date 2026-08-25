@@ -1,5 +1,6 @@
 'use client';
 
+import { LEGAL_CONTACTS } from '@/shared/data/legal-entity';
 import * as React from 'react';
 import Link from 'next/link';
 import { Mail, Clock, MessageSquare, Check, Headphones, X } from 'lucide-react';
@@ -33,7 +34,9 @@ interface ContactClientProps {
 
 export function ContactClient({ isLoggedIn }: ContactClientProps) {
   const [showLoginModal, setShowLoginModal] = React.useState(false);
-  const supportEmail = 'seyonstoresupport@gmail.com';
+  // One source, so the address in the legal pages and the address on the
+  // contact page cannot drift apart again.
+  const supportEmail = LEGAL_CONTACTS.support;
   const emailSubject = 'Support Request';
   const emailBody = `Hello Seyon Team,
 

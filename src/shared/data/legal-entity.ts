@@ -28,11 +28,36 @@ export interface GrievanceOfficer {
   address: string | null;
 }
 
+/**
+ * The addresses the marketplace publishes.
+ *
+ * One definition, because a sweep found four different support addresses live
+ * at once — support@seyon.in in the privacy policy and terms, support@seyon.com
+ * in both navbars and the seller footer, and seyonstoresupport@gmail.com on the
+ * contact page. At most one of those can be real, and the one printed in the
+ * legal pages is the one a regulator or an unhappy buyer will use.
+ *
+ * Overridable by environment so the addresses can change without a deploy, and
+ * so a deployment on a domain nobody owns yet can point them somewhere that
+ * actually receives mail.
+ */
 export const LEGAL_CONTACTS = {
-  privacy: 'privacy@seyon.in',
-  support: 'support@seyon.in',
-  legal: 'legal@seyon.in',
+  privacy: process.env.NEXT_PUBLIC_CONTACT_PRIVACY || 'privacy@seyon.in',
+  support: process.env.NEXT_PUBLIC_CONTACT_SUPPORT || 'support@seyon.in',
+  legal: process.env.NEXT_PUBLIC_CONTACT_LEGAL || 'legal@seyon.in',
 } as const;
+
+/**
+ * The marketplace's own WhatsApp number, digits only with country code.
+ *
+ * Unset by default and deliberately so. The footer shipped a link to
+ * wa.me/919876543210 — the standard Indian placeholder number — which meant
+ * every "message us on WhatsApp" click went to a stranger or nowhere. A missing
+ * contact is better than a wrong one, so the control hides itself when this is
+ * not configured.
+ */
+export const SUPPORT_WHATSAPP: string | null =
+  (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || '').replace(/[^\d]/g, '') || null;
 
 /** The statutory window to acknowledge a complaint under the 2020 e-commerce rules. */
 export const GRIEVANCE_ACKNOWLEDGEMENT_HOURS = 48;

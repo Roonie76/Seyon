@@ -8,6 +8,7 @@ import { notify } from '../lib/notify';
 import { revalidatePath } from 'next/cache';
 import { logger } from '../lib/logger';
 import { recomputeShopRatingSafe } from '../lib/shop-ratings';
+import { SITE_URL } from '@/shared/lib/site';
 
 export async function createReview(shopId: string, rawData: unknown) {
   try {
@@ -111,7 +112,7 @@ export async function createReview(shopId: string, rawData: unknown) {
           return notify({
             to: owner.email,
             subject: `New ${validated.data.rating}-star review on ${shop.name}`,
-            text: `Your storefront "${shop.name}" just received a new review on Seyon.\n\nRating: ${validated.data.rating}/5\nComment: "${validated.data.comment}"\n\nView your reviews: ${process.env.NEXT_PUBLIC_SITE_URL || ''}/store/${shop.slug}`,
+            text: `Your storefront "${shop.name}" just received a new review on Seyon.\n\nRating: ${validated.data.rating}/5\nComment: "${validated.data.comment}"\n\nView your reviews: ${SITE_URL}/store/${shop.slug}`,
           });
         }
       })

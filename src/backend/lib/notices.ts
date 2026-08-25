@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { logger } from './logger';
 import { notify } from './notify';
 import type { NoticeKind, Prisma } from '@prisma/client';
+import { SITE_URL } from '@/shared/lib/site';
 
 /**
  * Telling a seller something, in a way that survives the email not arriving.
@@ -65,7 +66,7 @@ export async function issueNotice(
  * seller reads it in their inbox instead, which is the whole point of storing
  * it first.
  */
-export async function emailNotice(noticeId: string, siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ''): Promise<void> {
+export async function emailNotice(noticeId: string, siteUrl: string = SITE_URL): Promise<void> {
   try {
     const notice = await db.notice.findUnique({
       where: { id: noticeId },

@@ -1,5 +1,6 @@
 'use client';
 
+import { LEGAL_CONTACTS } from '@/shared/data/legal-entity';
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -466,7 +467,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
               <div className="space-y-3">
                 <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
                 <a
-                  href="mailto:support@seyon.com"
+                  href={`mailto:${LEGAL_CONTACTS.support}`}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
                 >
                   Contact Support

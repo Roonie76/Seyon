@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/shared/lib/site';
 import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -65,7 +66,10 @@ export default async function HelpArticlePage({ params }: ArticlePageProps) {
       'name': 'Seyon',
       'logo': {
         '@type': 'ImageObject',
-        'url': 'https://seyon.in/logo.png'
+        // Structured data must be an absolute URL, and seyon.in is not the
+        // domain this is deployed on. Derive it instead of naming a host that
+        // may belong to somebody else.
+        'url': `${SITE_URL}/icon`
       }
     }
   };

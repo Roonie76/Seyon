@@ -1,3 +1,4 @@
+import { SUPPORT_WHATSAPP } from '@/shared/data/legal-entity';
 import Link from 'next/link';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -69,9 +70,11 @@ export function Footer() {
                 <a href="https://instagram.com/seyon.store" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="Instagram">
                   <InstagramIcon className="h-4.5 w-4.5" />
                 </a>
-                <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="WhatsApp">
+                {SUPPORT_WHATSAPP ? (
+                <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="WhatsApp">
                   <WhatsAppIcon className="h-4.5 w-4.5" />
                 </a>
+                ) : null}
                 <a href="https://t.me/seyon" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full border border-[#A77F3A]/30 hover:border-[#A77F3A] hover:bg-[#A77F3A]/10 flex items-center justify-center text-white transition-all duration-300" aria-label="Telegram">
                   <TelegramIcon className="h-4.5 w-4.5" />
                 </a>
