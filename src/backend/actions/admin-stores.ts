@@ -5,7 +5,11 @@ import { db } from '@/lib/db';
 import { Prisma, KycStatus } from '@prisma/client';
 import { isCurrentUserAdmin } from '../lib/is-admin';
 import { toUserMessage } from '../lib/action-errors';
-import { auditTrailFor, type AuditEntry } from '../lib/admin-audit';
+import { randomUUID } from 'node:crypto';
+import { revalidatePath } from 'next/cache';
+import { auditTrailFor, recordAdminAction, ADMIN_ACTIONS, type AuditEntry } from '../lib/admin-audit';
+import { requireAdmin } from '../lib/require-admin';
+import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
 import { parsePage } from '@/shared/lib/search-params';
 
 /**
@@ -243,5 +247,193 @@ export async function getStoreDetail(
     };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'getStoreDetail' }) };
+  }
+}
+
+/* ------------------------------------------------------------ bulk actions */
+
+const BulkSchema = z.object({
+  shopIds: z.array(z.string().cuid()).min(1, 'Select at least one store.').max(50, 'Fifty stores at a time.'),
+  action: z.enum(['VERIFY', 'UNVERIFY', 'MARK_UNDER_REVIEW', 'CLEAR_UNDER_REVIEW']),
+  reason: z.string().trim().max(1000).optional(),
+});
+
+/**
+ * Apply one reversible action to several stores.
+ *
+ * Deliberately not bulk suspend and not bulk delete. Both take something away
+ * from a seller, both are the actions a mistake is most expensive on, and both
+ * should cost an admin the effort of doing them one at a time — the friction is
+ * the feature. Verifying and marking under review are reversible with one
+ * click, which is what makes them safe in a batch.
+ *
+ * Each store still gets its own audit row. A single row listing forty ids would
+ * be unreadable on any of those forty stores' history pages, which is where
+ * anyone actually looks.
+ */
+export async function bulkStoreAction(raw: unknown) {
+  try {
+    const parsed = BulkSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { shopIds, action, reason } = parsed.data;
+
+    const { actorId } = await requireAdmin();
+
+    if (action === 'MARK_UNDER_REVIEW' && !reason?.trim()) {
+      return { error: 'Say why these stores are being looked at. It goes in each one\'s record.' };
+    }
+
+    const shops = await db.shop.findMany({
+      where: { id: { in: shopIds } },
+      select: { id: true, slug: true },
+    });
+    if (shops.length === 0) return { error: 'None of those stores exist.' };
+
+    const data =
+      action === 'VERIFY' ? { isVerified: true }
+      : action === 'UNVERIFY' ? { isVerified: false }
+      : action === 'MARK_UNDER_REVIEW' ? { isUnderReview: true, underReviewSince: new Date() }
+      : { isUnderReview: false, underReviewSince: null };
+
+    const auditAction =
+      action === 'VERIFY' ? ADMIN_ACTIONS.VERIFY_SHOP
+      : action === 'UNVERIFY' ? ADMIN_ACTIONS.UNVERIFY_SHOP
+      : action === 'MARK_UNDER_REVIEW' ? ADMIN_ACTIONS.MARK_UNDER_REVIEW
+      : ADMIN_ACTIONS.CLEAR_UNDER_REVIEW;
+
+    // One id shared by every row, so a batch can be told apart from forty
+    // people independently reaching the same conclusion.
+    const correlationId = randomUUID();
+
+    await db.$transaction(async (tx) => {
+      await tx.shop.updateMany({ where: { id: { in: shops.map((s) => s.id) } }, data });
+      for (const shop of shops) {
+        await recordAdminAction(
+          {
+            actorId,
+            action: auditAction,
+            targetType: 'Shop',
+            targetId: shop.id,
+            reason: reason?.trim() || null,
+            metadata: { slug: shop.slug, bulk: true, batchSize: shops.length, correlationId },
+          },
+          tx
+        );
+      }
+    });
+
+    for (const shop of shops) revalidateShopSurface(shop.slug);
+    revalidateMarketplace();
+    revalidatePath('/admin', 'layout');
+
+    return { success: true, count: shops.length };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'bulkStoreAction' }) };
+  }
+}
+
+/* ------------------------------------------------------------ store repair */
+
+const RepairSchema = z.object({
+  shopId: z.string().cuid(),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use lowercase letters, numbers and single hyphens.')
+    .min(3, 'At least three characters.')
+    .max(60, 'At most sixty characters.')
+    .optional(),
+  whatsapp: z
+    .string()
+    .trim()
+    .regex(/^\d{10,15}$/, 'Digits only, including the country code.')
+    .optional(),
+  reason: z.string().trim().min(10, 'Say what was wrong with it.').max(1000),
+});
+
+/**
+ * Fix a store's address or contact number.
+ *
+ * The slug is the sharp edge. Changing it breaks every link the seller has
+ * shared, every search result and every WhatsApp message pointing at the old
+ * one — so the old address is kept in `ShopSlugHistory` and the storefront
+ * redirects, rather than the marketplace quietly losing that traffic. The old
+ * slug is never freed for reuse either: handing it to a different store would
+ * redirect one seller's audience to another's.
+ */
+export async function repairStoreAction(raw: unknown) {
+  try {
+    const parsed = RepairSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { shopId, slug, whatsapp, reason } = parsed.data;
+
+    if (!slug && !whatsapp) return { error: 'Nothing to change.' };
+
+    const { actorId } = await requireAdmin();
+
+    const shop = await db.shop.findUnique({
+      where: { id: shopId },
+      select: { id: true, slug: true, whatsapp: true, name: true },
+    });
+    if (!shop) return { error: 'Store not found.' };
+
+    const slugChanged = Boolean(slug && slug !== shop.slug);
+
+    if (slugChanged) {
+      // Taken by a live store, or reserved by another store's history.
+      const [liveClash, historicClash] = await Promise.all([
+        db.shop.findUnique({ where: { slug: slug! }, select: { id: true } }),
+        db.shopSlugHistory.findUnique({ where: { slug: slug! }, select: { shopId: true } }),
+      ]);
+      if (liveClash && liveClash.id !== shop.id) return { error: 'Another store already uses that address.' };
+      if (historicClash && historicClash.shopId !== shop.id) {
+        return { error: 'That address used to belong to a different store, so it cannot be reused.' };
+      }
+    }
+
+    await db.$transaction(async (tx) => {
+      if (slugChanged) {
+        // Record the old address before taking it, so a crash between the two
+        // cannot leave the store unreachable at either.
+        await tx.shopSlugHistory.upsert({
+          where: { slug: shop.slug },
+          update: {},
+          create: { shopId: shop.id, slug: shop.slug, changedById: actorId },
+        });
+      }
+
+      await tx.shop.update({
+        where: { id: shop.id },
+        data: { ...(slugChanged ? { slug } : {}), ...(whatsapp ? { whatsapp } : {}) },
+      });
+
+      await recordAdminAction(
+        {
+          actorId,
+          action: ADMIN_ACTIONS.REPAIR_SHOP,
+          targetType: 'Shop',
+          targetId: shop.id,
+          reason,
+          metadata: {
+            name: shop.name,
+            ...(slugChanged ? { slugFrom: shop.slug, slugTo: slug } : {}),
+            ...(whatsapp && whatsapp !== shop.whatsapp
+              ? { whatsappFrom: shop.whatsapp, whatsappTo: whatsapp }
+              : {}),
+          },
+        },
+        tx
+      );
+    });
+
+    revalidateShopSurface(shop.slug);
+    if (slug) revalidateShopSurface(slug);
+    revalidateMarketplace();
+    revalidatePath('/admin', 'layout');
+
+    return { success: true, slug: slug ?? shop.slug };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'repairStore' }) };
   }
 }

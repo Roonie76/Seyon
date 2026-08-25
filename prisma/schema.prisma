@@ -97,8 +97,9 @@ model User {
   wishlist     Wishlist[]
   analytics    Analytics[]
   sellerKyc    SellerKyc?
-  kycReviewed  SellerKyc[]   @relation("KycReviewer")
-  adminActions AdminAction[] @relation("AdminActor")
+  kycReviewed  SellerKyc[]       @relation("KycReviewer")
+  adminActions AdminAction[]     @relation("AdminActor")
+  slugChanges  ShopSlugHistory[] @relation("SlugChanger")
 
   // Moderation trails. All SetNull or Restrict rather than Cascade: deleting an
   // admin account must never quietly erase the record of what they decided.
@@ -193,6 +194,7 @@ model Shop {
   notices               Notice[]
   analytics             Analytics[]
   whatsappVerifications WhatsappVerification[]
+  slugHistory           ShopSlugHistory[]
 
   @@index([isSuspended])
   @@index([isListed])
@@ -211,6 +213,26 @@ model WhatsappVerification {
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId, expiresAt])
+}
+
+/// Addresses a store used to have.
+///
+/// Changing a slug breaks every link a seller has shared and every search
+/// result pointing at the old one. Keeping the old address and redirecting is
+/// the difference between a tidy-up and an outage nobody notices for a week.
+model ShopSlugHistory {
+  id          String   @id @default(cuid())
+  shopId      String
+  /// Unique across all history, so a freed slug cannot be given to another
+  /// store and silently redirect its traffic somewhere else.
+  slug        String   @unique
+  changedAt   DateTime @default(now())
+  changedById String?
+
+  shop      Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  changedBy User? @relation("SlugChanger", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([shopId])
 }
 
 model Product {
@@ -490,6 +512,12 @@ model SellerKyc {
   // Tier 2 — only where the seller is over the GST threshold
   gstin String?
 
+  /// Asked of the seller rather than derived. `turnoverDeclaredAt` is required
+  /// whenever this is not NOT_DECLARED — a declaration with no date cannot be
+  /// aged out, and the whole point is asking again next year.
+  turnoverDeclaration TurnoverDeclaration @default(NOT_DECLARED)
+  turnoverDeclaredAt  DateTime?
+
   reviewedById    String?
   reviewedAt      DateTime?
   rejectionReason String?
@@ -502,6 +530,7 @@ model SellerKyc {
 
   @@index([status, submittedAt])
   @@index([idHash])
+  @@index([turnoverDeclaration, turnoverDeclaredAt])
 }
 
 enum KycTier {
@@ -516,6 +545,18 @@ enum KycStatus {
   APPROVED
   REJECTED
   EXPIRED
+}
+
+/// What a seller says about their turnover.
+///
+/// A declaration, not a measurement: Seyon is a discovery marketplace, buyers
+/// leave for WhatsApp to transact, and nothing in this schema records a sale.
+/// The marketplace cannot detect a threshold crossing, so it asks, records the
+/// date, and asks again when the answer goes stale.
+enum TurnoverDeclaration {
+  NOT_DECLARED
+  BELOW_THRESHOLD
+  ABOVE_THRESHOLD
 }
 
 enum KycIdType {

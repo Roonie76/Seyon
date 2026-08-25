@@ -44,6 +44,10 @@ export const ADMIN_ACTIONS = {
   VIEW_KYC_DOCUMENT: 'VIEW_KYC_DOCUMENT',
   /// Written by the nightly retention sweep, under the system account.
   SWEEP_KYC_DOCUMENTS: 'SWEEP_KYC_DOCUMENTS',
+  /// Correcting a store's address or contact number. Requires a reason: the
+  /// old address stops being the one people have, so somebody should have
+  /// written down why.
+  REPAIR_SHOP: 'REPAIR_SHOP',
 } as const;
 
 export type AdminActionName = (typeof ADMIN_ACTIONS)[keyof typeof ADMIN_ACTIONS];

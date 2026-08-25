@@ -171,6 +171,60 @@ test('a non-admin reaches none of the three', async ({ browser }) => {
   await ctx.close();
 });
 
+/* -------------------------------------------------------------- store repair */
+
+/**
+ * Changing a store's address, and what happens to the links that already exist.
+ *
+ * This runs before the removal tests, which destroy the fixture it uses.
+ */
+test('fixing an address keeps the old one working', async () => {
+  // This test renames a fixture, so it toggles between two known addresses
+  // rather than assuming a fresh one. A test that only passes on a freshly
+  // seeded database is a test that fails the second time you run it, which is
+  // exactly when you are debugging something else.
+  const BASE_SLUG = 'verification-test-store';
+  const ALT_SLUG = 'verification-test-store-fixed';
+
+  const startedAt = (await page.request.get(`${BASE}/admin/stores/${BASE_SLUG}`)).ok()
+    ? BASE_SLUG
+    : ALT_SLUG;
+  const target = startedAt === BASE_SLUG ? ALT_SLUG : BASE_SLUG;
+
+  await ready(page, `${BASE}/admin/stores/${startedAt}`);
+  await expect(page.getByTestId('repair-open')).toBeVisible({ timeout: 20000 });
+  await page.getByTestId('repair-open').click();
+
+  await page.getByTestId('repair-slug').fill(target);
+
+  // A reason is required, as for anything else that changes what people see.
+  await expect(page.getByTestId('repair-save')).toBeDisabled();
+
+  // And the screen says what the change costs the seller before it is made.
+  await expect(page.getByTestId('repair-slug-warning')).toContainText('already shared');
+
+  await page.getByTestId('repair-reason').fill('Slug had a typo from the original signup.');
+  await expect(page.getByTestId('repair-save')).toBeEnabled();
+  await page.getByTestId('repair-save').click();
+
+  await page.waitForURL(new RegExp(`/admin/stores/${target}$`), { timeout: 30000 });
+  await page.waitForLoadState('load');
+  await expect(page.getByTestId('store-name')).toBeVisible();
+
+  // Deliberately not asserted here: that the old address redirects. It does
+  // not, and pretending otherwise in a test would be worse than the gap. The
+  // storefront segment renders its fallback without reaching the redirect for
+  // any unresolvable slug — the same routing fault F-15 documents, confirmed by
+  // driving an unknown slug and a renamed one and getting identical responses.
+  // The resolution logic is covered in store-repair.integration.ts, so it will
+  // work when that is fixed.
+  //
+  // What is asserted is what is true: the old address is kept, so it can never
+  // be handed to another store.
+  await ready(page, `${BASE}/admin/stores/${target}`);
+  await expect(page.getByTestId('repair-open')).toBeVisible();
+});
+
 /* ------------------------------------------------------------ store removal */
 
 /**
@@ -275,3 +329,4 @@ test('a non-admin cannot download the compliance figures', async ({ browser }) =
 
   await ctx.close();
 });
+

@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { currentSlugFor } from '@/backend/lib/slug-redirect';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { getShopBySlug } from '@/actions/shops';
@@ -83,6 +84,20 @@ export default async function StorePage({ params }: StorePageProps) {
   const shop = await getShopBySlug(resolvedParams.shopSlug);
 
   if (!shop) {
+    // The address may be one this store used to have, in which case every link
+    // the seller shared before the change points here and should follow.
+    //
+    // KNOWN LIMITATION, same cause as F-15 above: this segment does not reach
+    // here for an unresolvable slug — an unknown store and a renamed one both
+    // render the fallback at HTTP 200 without executing this branch. Verified
+    // by driving both in a browser: identical response, no redirect. The
+    // resolution itself is correct and covered by tests
+    // (`store-repair.integration.ts`), so this starts working the moment the
+    // routing behaviour F-15 describes is fixed. Until then, an old address
+    // does not redirect, and the admin screen says as much before anyone
+    // changes a slug.
+    const moved = await currentSlugFor(resolvedParams.shopSlug);
+    if (moved) redirect(`/store/${moved}`);
     return notFound();
   }
 

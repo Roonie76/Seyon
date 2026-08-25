@@ -5,6 +5,7 @@ import { getStoreDetail } from '@/backend/actions/admin-stores';
 import { getShopReviewsForModeration } from '@/backend/actions/moderation';
 import { getShopNotices } from '@/backend/actions/notices';
 import { StoreActions, DeleteProductButton, DeleteStoreButton } from '@/frontend/components/admin/store-actions';
+import { StoreRepair } from '@/frontend/components/admin/store-repair';
 import { ReviewModeration } from '@/frontend/components/admin/review-moderation';
 import { UnderReviewControl, StoreNotices } from '@/frontend/components/admin/store-notices';
 
@@ -70,6 +71,14 @@ export default async function AdminStoreDetailPage({
         </div>
 
         <StoreActions shopId={s.id} slug={s.slug} isVerified={s.isVerified} isSuspended={s.isSuspended} />
+
+        <div className="rounded-xl border border-zinc-200 p-4">
+          <h2 className="text-sm font-bold text-zinc-950">Details</h2>
+          <p className="mt-1 text-[11px] text-zinc-600">
+            For correcting a mistake, not for renaming on request.
+          </p>
+          <StoreRepair shopId={s.id} slug={s.slug} whatsapp={s.whatsapp} />
+        </div>
 
         <UnderReviewControl
           shopId={s.id}

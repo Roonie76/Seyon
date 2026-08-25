@@ -384,3 +384,61 @@ export async function uploadIdentityDocument(
     return { error: toUserMessage(error, { action: 'uploadIdentityDocument' }) };
   }
 }
+
+/* --------------------------------------------------- the GST threshold ask */
+
+const TurnoverSchema = z.object({
+  declaration: z.enum(['BELOW_THRESHOLD', 'ABOVE_THRESHOLD']),
+  /** Required when declaring above the threshold. */
+  gstin: z.string().trim().toUpperCase().optional(),
+});
+
+/**
+ * Record what the seller says about their turnover.
+ *
+ * A declaration, not a measurement — see `shared/lib/turnover.ts` for why the
+ * marketplace cannot know this. The date is stamped here rather than taken from
+ * the client, so a stale declaration cannot be made to look fresh, and the
+ * database refuses a declaration with no date at all.
+ */
+export async function declareTurnoverAction(raw: unknown): Promise<{ success: true } | { error: string }> {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) return { error: 'You must be signed in.' };
+
+    const parsed = TurnoverSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { declaration } = parsed.data;
+    const gstin = parsed.data.gstin?.trim() || null;
+
+    // Saying you are over the threshold without a GSTIN leaves the marketplace
+    // holding a stated obligation and nothing to satisfy it with.
+    if (declaration === 'ABOVE_THRESHOLD') {
+      if (!gstin) return { error: 'Add your GSTIN. Declaring you are over the threshold without one leaves it unresolved.' };
+      const check = checkGstin(gstin);
+      if (!check.valid) return { error: check.error ?? 'That GSTIN does not look right.' };
+    }
+
+    await db.sellerKyc.upsert({
+      where: { userId },
+      update: {
+        turnoverDeclaration: declaration,
+        turnoverDeclaredAt: new Date(),
+        ...(gstin ? { gstin } : {}),
+      },
+      create: {
+        userId,
+        turnoverDeclaration: declaration,
+        turnoverDeclaredAt: new Date(),
+        ...(gstin ? { gstin } : {}),
+      },
+    });
+
+    revalidatePath('/dashboard');
+    revalidatePath('/verification');
+    return { success: true };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'declareTurnover' }) };
+  }
+}
