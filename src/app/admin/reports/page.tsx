@@ -48,7 +48,16 @@ export default async function AdminComplaintsPage({
               Acknowledge within {ACK_DEADLINE_HOURS} hours, close within {RESOLVE_DEADLINE_DAYS} days.
             </p>
           </div>
-          <Link href="/admin" className="text-xs font-bold text-[#A77F3A] hover:underline">← Admin</Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/reports/performance"
+              data-testid="nav-performance"
+              className="text-xs font-bold text-[#A77F3A] hover:underline"
+            >
+              Performance
+            </Link>
+            <Link href="/admin" className="text-xs font-bold text-[#A77F3A] hover:underline">← Admin</Link>
+          </div>
         </div>
 
         {/* The two numbers that mean something is wrong, made impossible to

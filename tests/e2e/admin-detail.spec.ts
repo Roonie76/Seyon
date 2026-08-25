@@ -232,3 +232,46 @@ test('a removed store is gone from the admin list, and its record is not', async
   await expect(page.getByTestId('audit-log-action').first()).toHaveText('DELETE_SHOP');
   await expect(page.getByTestId('audit-log-reason').first()).toContainText('counterfeit');
 });
+
+/* ------------------------------------------------------- SLA performance */
+
+test('the performance report counts an untouched complaint against the month', async () => {
+  await ready(page, `${BASE}/admin/reports/performance`);
+
+  await expect(page.getByTestId('performance-table')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByTestId('performance-row').first()).toBeVisible();
+
+  // The fixtures seed one complaint three days old and unacknowledged. It has
+  // to appear as a miss rather than be excluded for not being closed — the
+  // difference between an honest report and a flattering one.
+  await expect(page.getByTestId('miss-count')).not.toHaveText('(0)');
+  await expect(page.getByTestId('miss-row').first()).toBeVisible();
+  await expect(page.getByTestId('miss-open-badge').first()).toBeVisible();
+
+  // And the page says out loud what the denominator is, because a good number
+  // here is open to a flattering misreading otherwise.
+  await expect(page.getByTestId('performance-denominator-note')).toContainText('not of everything closed');
+});
+
+test('the CSV export is the same report, not a second implementation', async () => {
+  const res = await page.request.get(`${BASE}/admin/reports/performance/export?months=6`);
+  expect(res.status()).toBe(200);
+  expect(res.headers()['content-type']).toContain('text/csv');
+  expect(res.headers()['content-disposition']).toContain('seyon-complaint-performance-');
+
+  const body = await res.text();
+  const lines = body.trim().split('\n');
+  expect(lines[0]).toContain('acknowledgement_rate');
+  expect(lines.length).toBeGreaterThan(1);
+});
+
+test('a non-admin cannot download the compliance figures', async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const seller = await ctx.newPage();
+  await login(seller, OWNER);
+
+  const res = await seller.request.get(`${BASE}/admin/reports/performance/export`);
+  expect(res.status()).toBe(403);
+
+  await ctx.close();
+});
