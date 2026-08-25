@@ -1,7 +1,40 @@
+# Dependency updates, at a volume a one-person project can actually read.
+#
+# Weekly with a limit of ten produced exactly that: ten open pull requests,
+# each its own branch, each its own Vercel preview build. Several could never
+# be merged as proposed -- typescript 5.9 to 7.0 and @types/node 20 to 26 are
+# major bumps that failed to build -- so the queue was mostly noise sitting on
+# top of the few updates worth taking.
+#
+# Three changes, all aimed at "one pull request a month that is worth reading":
+#   monthly     instead of weekly
+#   grouped     minor and patch arrive together, not one branch each
+#   no majors   a major bump is a decision, not a chore; take those by hand
+#
+# This governs *version* updates only. Dependabot security updates are a
+# separate setting (Settings -> Code security -> Dependabot security updates)
+# and should stay on: a vulnerability is worth a pull request whatever the
+# schedule here says.
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: "monthly"
+    open-pull-requests-limit: 3
+
+    # One pull request for everything routine, rather than one per package.
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Majors are opt-in. Nothing here stops you running `npm outdated` and
+    # taking one deliberately; it stops ten of them opening themselves.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
