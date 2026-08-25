@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { recordAdminAction, ADMIN_ACTIONS, auditTrailFor, type AuditEntry } from '../lib/admin-audit';
 import { recomputeShopRating } from '../lib/shop-ratings';
 import { requireAdmin } from '../lib/require-admin';
+import { hideReviewInTx } from '../lib/moderation-ops';
 import { toUserMessage } from '../lib/action-errors';
 import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
 
@@ -46,38 +47,14 @@ export async function hideReviewAction(reviewId: string, reason: string): Promis
 
     const { actorId } = await requireAdmin();
 
-    const review = await db.review.findUnique({
-      where: { id: id.data },
-      select: { id: true, shopId: true, rating: true, isHidden: true, shop: { select: { slug: true } } },
-    });
-    if (!review) return { error: 'Review not found.' };
-    if (review.isHidden) return { success: true };
+    const result = await db.$transaction((tx) =>
+      hideReviewInTx(tx, { reviewId: id.data, reason: parsedReason.data }, { actorId })
+    );
 
-    await db.$transaction(async (tx) => {
-      await tx.review.update({
-        where: { id: review.id },
-        data: {
-          isHidden: true,
-          hiddenAt: new Date(),
-          hiddenReason: parsedReason.data,
-          hiddenById: actorId,
-        },
-      });
-      await recordAdminAction(
-        {
-          actorId,
-          action: ADMIN_ACTIONS.HIDE_REVIEW,
-          targetType: 'Review',
-          targetId: review.id,
-          reason: parsedReason.data,
-          metadata: { shopId: review.shopId, rating: review.rating },
-        },
-        tx
-      );
-      await recomputeShopRating(review.shopId, tx);
-    });
+    // Already hidden: nothing changed, and saying so would be a lie either way.
+    if (!result) return { success: true };
 
-    revalidateShopSurface(review.shop.slug);
+    revalidateShopSurface(result.shopSlug);
     revalidateMarketplace();
     revalidatePath('/admin', 'layout');
     return { success: true };

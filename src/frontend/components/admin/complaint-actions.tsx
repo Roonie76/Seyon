@@ -18,10 +18,17 @@ export function ComplaintActions({
   reportId,
   acknowledged,
   closed,
+  hideClose = false,
 }: {
   reportId: string;
   acknowledged: boolean;
   closed: boolean;
+  /**
+   * The complaint detail page offers closing through `CloseWithAction`, which
+   * can also act in the same step. Showing both there would give a moderator
+   * two Close buttons that do different amounts.
+   */
+  hideClose?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
@@ -65,6 +72,7 @@ export function ComplaintActions({
           </button>
         ) : null}
 
+        {hideClose ? null : (
         <button
           type="button"
           data-testid="close-upheld"
@@ -74,7 +82,8 @@ export function ComplaintActions({
         >
           Close — action taken
         </button>
-
+        )}
+        {hideClose ? null : (
         <button
           type="button"
           data-testid="close-rejected"
@@ -84,6 +93,7 @@ export function ComplaintActions({
         >
           Close — nothing wrong
         </button>
+        )}
       </div>
 
       {mode ? (

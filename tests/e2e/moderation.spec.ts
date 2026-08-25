@@ -57,6 +57,28 @@ async function ready(page: Page, url: string) {
   await page.waitForLoadState('load');
 }
 
+
+/**
+ * Open the report form on a review card.
+ *
+ * The button is a client component; on a route the dev server has just
+ * compiled, the first click can land before hydration and do nothing. Clicking
+ * and then checking the form actually opened — retrying once if not — is more
+ * honest than a fixed sleep, and does not slow the warm case down.
+ */
+async function openReportForm(p: Page, card: ReturnType<Page['locator']>) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await card.getByTestId('report-review-open').click();
+    try {
+      await p.getByTestId('report-review-form').waitFor({ state: 'visible', timeout: 4000 });
+      return;
+    } catch {
+      if (attempt === 2) throw new Error('report form never opened');
+      await p.waitForTimeout(1500);
+    }
+  }
+}
+
 test.describe.configure({ mode: 'serial' });
 
 // One login for the suite: LOGIN is rate limited to five per minute per email,
@@ -342,7 +364,7 @@ test('a buyer reports a review, and a moderator can act on it', async ({ browser
   // The one-star review is the third; report the review that is not this
   // buyer's own by finding the control beside that text.
   const card = buyer.locator('div', { hasText: 'This seller is a fraud' }).last();
-  await card.getByTestId('report-review-open').click();
+  await openReportForm(buyer, card);
   await buyer.getByTestId('report-review-category').selectOption('OFFENSIVE_CONTENT');
   await buyer.getByTestId('report-review-reason').fill('Calls the seller a fraud with no order behind it.');
   await buyer.getByTestId('report-review-submit').click();
@@ -384,6 +406,111 @@ test('the store filter and the review filter separate the two kinds', async () =
   // The seeded store complaints are about the store, so none of them carry the
   // review badge.
   await expect(page.getByTestId('review-target-badge')).toHaveCount(0);
+});
+
+
+/* ------------------------------------------- closing and acting in one step */
+
+test('closing a complaint can hide the review in the same step', async () => {
+  // A different review from the one the earlier test hides — that one is gone
+  // from the storefront by now, and a test that depends on an earlier test not
+  // having run is a test that fails in file order.
+  const TARGET = 'Good packaging, would buy again.';
+
+  const buyerCtx = await browser.newContext();
+  await buyerCtx.addInitScript(() => {
+    try { localStorage.setItem('seyon_dev_notice_seen', 'true'); } catch { /* private mode */ }
+  });
+  const buyer = await buyerCtx.newPage();
+  // adminbuyer3 wrote the one-star review, not this one, so reporting it is
+  // allowed — you cannot report your own.
+  await login(buyer, 'adminbuyer3@example.com');
+  await ready(buyer, `${BASE}/store/${SHOP_SLUG}`);
+  await expect(buyer.getByText(TARGET)).toBeVisible({ timeout: 20000 });
+
+  const card = buyer.locator('div', { hasText: TARGET }).last();
+  await openReportForm(buyer, card);
+  await buyer.getByTestId('report-review-reason').fill('Written by an account with no order behind it.');
+  await buyer.getByTestId('report-review-submit').click();
+  await expect(buyer.getByTestId('report-review-done')).toBeVisible({ timeout: 20000 });
+  await buyerCtx.close();
+
+  await ready(page, `${BASE}/admin/reports?status=open&target=REVIEW`);
+  await expect(page.getByTestId('complaint-row').first()).toBeVisible({ timeout: 20000 });
+
+  // Pick this complaint by its own text. The earlier review test leaves its
+  // complaint open on purpose — hiding a review does not close the complaint —
+  // so "the first open review complaint" is not this one.
+  const mine = page.getByTestId('complaint-row').filter({ hasText: 'Written by an account' });
+  await expect(mine).toHaveCount(1);
+  await mine.getByTestId('complaint-open').click();
+
+  await page.waitForURL(/\/admin\/reports\/[a-z0-9]+/, { timeout: 20000 });
+  await page.waitForLoadState('load');
+  await expect(page.getByTestId('complaint-review-comment')).toContainText('Good packaging');
+
+  // Both statements are asked for separately: what the reporter is told is not
+  // the same as the finding recorded against the review.
+  await page.getByTestId('outcome-resolved').click();
+  await page.getByTestId('close-note').fill('The review was hidden; the account has no order history.');
+  await page.getByTestId('escalation-select').selectOption('HIDE_REVIEW');
+  await expect(page.getByTestId('close-with-action-confirm')).toBeDisabled();
+
+  await page.getByTestId('escalation-reason').fill('No order behind the account that wrote it.');
+  await expect(page.getByTestId('close-with-action-confirm')).toBeEnabled();
+  await page.getByTestId('close-with-action-confirm').click();
+
+  // Both happened, in one step.
+  await expect(page.getByTestId('complaint-outcome')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByTestId('complaint-review-hidden')).toBeVisible();
+
+  // Two rows, not one merged row: the closure and the hiding each kept their
+  // own words.
+  const actions = await page.getByTestId('complaint-audit-action').allTextContents();
+  expect(actions).toContain('RESOLVE_REPORT');
+
+  // And the storefront stops showing it.
+  await ready(page, `${BASE}/store/${SHOP_SLUG}`);
+  await expect(page.getByText(TARGET)).toHaveCount(0);
+});
+
+test('rejecting a complaint offers no escalation at all', async () => {
+  await ready(page, `${BASE}/admin/reports?status=open`);
+  await expect(page.getByTestId('complaint-row').first()).toBeVisible({ timeout: 20000 });
+  await page.getByTestId('complaint-open').first().click();
+  await page.waitForLoadState('load');
+
+  // "Nothing wrong" and "and also suspend them" cannot both be true.
+  await page.getByTestId('outcome-rejected').click();
+  await expect(page.getByTestId('escalation-select')).toHaveCount(0);
+});
+
+/* ------------------------------------------------------------ notice queue */
+
+test('the notices page shows what was sent and whether it was read', async () => {
+  await ready(page, `${BASE}/admin/notices`);
+
+  await expect(page.getByTestId('notice-row').first()).toBeVisible({ timeout: 20000 });
+  await expect(page.getByTestId('notice-count-unread')).toBeVisible();
+  await expect(page.getByTestId('notice-count-awaiting')).toBeVisible();
+  await expect(page.getByTestId('notice-count-overdue')).toBeVisible();
+
+  // Sent and delivered are separate facts. Email is unconfigured in this
+  // environment, so every notice should say so rather than implying delivery.
+  await expect(page.getByTestId('notice-delivery').first()).toContainText('no email sent');
+});
+
+test('the unread filter narrows to notices nobody has opened', async () => {
+  await ready(page, `${BASE}/admin/notices?filter=unread`);
+  await page.waitForLoadState('load');
+  const unread = await page.getByTestId('notice-row').count();
+
+  await ready(page, `${BASE}/admin/notices?filter=all`);
+  await page.waitForLoadState('load');
+  const all = await page.getByTestId('notice-row').count();
+
+  expect(unread).toBeLessThanOrEqual(all);
+  expect(all).toBeGreaterThan(0);
 });
 
 /* ----------------------------------------------------------- access control */

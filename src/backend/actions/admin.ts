@@ -14,6 +14,7 @@ import { requireAdmin } from '../lib/require-admin';
 import { roleAfterShopRemoval } from '@/shared/lib/shop-removal';
 import { ACK_DEADLINE_HOURS } from '@/shared/lib/complaints';
 import { issueNotice, emailNotice } from '../lib/notices';
+import { setShopSuspendedInTx } from '../lib/moderation-ops';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
 const RoleSchema = z.nativeEnum(Role);
@@ -210,54 +211,14 @@ export async function suspendShopAction(shopId: string, isSuspended: boolean, re
       return { error: 'Give a reason for the suspension. The seller is told what it says.' };
     }
 
-    const { shop, noticeId } = await db.$transaction(async (tx) => {
-      const updated = await tx.shop.update({
-        where: { id: parsedShopId.data },
-        data: { isSuspended },
-        include: { owner: { select: { email: true } } },
-      });
-      await recordAdminAction(
-        {
-          actorId,
-          action: isSuspended ? ADMIN_ACTIONS.SUSPEND_SHOP : ADMIN_ACTIONS.UNSUSPEND_SHOP,
-          targetType: 'Shop',
-          targetId: updated.id,
-          reason: isSuspended ? reason : (reason ?? 'Reinstated'),
-          metadata: { slug: updated.slug, isSuspended },
-        },
-        tx
-      );
-
-      // The seller's copy, stored rather than emailed. This used to be a single
-      // fire-and-forget `notify()` call, which no-ops entirely when email is not
-      // configured — so a seller could lose their storefront and never be told,
-      // with nothing recording that we had tried.
-      const notice = await issueNotice(
-        {
-          shopId: updated.id,
-          actorId,
-          kind: isSuspended ? 'SUSPENSION' : 'REINSTATEMENT',
-          subject: isSuspended
-            ? `Your storefront "${updated.name}" has been suspended`
-            : `Your storefront "${updated.name}" has been reinstated`,
-          body: isSuspended
-            ? `Your storefront "${updated.name}" is no longer visible to buyers.\n\n` +
-              `Reason given by the reviewer:\n${reason?.trim()}\n\n` +
-              'If you believe this is a mistake, reply to this notice with anything that shows it.'
-            : `Your storefront "${updated.name}" is visible to buyers again.` +
-              (reason?.trim() ? `\n\nNote from the reviewer:\n${reason.trim()}` : ''),
-          requiresResponse: isSuspended,
-        },
-        tx
-      );
-
-      return { shop: updated, noticeId: notice.id };
-    });
+    const { shopSlug, noticeId } = await db.$transaction((tx) =>
+      setShopSuspendedInTx(tx, { shopId: parsedShopId.data, isSuspended, reason }, { actorId })
+    );
 
     // Email is the convenience copy; the notice above is the record.
     emailNotice(noticeId).catch(() => undefined);
 
-    revalidateShopSurface(shop.slug);
+    revalidateShopSurface(shopSlug);
     revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
   } catch (error) {

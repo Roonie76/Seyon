@@ -210,3 +210,165 @@ export async function getShopNotices(
     return { error: toUserMessage(error, { action: 'getShopNotices' }) };
   }
 }
+
+/* ----------------------------------------------------- the marketplace view */
+
+const NOTICE_PAGE_SIZE = 25;
+
+const NoticeQueueSchema = z.object({
+  filter: z.enum(['all', 'unread', 'awaiting', 'overdue']).optional(),
+  page: z.string().optional(),
+});
+
+export interface AdminNoticeRow {
+  id: string;
+  kind: NoticeKind;
+  subject: string;
+  body: string;
+  sentAt: Date;
+  emailedAt: Date | null;
+  readAt: Date | null;
+  respondedAt: Date | null;
+  response: string | null;
+  requiresResponse: boolean;
+  respondBy: Date | null;
+  /** Asked for a response, past the date, still nothing back. */
+  overdue: boolean;
+  shopName: string;
+  shopSlug: string;
+  actorName: string | null;
+}
+
+export interface AdminNoticeQueue {
+  rows: AdminNoticeRow[];
+  total: number;
+  page: number;
+  pageCount: number;
+  counts: { unread: number; awaiting: number; overdue: number };
+}
+
+/**
+ * Every notice the marketplace has sent.
+ *
+ * The seller's inbox has existed since notices did; nothing showed the other
+ * side of it. You could prove a notice was sent and not see, in one place,
+ * which ones were never opened and which asked a question nobody answered.
+ */
+export async function getNoticeQueue(
+  raw: unknown
+): Promise<{ data: AdminNoticeQueue } | { error: string }> {
+  try {
+    await requireAdmin();
+
+    const parsed = NoticeQueueSchema.safeParse(raw ?? {});
+    if (!parsed.success) return { error: 'Invalid filter.' };
+    const filter = parsed.data.filter ?? 'all';
+    const page = Math.max(1, Number.parseInt(parsed.data.page ?? '1', 10) || 1);
+
+    const now = new Date();
+    const overdueWhere = {
+      requiresResponse: true,
+      respondedAt: null,
+      respondBy: { lt: now },
+    } as const;
+
+    const where =
+      filter === 'unread'
+        ? { readAt: null }
+        : filter === 'awaiting'
+          ? { requiresResponse: true, respondedAt: null }
+          : filter === 'overdue'
+            ? overdueWhere
+            : {};
+
+    const [total, rows, unread, awaiting, overdue] = await Promise.all([
+      db.notice.count({ where }),
+      db.notice.findMany({
+        where,
+        // Oldest first for the queues that need chasing; a list sorted
+        // newest-first is how the oldest unanswered notice is never reached.
+        orderBy: filter === 'all' ? { sentAt: 'desc' } : { sentAt: 'asc' },
+        skip: (page - 1) * NOTICE_PAGE_SIZE,
+        take: NOTICE_PAGE_SIZE,
+        include: {
+          shop: { select: { name: true, slug: true } },
+          actor: { select: { name: true } },
+        },
+      }),
+      db.notice.count({ where: { readAt: null } }),
+      db.notice.count({ where: { requiresResponse: true, respondedAt: null } }),
+      db.notice.count({ where: overdueWhere }),
+    ]);
+
+    return {
+      data: {
+        rows: rows.map((n) => ({
+          id: n.id,
+          kind: n.kind,
+          subject: n.subject,
+          body: n.body,
+          sentAt: n.sentAt,
+          emailedAt: n.emailedAt,
+          readAt: n.readAt,
+          respondedAt: n.respondedAt,
+          response: n.response,
+          requiresResponse: n.requiresResponse,
+          respondBy: n.respondBy,
+          overdue: Boolean(
+            n.requiresResponse && !n.respondedAt && n.respondBy && n.respondBy < now
+          ),
+          shopName: n.shop.name,
+          shopSlug: n.shop.slug,
+          actorName: n.actor.name,
+        })),
+        total,
+        page,
+        pageCount: Math.max(1, Math.ceil(total / NOTICE_PAGE_SIZE)),
+        counts: { unread, awaiting, overdue },
+      },
+    };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'getNoticeQueue' }) };
+  }
+}
+
+/**
+ * Send the email for a notice again.
+ *
+ * Deliberately not "send the notice again": the notice already exists and the
+ * seller already has it. This retries the convenience copy, for the case where
+ * email was unconfigured or bouncing when it was first issued. It writes no new
+ * notice row, because a duplicate in the seller's inbox would imply a second
+ * decision was taken.
+ */
+export async function resendNoticeEmailAction(noticeId: string): Promise<Result> {
+  try {
+    const id = IdSchema.safeParse(noticeId);
+    if (!id.success) return { error: 'Invalid notice id.' };
+
+    const { actorId } = await requireAdmin();
+
+    const notice = await db.notice.findUnique({
+      where: { id: id.data },
+      select: { id: true, shopId: true, subject: true },
+    });
+    if (!notice) return { error: 'Notice not found.' };
+
+    await emailNotice(notice.id);
+
+    // Observational rather than a state change, so a failure to record it must
+    // not fail the resend.
+    await recordAdminAction({
+      actorId,
+      action: ADMIN_ACTIONS.SEND_NOTICE,
+      targetType: 'Shop',
+      targetId: notice.shopId,
+      metadata: { noticeId: notice.id, subject: notice.subject, resend: true },
+    }).catch(() => undefined);
+
+    revalidatePath('/admin', 'layout');
+    return { success: true };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'resendNoticeEmail' }) };
+  }
+}

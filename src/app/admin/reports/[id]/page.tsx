@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getComplaint } from '@/backend/actions/complaints';
 import { ComplaintActions } from '@/frontend/components/admin/complaint-actions';
+import { CloseWithAction } from '@/frontend/components/admin/close-with-action';
 import { ComplaintReviewTargetCard } from '@/frontend/components/admin/complaint-review-target';
 import {
   REPORT_CATEGORY_LABELS,
@@ -184,14 +185,23 @@ export default async function AdminComplaintPage({
             <p className="mt-2 text-[10px] text-zinc-500">The person who reported it was sent this.</p>
           </div>
         ) : (
-          <div className="rounded-xl border border-zinc-200 p-4">
-            <h2 className="mb-1 text-sm font-bold text-zinc-950">Act on it</h2>
-            <ComplaintActions
+          <>
+            {/* Acknowledging stays one click with no text: the 48-hour clock
+                should never be missed for want of time to write a paragraph. */}
+            {!c.acknowledgedAt ? (
+              <div className="rounded-xl border border-zinc-200 p-4">
+                <h2 className="mb-1 text-sm font-bold text-zinc-950">Acknowledge</h2>
+                <ComplaintActions reportId={c.id} acknowledged={false} closed={closed} hideClose />
+              </div>
+            ) : null}
+
+            <CloseWithAction
               reportId={c.id}
-              acknowledged={Boolean(c.acknowledgedAt)}
-              closed={closed}
+              hasReview={Boolean(c.review)}
+              reviewAlreadyHidden={Boolean(c.review?.isHidden)}
+              shopAlreadySuspended={c.shopIsSuspended}
             />
-          </div>
+          </>
         )}
 
         <div className="rounded-xl border border-zinc-200 p-4">

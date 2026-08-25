@@ -2,15 +2,18 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { Prisma, ReportCategory, ReportStatus, ReportTarget } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import { Prisma, ReportCategory, ReportStatus, ReportTarget, NoticeKind } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../lib/require-admin';
 import { recordAdminAction, ADMIN_ACTIONS, auditTrailFor, type AuditEntry } from '../lib/admin-audit';
+import { closeComplaintInTx, hideReviewInTx, setShopSuspendedInTx } from '../lib/moderation-ops';
+import { issueNotice, emailNotice } from '../lib/notices';
 import { toUserMessage } from '../lib/action-errors';
 import { notify } from '../lib/notify';
 import { complaintSla, isSevere, type ComplaintSla } from '@/shared/lib/complaints';
 import { parsePage } from '@/shared/lib/search-params';
-import { revalidateShopSurface } from '@/shared/lib/cache';
+import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
 
 /**
  * The complaints queue, and the clock it runs against.
@@ -319,36 +322,20 @@ export async function closeComplaintAction(
 
     const now = new Date();
 
-    await db.$transaction(async (tx) => {
-      await tx.report.update({
-        where: { id: report.id },
-        data: {
-          status: outcome === 'RESOLVED' ? ReportStatus.RESOLVED : ReportStatus.REJECTED,
-          resolvedAt: now,
-          resolutionNote: parsedNote.data,
-          // The database refuses a disposal that was never acknowledged. Closing
-          // something the same hour it arrived is legitimate — stamp the
-          // acknowledgement rather than failing the close.
-          ...(report.acknowledgedAt ? {} : { acknowledgedAt: now, acknowledgedById: actorId }),
-        },
-      });
-      await recordAdminAction(
+    await db.$transaction((tx) =>
+      closeComplaintInTx(
+        tx,
         {
-          actorId,
-          action: outcome === 'RESOLVED' ? ADMIN_ACTIONS.RESOLVE_REPORT : ADMIN_ACTIONS.REJECT_REPORT,
-          targetType: 'Report',
-          targetId: report.id,
-          // REJECT_REPORT requires a reason, in the code and in the database.
-          reason: outcome === 'REJECTED' ? parsedNote.data : null,
-          metadata: {
-            shopSlug: report.shop.slug,
-            category: report.category,
-            daysAfterReceipt: Math.round((now.getTime() - report.createdAt.getTime()) / 86_400_000),
+          report: {
+            id: report.id, acknowledgedAt: report.acknowledgedAt, createdAt: report.createdAt,
+            category: report.category, shopSlug: report.shop.slug,
           },
+          outcome,
+          note: parsedNote.data,
         },
-        tx
-      );
-    });
+        { actorId }
+      )
+    );
 
     if (report.user?.email) {
       notify({
@@ -452,5 +439,174 @@ export async function getComplaint(
     };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'getComplaint' }) };
+  }
+}
+
+/* ------------------------------------------------- closing, and acting on it */
+
+const EscalationSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('NONE') }),
+  z.object({
+    type: z.literal('SUSPEND_SHOP'),
+    reason: z.string().trim().min(10, 'Say why the store is being suspended. The seller is told this.'),
+  }),
+  z.object({
+    type: z.literal('HIDE_REVIEW'),
+    reason: z.string().trim().min(10, 'Say what is wrong with the review — at least a sentence.'),
+  }),
+  z.object({
+    type: z.literal('SEND_NOTICE'),
+    kind: z.nativeEnum(NoticeKind),
+    subject: z.string().trim().min(5, 'Give the notice a subject.').max(160),
+    body: z.string().trim().min(20, 'Write something the seller can act on.').max(4000),
+    requiresResponse: z.boolean().optional(),
+    respondByDays: z.number().int().min(1).max(90).optional(),
+  }),
+]);
+
+const CloseWithActionSchema = z.object({
+  reportId: IdSchema,
+  outcome: z.enum(['RESOLVED', 'REJECTED']),
+  note: NoteSchema,
+  escalation: EscalationSchema,
+});
+
+/**
+ * Close a complaint and do something about it, in one transaction.
+ *
+ * Every action this can take already existed as its own server action. What did
+ * not exist was doing them together: a moderator deciding a review was abusive
+ * had to close the complaint here, navigate to the store, hide the review
+ * there, and hope nothing interrupted them between the two. Steps that require
+ * leaving the page are the steps that get skipped.
+ *
+ * Each act still writes its own audit row. One row saying "closed and
+ * suspended" reads well and answers nothing — it cannot separate the
+ * suspension reason from the closure note, and it breaks the per-target
+ * history that every detail page is built on. Instead the rows share a
+ * `correlationId`, so a gesture can be reassembled without being merged.
+ *
+ * Either everything commits or nothing does. A complaint recorded as closed
+ * "with the store suspended" while the store is still live is worse than a
+ * failure the moderator can see and retry.
+ */
+export async function closeComplaintWithActionAction(raw: unknown): Promise<Result> {
+  try {
+    const parsed = CloseWithActionSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { reportId, outcome, note, escalation } = parsed.data;
+
+    const { actorId } = await requireAdmin();
+
+    const report = await db.report.findUnique({
+      where: { id: reportId },
+      select: {
+        id: true, acknowledgedAt: true, createdAt: true, category: true, resolvedAt: true,
+        shopId: true, reviewId: true,
+        user: { select: { email: true } },
+        shop: { select: { name: true, slug: true, isSuspended: true } },
+        review: { select: { id: true, isHidden: true } },
+      },
+    });
+    if (!report) return { error: 'Report not found.' };
+    if (report.resolvedAt) return { error: 'This complaint is already closed.' };
+
+    // Refuse impossible combinations before opening a transaction, so the
+    // moderator gets a sentence rather than a rolled-back mystery.
+    if (escalation.type === 'HIDE_REVIEW') {
+      if (!report.review) return { error: 'This complaint is not about a review, so there is none to hide.' };
+      if (report.review.isHidden) return { error: 'That review is already hidden. Close the complaint on its own.' };
+    }
+    if (escalation.type === 'SUSPEND_SHOP' && report.shop.isSuspended) {
+      return { error: 'That store is already suspended. Close the complaint on its own.' };
+    }
+
+    // Shared by every row this gesture writes.
+    const correlationId = randomUUID();
+    const ctx = { actorId, correlationId };
+
+    const outcomes = await db.$transaction(async (tx) => {
+      let noticeId: string | null = null;
+
+      // The escalation runs first: if suspending fails, the complaint must not
+      // be recorded as closed on the strength of it.
+      if (escalation.type === 'SUSPEND_SHOP') {
+        const res = await setShopSuspendedInTx(
+          tx,
+          { shopId: report.shopId, isSuspended: true, reason: escalation.reason },
+          ctx
+        );
+        noticeId = res.noticeId;
+      } else if (escalation.type === 'HIDE_REVIEW') {
+        await hideReviewInTx(tx, { reviewId: report.review!.id, reason: escalation.reason }, ctx);
+      } else if (escalation.type === 'SEND_NOTICE') {
+        const created = await issueNotice(
+          {
+            shopId: report.shopId,
+            actorId,
+            kind: escalation.kind,
+            subject: escalation.subject,
+            body: escalation.body,
+            requiresResponse: escalation.requiresResponse ?? false,
+            respondBy:
+              escalation.requiresResponse && escalation.respondByDays
+                ? new Date(Date.now() + escalation.respondByDays * 86_400_000)
+                : null,
+          },
+          tx
+        );
+        await recordAdminAction(
+          {
+            actorId,
+            action: ADMIN_ACTIONS.SEND_NOTICE,
+            targetType: 'Shop',
+            targetId: report.shopId,
+            metadata: {
+              noticeId: created.id, kind: escalation.kind, subject: escalation.subject,
+              correlationId,
+            },
+          },
+          tx
+        );
+        noticeId = created.id;
+      }
+
+      await closeComplaintInTx(
+        tx,
+        {
+          report: {
+            id: report.id, acknowledgedAt: report.acknowledgedAt, createdAt: report.createdAt,
+            category: report.category, shopSlug: report.shop.slug,
+          },
+          outcome,
+          note,
+        },
+        ctx
+      );
+
+      return { noticeId };
+    });
+
+    // Outside the transaction: neither of these may hold it open or fail it.
+    if (outcomes.noticeId) emailNotice(outcomes.noticeId).catch(() => undefined);
+
+    if (report.user?.email) {
+      notify({
+        to: report.user.email,
+        subject: `Your report about "${report.shop.name}" is closed`,
+        text:
+          outcome === 'RESOLVED'
+            ? `Your report about the storefront "${report.shop.name}" has been reviewed and acted on.\n\nWhat happened:\n${note}`
+            : `Your report about the storefront "${report.shop.name}" has been reviewed. We did not find a breach of our policies.\n\nWhy:\n${note}\n\nIf you have more information, report it again and it will be looked at fresh.`,
+      }).catch(() => undefined);
+    }
+
+    revalidateShopSurface(report.shop.slug);
+    revalidateMarketplace();
+    revalidatePath('/admin', 'layout');
+    revalidatePath('/notices');
+    return { success: true };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'closeComplaintWithAction' }) };
   }
 }
