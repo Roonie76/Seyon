@@ -24,26 +24,14 @@
 .DS_Store
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
 next-env.d.ts
 
 /src/generated/prisma
 
 .vercel
 .env*
+!.env.example
+_to_delete/
 
 # Local database backups - never commit (contains all user data)
 backups/

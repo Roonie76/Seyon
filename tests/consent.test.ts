@@ -8,13 +8,30 @@ import { readConsent, setConsent, CONSENT_KEY } from '@/frontend/lib/consent';
  * including the ones where storage itself fails.
  */
 
+const storageMap = new Map<string, string>();
+const localStorageMock = {
+  getItem: (key: string) => storageMap.get(key) ?? null,
+  setItem: (key: string, value: string) => { storageMap.set(key, String(value)); },
+  removeItem: (key: string) => { storageMap.delete(key); },
+  clear: () => { storageMap.clear(); },
+  get length() { return storageMap.size; },
+  key: (i: number) => Array.from(storageMap.keys())[i] ?? null,
+};
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  configurable: true,
+  writable: true,
+});
+
 beforeEach(() => {
-  window.localStorage.clear();
+  storageMap.clear();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
 
 describe('analytics consent', () => {
   it('starts unset, so nothing is tracked before a choice is made', () => {

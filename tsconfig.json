@@ -70,6 +70,7 @@
     "node_modules",
     "**/node_modules",
     "buyer-market/**",
-    "seller-portal/**"
+    "seller-portal/**",
+    "_to_delete/**"
   ]
 }
