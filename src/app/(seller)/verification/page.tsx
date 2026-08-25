@@ -9,7 +9,7 @@ import { KycPanel } from '@/frontend/components/dashboard/kyc-panel';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Verification | Seyon Seller',
+  title: 'Verification — Seller Portal',
   description: 'Complete your business details so your store appears in the marketplace.',
 };
 

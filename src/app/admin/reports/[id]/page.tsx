@@ -25,7 +25,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Complaint | Seyon Admin' };
+export const metadata = { title: 'Complaint — Admin' };
 
 export default async function AdminComplaintPage({
   params,

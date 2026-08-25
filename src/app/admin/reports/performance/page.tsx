@@ -18,7 +18,7 @@ import { ACK_DEADLINE_HOURS, RESOLVE_DEADLINE_DAYS } from '@/shared/lib/complain
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Complaint performance | Seyon Admin' };
+export const metadata = { title: 'Complaint performance — Admin' };
 
 const RANGES = [3, 6, 12] as const;
 

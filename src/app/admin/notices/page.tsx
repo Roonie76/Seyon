@@ -17,7 +17,7 @@ import { ResendNoticeButton } from '@/frontend/components/admin/resend-notice';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Notices | Seyon Admin' };
+export const metadata = { title: 'Notices — Admin' };
 
 const FILTERS = [
   { key: 'all', label: 'All' },

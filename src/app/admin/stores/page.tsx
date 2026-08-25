@@ -6,7 +6,7 @@ import { searchStores } from '@/backend/actions/admin-stores';
 // Reads the session and query params; never prerenderable.
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Stores | Seyon Admin' };
+export const metadata = { title: 'Stores — Admin' };
 
 const STATUSES = ['all', 'listed', 'unlisted', 'suspended', 'verified', 'unverified'] as const;
 

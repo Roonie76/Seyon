@@ -11,7 +11,7 @@ import { UnderReviewControl, StoreNotices } from '@/frontend/components/admin/st
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Store | Seyon Admin' };
+export const metadata = { title: 'Store — Admin' };
 
 export default async function AdminStoreDetailPage({
   params,

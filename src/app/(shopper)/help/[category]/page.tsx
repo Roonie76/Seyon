@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: CategoryPageProps) {
   };
 
   return {
-    title: `${categoryLabels[category]} | Seyon Help Center`,
+    title: `${categoryLabels[category]} — Help Center`,
     description: `Read articles and guides for ${categoryLabels[category]} on Seyon.`,
   };
 }

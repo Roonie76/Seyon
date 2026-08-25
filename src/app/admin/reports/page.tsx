@@ -8,7 +8,7 @@ import { ReportCategory, ReportTarget } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Complaints | Seyon Admin' };
+export const metadata = { title: 'Complaints — Admin' };
 
 const FILTERS = ['open', 'overdue', 'acknowledged', 'closed', 'all'] as const;
 

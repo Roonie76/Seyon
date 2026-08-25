@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: ArticlePageProps) {
   }
 
   return {
-    title: `${article.title} | Seyon Help Center`,
+    title: `${article.title} — Help Center`,
     description: article.content.substring(0, 155) + '...',
   };
 }

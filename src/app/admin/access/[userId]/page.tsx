@@ -17,7 +17,7 @@ import { RoleControl } from '@/frontend/components/admin/role-control';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Account | Seyon Admin' };
+export const metadata = { title: 'Account — Admin' };
 
 export default async function AdminAccountPage({
   params,

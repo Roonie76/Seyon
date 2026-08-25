@@ -11,7 +11,7 @@ import { KycStatus } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Identity review | Seyon Admin',
+  title: 'Identity review — Admin',
 };
 
 export default async function AdminKycPage() {

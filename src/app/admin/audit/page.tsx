@@ -16,7 +16,7 @@ import { ADMIN_ACTIONS } from '@/backend/lib/admin-audit';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Audit log | Seyon Admin' };
+export const metadata = { title: 'Audit log — Admin' };
 
 const TARGET_TYPES = ['Shop', 'Product', 'User', 'Report', 'SellerKyc', 'Review', 'Notice'] as const;
 

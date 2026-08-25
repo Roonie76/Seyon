@@ -4,14 +4,27 @@ import { join } from 'path';
 
 /**
  * The root layout sets `template: "%s | Seyon"`, so Next appends the brand to
- * every page title by itself. A page that also ends its own title with
- * "| Seyon" therefore ships "Privacy Policy | Seyon | Seyon" -- which is what
- * a visitor sees in their browser tab and what a search result shows.
+ * every page title by itself. A page whose own title already ends in a brand
+ * segment therefore ships it twice -- "Privacy Policy | Seyon | Seyon", or
+ * "Complaints | Seyon Admin | Seyon" -- which is what a visitor sees in their
+ * browser tab and what a search result shows.
  *
  * Caught by sweeping the live site rather than by reading the code, because
  * both halves are correct on their own; the duplication only exists once
  * Next composes them.
+ *
+ * The first version of this test matched only titles ending in exactly
+ * "| Seyon", so it passed while eleven admin and seller pages still shipped
+ * "| Seyon Admin | Seyon". The rule is not "ends with the brand" but "the last
+ * segment is a brand segment", which is what the pattern below says.
+ *
+ * A title that merely mentions Seyon in prose -- "Seyon Blog — Luxury Stories"
+ * -- is left alone. It has no trailing brand segment, so the template adds the
+ * only one there is.
  */
+
+/** A final "| Seyon…" segment: the thing the template is about to add again. */
+const TRAILING_BRAND = /\|\s*Seyon\b[^|]*$/;
 
 const APP = join(__dirname, '..', 'src', 'app');
 
@@ -70,7 +83,7 @@ describe('page titles', () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it('no page title ends with the brand the layout template already appends', () => {
+  it('no page title ends in a brand segment the layout template already appends', () => {
     const offenders: string[] = [];
 
     for (const file of files) {
@@ -79,7 +92,7 @@ describe('page titles', () => {
       if (file.endsWith(join('src', 'app', 'layout.tsx'))) continue;
 
       for (const title of titlesIn(readFileSync(file, 'utf8'))) {
-        if (/\|\s*Seyon\s*$/.test(title)) {
+        if (TRAILING_BRAND.test(title)) {
           offenders.push(`${file.slice(file.indexOf('src'))}: "${title}"`);
         }
       }

@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Access | Seyon Admin' };
+export const metadata = { title: 'Access — Admin' };
 
 export default async function AdminAccessPage({
   searchParams,
