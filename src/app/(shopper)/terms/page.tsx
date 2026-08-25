@@ -11,7 +11,7 @@ import { PrivacyContactCard } from '../privacy/_components/privacy-contact-card'
 import { GrievanceOfficerBlock } from '@/frontend/components/shared/grievance-officer-block';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | Seyon',
+  title: 'Terms of Service',
   description: 'These Terms explain the rules for using Seyon. By creating an account or using Seyon, you agree to these Terms.',
 };
 

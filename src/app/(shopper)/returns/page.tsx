@@ -30,7 +30,7 @@ import {
  */
 
 export const metadata: Metadata = {
-  title: 'Returns, Refunds & Cancellations | Seyon',
+  title: 'Returns, Refunds & Cancellations',
   description:
     'How returns, refunds and cancellations work on Seyon: terms are set by each seller, payment happens directly between buyer and seller, and Seyon acts on complaints about sellers who do not honour them.',
 };

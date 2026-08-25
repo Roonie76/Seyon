@@ -7,7 +7,7 @@ import { NoticeInbox } from '@/frontend/components/dashboard/notice-inbox';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Notices | Seyon',
+  title: 'Notices',
   robots: { index: false, follow: false },
 };
 

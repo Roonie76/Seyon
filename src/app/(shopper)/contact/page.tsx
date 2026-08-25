@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { ContactClient } from '@/components/help/ContactClient';
 
 export const metadata: Metadata = {
-  title: 'Contact Us | Seyon',
+  title: 'Contact Us',
   description: 'Get in touch with the Seyon support team. Reach out to us via email — we typically respond within 24 hours.',
 };
 

@@ -19,3 +19,36 @@ if (!explicit && process.env.NODE_ENV === 'production') {
 }
 
 export const SITE_URL: string = (explicit || 'http://localhost:3000').replace(/\/$/, '');
+
+/**
+ * Origin the admin screens actually live on.
+ *
+ * `/admin` is a seller-host route: on the shopper host, middleware sends it
+ * to the homepage. So a link built from SITE_URL is wrong whenever the code
+ * runs on the shopper deployment — and it does, because the same repository
+ * is deployed as two Vercel projects and `vercel.json` registers the nightly
+ * cron on both of them. The admin who followed last night's digest link
+ * landed on the marketplace.
+ *
+ * Derived from SELLER_HOSTS so it is correct from either deployment. Falls
+ * back to SITE_URL when that is unset, which is right in development (one
+ * host serves everything) and merely no worse than before in production.
+ */
+export function adminOriginFrom(sellerHosts: string | undefined, siteUrl: string): string {
+  const first = (sellerHosts || '')
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean)[0];
+
+  if (!first) return siteUrl;
+
+  // A host with a scheme already on it is taken as given; SELLER_HOSTS is
+  // documented as bare hostnames, but a value copied from a browser bar
+  // should not produce "https://https://…".
+  if (/^https?:\/\//i.test(first)) return first.replace(/\/$/, '');
+
+  const local = /^(localhost|127\.0\.0\.1)(:|$)/.test(first);
+  return `${local ? 'http' : 'https'}://${first}`;
+}
+
+export const ADMIN_URL: string = adminOriginFrom(process.env.SELLER_HOSTS, SITE_URL);

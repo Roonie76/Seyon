@@ -4,7 +4,7 @@ import { ProfileEditor } from '@/components/shared/profile-editor';
 import { AccountDataControls } from '@/frontend/components/shared/account-data-controls';
 
 export const metadata = {
-  title: 'My Account | Seyon',
+  title: 'My Account',
   description: 'Manage your profile, update your name, phone number, and profile picture on Seyon.',
 };
 

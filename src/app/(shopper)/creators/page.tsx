@@ -10,7 +10,7 @@ import { getCreatorPresentation } from '@/lib/demo';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Meet All Creators | Seyon',
+  title: 'Meet All Creators',
   description: 'Discover independent designers, artists, and creators from all over India on Seyon.',
 };
 

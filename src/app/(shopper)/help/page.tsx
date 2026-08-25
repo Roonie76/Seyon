@@ -7,7 +7,7 @@ import { helpArticles } from '@/shared/data/help';
 import { HelpSearch } from '@/components/help/HelpSearch';
 
 export const metadata = {
-  title: 'Help Center | Seyon',
+  title: 'Help Center',
   description: 'Learn how Seyon operates, discovery rules, buyer/seller responsibilities, and WhatsApp ordering mechanics.',
 };
 

@@ -7,7 +7,8 @@ import { recordAdminActionSafe, ADMIN_ACTIONS } from './admin-audit';
 import { systemActorId } from './system-actor';
 import { ACK_DEADLINE_HOURS, RESOLVE_DEADLINE_DAYS } from '@/shared/lib/complaints';
 import { Role } from '@prisma/client';
-import { SITE_URL } from '@/shared/lib/site';
+import { ADMIN_URL } from '@/shared/lib/site';
+import { isUniqueViolation } from './action-errors';
 
 /**
  * The work that happens without anybody asking.
@@ -40,6 +41,49 @@ export interface JobResult {
   name: string;
   did: number;
   detail?: string;
+}
+
+/**
+ * Claim one job for one day, across every instance and every deployment.
+ *
+ * `vercel.json` ships with the repository and both Vercel projects deploy it,
+ * so the nightly schedule is registered twice and the daily route is invoked
+ * twice. Vercel can also retry a single schedule. For the sweeps that does not
+ * matter -- they are written as "find what still needs doing" and a second run
+ * finds nothing. For the two jobs that send email it matters a great deal: the
+ * admins get the same digest twice and a seller gets chased twice for the same
+ * unanswered notice.
+ *
+ * The claim is an insert against a primary key, so the database decides the
+ * winner rather than the two invocations racing. `RateLimitCounter` is reused
+ * rather than adding a table: a daily claim is exactly a rate limit of one per
+ * day, the row expires on its own, and a migration for this would have to be
+ * applied to a production database for a lock.
+ *
+ * A failure that is not a collision is rethrown. Treating a database outage as
+ * "already ran" would silently skip the job every night and look like success.
+ */
+export async function claimOncePerDay(job: string, now = new Date()): Promise<boolean> {
+  const day = now.toISOString().slice(0, 10);
+
+  try {
+    await db.rateLimitCounter.create({
+      data: {
+        key: `cron:${job}:${day}`,
+        count: 1,
+        // Kept a few days so the row is still there for a late retry, and
+        // swept by whatever already prunes expired counters.
+        expiresAt: new Date(now.getTime() + 3 * 86_400_000),
+      },
+    });
+    return true;
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      logger.info('Scheduled job already claimed for today', { job, day });
+      return false;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -123,6 +167,14 @@ export async function chaseOverdueNotices(now = new Date()): Promise<JobResult> 
     take: 200,
   });
 
+  // Nothing to chase costs no claim, so a later invocation on a day that does
+  // have work can still send.
+  if (overdue.length === 0) return { name: 'notice-chase', did: 0 };
+
+  if (!(await claimOncePerDay('notice-chase', now))) {
+    return { name: 'notice-chase', did: 0, detail: 'already chased today' };
+  }
+
   for (const n of overdue) {
     await emailNotice(n.id);
   }
@@ -159,12 +211,16 @@ export async function sendSlaDigest(now = new Date()): Promise<JobResult> {
   // Nothing to say is worth saying nothing about.
   if (total === 0) return { name: 'sla-digest', did: 0 };
 
+  if (!(await claimOncePerDay('sla-digest', now))) {
+    return { name: 'sla-digest', did: 0, detail: 'digest already sent today' };
+  }
+
   const admins = await db.user.findMany({
     where: { role: Role.ADMIN, email: { not: null } },
     select: { email: true },
   });
 
-  const site = SITE_URL;
+  const site = ADMIN_URL;
   const text =
     'Complaints needing attention on Seyon:\n\n' +
     `${overdueAck} past the ${ACK_DEADLINE_HOURS}-hour acknowledgement deadline\n` +

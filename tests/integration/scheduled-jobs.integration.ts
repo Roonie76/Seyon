@@ -3,6 +3,8 @@ import { testDb, closeDatabase } from './setup';
 import {
   sweepAbandonedKycDocuments,
   chaseOverdueNotices,
+  sendSlaDigest,
+  claimOncePerDay,
   KYC_DOCUMENT_MAX_AGE_DAYS,
   NOTICE_CHASE_GRACE_DAYS,
 } from '@/backend/lib/scheduled-jobs';
@@ -42,6 +44,9 @@ beforeAll(async () => {
 
 async function cleanup() {
   _resetSystemActorCache();
+  // The once-a-day claims. Without this every test after the first would find
+  // the day already taken and see a job that correctly did nothing.
+  await testDb.rateLimitCounter.deleteMany({ where: { key: { startsWith: 'cron:' } } });
   await testDb.adminAction.deleteMany({
     where: { actor: { email: { in: [SYSTEM_ACTOR_EMAIL] } } },
   });
@@ -220,5 +225,150 @@ describe('the system actor', () => {
     // requireAdmin would refuse it, so nothing can act as an admin through it
     // even if a sign-in were somehow possible.
     expect(user.role).toBe('USER');
+  });
+});
+
+describe('the once-a-day claim', () => {
+  /**
+   * `vercel.json` ships in the repository and both Vercel projects deploy it,
+   * so the nightly schedule is registered twice and the route is invoked
+   * twice. The sweeps do not care. The two jobs that send email do: without
+   * this, every admin gets the digest twice and every unanswered notice is
+   * chased twice.
+   */
+
+  it('is granted once and refused after that', async () => {
+    expect(await claimOncePerDay('demo')).toBe(true);
+    expect(await claimOncePerDay('demo')).toBe(false);
+    expect(await claimOncePerDay('demo')).toBe(false);
+  });
+
+  it('is per job, so one job does not consume another job\'s day', async () => {
+    expect(await claimOncePerDay('demo-a')).toBe(true);
+    expect(await claimOncePerDay('demo-b')).toBe(true);
+  });
+
+  it('is per day, so tomorrow is a fresh claim', async () => {
+    const today = new Date('2026-08-25T19:30:00Z');
+    const tomorrow = new Date('2026-08-26T19:30:00Z');
+
+    expect(await claimOncePerDay('demo', today)).toBe(true);
+    expect(await claimOncePerDay('demo', today)).toBe(false);
+    expect(await claimOncePerDay('demo', tomorrow)).toBe(true);
+  });
+
+  it('holds across the UTC day, not the local one', async () => {
+    // The cron runs at 19:30 UTC, which is the small hours in IST. Two
+    // invocations either side of local midnight are the same UTC day and must
+    // not both send.
+    const before = new Date('2026-08-25T18:00:00Z');
+    const after = new Date('2026-08-25T23:59:00Z');
+
+    expect(await claimOncePerDay('demo', before)).toBe(true);
+    expect(await claimOncePerDay('demo', after)).toBe(false);
+  });
+
+  it('only the winner emails when two invocations chase the same notice', async () => {
+    const { notify } = await import('@/backend/lib/notify');
+
+    await testDb.notice.create({
+      data: {
+        shopId,
+        actorId: adminId,
+        kind: 'INFORMATION_REQUEST',
+        subject: 'Second request for the dispatch proof',
+        body: 'We asked a week ago and have not heard back.',
+        requiresResponse: true,
+        respondBy: new Date(Date.now() - (NOTICE_CHASE_GRACE_DAYS + 1) * DAY),
+      },
+    });
+
+    expect((await chaseOverdueNotices()).did).toBe(1);
+    const afterFirst = vi.mocked(notify).mock.calls.length;
+    expect(afterFirst).toBeGreaterThan(0);
+
+    const second = await chaseOverdueNotices();
+    expect(second.did).toBe(0);
+    expect(second.detail).toBe('already chased today');
+    // The point of the whole thing: no second email.
+    expect(vi.mocked(notify).mock.calls.length).toBe(afterFirst);
+  });
+
+  it('sends the complaint digest once, however many times the cron fires', async () => {
+    const { notify } = await import('@/backend/lib/notify');
+
+    const reporter = await testDb.user.create({
+      data: { email: `${PREFIX}reporter@example.com`, name: 'Sched Reporter' },
+    });
+    await testDb.report.create({
+      data: {
+        shopId,
+        userId: reporter.id,
+        category: 'COUNTERFEIT',
+        reason: 'The listing photographs are lifted from another shop entirely.',
+        // Old enough to be past the acknowledgement deadline.
+        createdAt: new Date(Date.now() - 7 * DAY),
+      },
+    });
+
+    const first = await sendSlaDigest();
+    expect(first.did).toBeGreaterThan(0);
+    const afterFirst = vi.mocked(notify).mock.calls.length;
+    expect(afterFirst).toBeGreaterThan(0);
+
+    const second = await sendSlaDigest();
+    expect(second.did).toBe(0);
+    expect(second.detail).toBe('digest already sent today');
+    expect(vi.mocked(notify).mock.calls.length).toBe(afterFirst);
+  });
+
+  it('does not spend the day on a night with nothing to report', async () => {
+    // No complaints exist, so the digest sends nothing and takes no claim --
+    // otherwise a quiet 19:30 would silence a busy 23:00 retry.
+    expect((await sendSlaDigest()).did).toBe(0);
+
+    const claims = await testDb.rateLimitCounter.count({
+      where: { key: { startsWith: 'cron:sla-digest:' } },
+    });
+    expect(claims).toBe(0);
+  });
+
+  it('points the admin at the host the admin screens are actually on', async () => {
+    // Configured here rather than read from the ambient environment, because
+    // with SELLER_HOSTS unset ADMIN_URL and SITE_URL are the same string and
+    // the assertion would pass against the very bug it exists to catch.
+    vi.stubEnv('SELLER_HOSTS', 'admin.example.test');
+    vi.resetModules();
+
+    const { sendSlaDigest: freshDigest } = await import('@/backend/lib/scheduled-jobs');
+    const { notify: freshNotify } = await import('@/backend/lib/notify');
+
+    const reporter = await testDb.user.create({
+      data: { email: `${PREFIX}reporter2@example.com`, name: 'Sched Reporter Two' },
+    });
+    await testDb.report.create({
+      data: {
+        shopId,
+        userId: reporter.id,
+        category: 'PROHIBITED_ITEM',
+        reason: 'This store is listing prescription medicines under home remedies.',
+        createdAt: new Date(Date.now() - 7 * DAY),
+      },
+    });
+
+    await freshDigest();
+
+    const body = vi
+      .mocked(freshNotify)
+      .mock.calls.map((c) => c[0].text)
+      .join('\n');
+
+    // The seller host, where /admin is served.
+    expect(body).toContain('https://admin.example.test/admin/reports');
+    // Not the shopper host, where /admin redirects to the marketplace.
+    expect(body).not.toContain('http://localhost:3000/admin/reports');
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 });

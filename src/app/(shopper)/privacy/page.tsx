@@ -12,7 +12,7 @@ import { GrievanceOfficerBlock } from '@/frontend/components/shared/grievance-of
 import { ConsentPreference } from '@/frontend/components/shared/consent-preference';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Seyon',
+  title: 'Privacy Policy',
   description:
     'Learn how Seyon collects, uses, and protects your information when discovering and shopping from creator storefronts.',
 };
