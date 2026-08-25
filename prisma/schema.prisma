@@ -35,6 +35,13 @@ enum ReportStatus {
 /// after them, because it cannot be counted, filtered or escalated. A category
 /// turns "this store has had four counterfeit reports this month" into a query
 /// rather than a reading exercise.
+/// What a complaint is about. One Report model covers both, because the
+/// acknowledgement and disposal deadlines are the same either way.
+enum ReportTarget {
+  SHOP
+  REVIEW
+}
+
 enum ReportCategory {
   COUNTERFEIT
   PROHIBITED_ITEM
@@ -95,10 +102,10 @@ model User {
 
   // Moderation trails. All SetNull or Restrict rather than Cascade: deleting an
   // admin account must never quietly erase the record of what they decided.
-  hiddenReviews       Review[] @relation("ReviewModerator")
-  acknowledgedReports Report[] @relation("ReportAcknowledger")
-  noticesSent         Notice[] @relation("NoticeAuthor")
-  shopsPlacedUnderReview Shop[] @relation("ShopUnderReviewBy")
+  hiddenReviews          Review[] @relation("ReviewModerator")
+  acknowledgedReports    Report[] @relation("ReportAcknowledger")
+  noticesSent            Notice[] @relation("NoticeAuthor")
+  shopsPlacedUnderReview Shop[]   @relation("ShopUnderReviewBy")
 }
 
 model Account {
@@ -276,9 +283,10 @@ model Review {
   hiddenReason String?
   hiddenById   String?
 
-  shop     Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  hiddenBy User? @relation("ReviewModerator", fields: [hiddenById], references: [id], onDelete: SetNull)
+  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hiddenBy User?    @relation("ReviewModerator", fields: [hiddenById], references: [id], onDelete: SetNull)
+  reports  Report[]
 
   @@unique([shopId, userId])
   @@index([shopId, createdAt])
@@ -287,9 +295,18 @@ model Review {
 }
 
 model Report {
-  id        String         @id @default(cuid())
-  shopId    String
-  userId    String
+  id     String @id @default(cuid())
+  /// Always set: a review report is still a complaint about that shop, so the
+  /// store's queue and the "how many open against this store" count include it
+  /// without a second query.
+  shopId String
+  userId String
+
+  /// What the complaint is about. `reviewId` is set if and only if this is
+  /// REVIEW — enforced by a CHECK, not only by the action.
+  targetType ReportTarget @default(SHOP)
+  reviewId   String?
+
   category  ReportCategory @default(OTHER)
   reason    String
   status    ReportStatus   @default(OPEN)
@@ -308,13 +325,17 @@ model Report {
   /// What was actually done, or why nothing was. Shown to the reporter.
   resolutionNote   String?
 
-  shop           Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user           User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  acknowledgedBy User? @relation("ReportAcknowledger", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  shop           Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  review         Review? @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  acknowledgedBy User?   @relation("ReportAcknowledger", fields: [acknowledgedById], references: [id], onDelete: SetNull)
 
+  @@unique([reviewId, userId], name: "Report_one_per_user_per_review")
   @@index([status, createdAt])
   @@index([shopId, status])
   @@index([category, createdAt])
+  @@index([targetType, status, createdAt])
+  @@index([reviewId])
   /// Drives the "overdue for acknowledgement" queue.
   @@index([acknowledgedAt, createdAt])
 }

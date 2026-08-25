@@ -313,6 +313,79 @@ test('a notice sent by an admin reaches the seller and is marked read', async ()
   await expect(seen.getByTestId('store-notice-response')).toContainText('Invoices attached');
 });
 
+/* ------------------------------------------------- reporting a review */
+
+/**
+ * The gap this closes: `Report` could only be about a shop, so a defamatory
+ * review was only ever dealt with if an admin happened to read it. This walks
+ * the whole path — a buyer reports it, it appears in the moderation queue as a
+ * review complaint, a moderator hides it, and the storefront stops showing it.
+ *
+ * Three sessions and three layers, which is exactly where a `where` clause gets
+ * forgotten.
+ */
+test('a buyer reports a review, and a moderator can act on it', async ({ browser }) => {
+  // A buyer who did not write the review — you cannot report your own.
+  const buyerCtx = await browser.newContext();
+  // The dev notice is a full-screen modal that swallows the first click on any
+  // page. Existing storefront tests only read text, so they never hit it; this
+  // is the first test that clicks something there.
+  await buyerCtx.addInitScript(() => {
+    try { localStorage.setItem('seyon_dev_notice_seen', 'true'); } catch { /* private mode */ }
+  });
+  const buyer = await buyerCtx.newPage();
+  await login(buyer, 'adminbuyer1@example.com');
+
+  await ready(buyer, `${BASE}/store/${SHOP_SLUG}`);
+  await expect(buyer.getByText('This seller is a fraud')).toBeVisible({ timeout: 20000 });
+
+  // The one-star review is the third; report the review that is not this
+  // buyer's own by finding the control beside that text.
+  const card = buyer.locator('div', { hasText: 'This seller is a fraud' }).last();
+  await card.getByTestId('report-review-open').click();
+  await buyer.getByTestId('report-review-category').selectOption('OFFENSIVE_CONTENT');
+  await buyer.getByTestId('report-review-reason').fill('Calls the seller a fraud with no order behind it.');
+  await buyer.getByTestId('report-review-submit').click();
+  await expect(buyer.getByTestId('report-review-done')).toBeVisible({ timeout: 20000 });
+
+  await buyerCtx.close();
+
+  // It arrives in the queue, marked as being about a review rather than the store.
+  await ready(page, `${BASE}/admin/reports?status=all&target=REVIEW`);
+  await expect(page.getByTestId('review-target-badge').first()).toBeVisible({ timeout: 20000 });
+  await expect(page.getByTestId('complaint-row')).toHaveCount(1);
+
+  // The detail page shows the review itself, not only the complaint about it.
+  await page.getByTestId('complaint-open').first().click();
+  await page.waitForURL(/\/admin\/reports\/[a-z0-9]+/, { timeout: 20000 });
+  await page.waitForLoadState('load');
+  await expect(page.getByTestId('complaint-target-type')).toHaveText('About a review');
+  await expect(page.getByTestId('complaint-review-comment')).toContainText('fraud');
+  await expect(page.getByTestId('complaint-review-visible')).toBeVisible();
+
+  // Hide it from here, with the moderator's own wording.
+  await page.getByTestId('complaint-hide-review-open').click();
+  await page.getByTestId('complaint-hide-review-reason').fill('Unfounded accusation of fraud; no order exists.');
+  await page.getByTestId('complaint-hide-review-confirm').click();
+  await expect(page.getByTestId('complaint-review-hidden')).toBeVisible({ timeout: 20000 });
+
+  // The storefront stops showing it.
+  await ready(page, `${BASE}/store/${SHOP_SLUG}`);
+  await expect(page.getByText('This seller is a fraud')).toHaveCount(0);
+
+  // Hiding does not close the complaint: the reporter still has to be told.
+  await ready(page, `${BASE}/admin/reports?status=open&target=REVIEW`);
+  await expect(page.getByTestId('complaint-row')).toHaveCount(1);
+});
+
+test('the store filter and the review filter separate the two kinds', async () => {
+  await ready(page, `${BASE}/admin/reports?status=all&target=SHOP`);
+  await expect(page.getByTestId('complaint-row').first()).toBeVisible({ timeout: 20000 });
+  // The seeded store complaints are about the store, so none of them carry the
+  // review badge.
+  await expect(page.getByTestId('review-target-badge')).toHaveCount(0);
+});
+
 /* ----------------------------------------------------------- access control */
 
 test('an admin cannot remove their own admin access', async () => {

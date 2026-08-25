@@ -151,6 +151,12 @@ export const ReportSchema = z.object({
    */
   category: z.nativeEnum(ReportCategory).default(ReportCategory.OTHER),
   reason: TrimmedText(5, 1000, 'Reason'),
+  /**
+   * Which review is being complained about, when the complaint is about one.
+   * Absent means the complaint is about the store, which is what the existing
+   * store-page form sends — so it keeps working untouched.
+   */
+  reviewId: z.string().cuid('Invalid review reference').optional(),
 });
 
 export const ReorderImageItemSchema = z.object({

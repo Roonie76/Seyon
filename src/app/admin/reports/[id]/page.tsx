@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getComplaint } from '@/backend/actions/complaints';
 import { ComplaintActions } from '@/frontend/components/admin/complaint-actions';
+import { ComplaintReviewTargetCard } from '@/frontend/components/admin/complaint-review-target';
 import {
   REPORT_CATEGORY_LABELS,
   ACK_DEADLINE_HOURS,
@@ -59,6 +60,9 @@ export default async function AdminComplaintPage({
             </h1>
             <p className="mt-1 text-sm text-zinc-600">
               Received {c.createdAt.toLocaleString('en-IN')} · {c.status}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-zinc-700" data-testid="complaint-target-type">
+              {c.targetType === 'REVIEW' ? 'About a review' : 'About the store'}
             </p>
           </div>
           <Link href="/admin/reports" className="text-xs font-bold text-[#A77F3A] hover:underline">
@@ -122,6 +126,10 @@ export default async function AdminComplaintPage({
             </p>
           ) : null}
         </div>
+
+        {c.review ? (
+          <ComplaintReviewTargetCard review={c.review} suggestedReason={c.reason} />
+        ) : null}
 
         <div className="rounded-xl border border-zinc-200 p-4">
           <h2 className="mb-2 text-sm font-bold text-zinc-950">Store</h2>

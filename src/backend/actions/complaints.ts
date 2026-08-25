@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { Prisma, ReportCategory, ReportStatus } from '@prisma/client';
+import { Prisma, ReportCategory, ReportStatus, ReportTarget } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '../lib/require-admin';
 import { recordAdminAction, ADMIN_ACTIONS, auditTrailFor, type AuditEntry } from '../lib/admin-audit';
@@ -29,13 +29,27 @@ const IdSchema = z.string().cuid('Invalid identifier');
 const QueueSchema = z.object({
   status: z.enum(['open', 'acknowledged', 'overdue', 'closed', 'all']).optional(),
   category: z.nativeEnum(ReportCategory).optional(),
+  /** Complaints about the store itself, or about one of its reviews. */
+  target: z.nativeEnum(ReportTarget).optional(),
   page: z.string().optional(),
 });
 
 type Result = { success: true; error?: undefined } | { success?: undefined; error: string };
 
+/** The review a complaint is about, when it is about one. */
+export interface ComplaintReviewTarget {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  isHidden: boolean;
+  authorName: string | null;
+}
+
 export interface ComplaintRow {
   id: string;
+  targetType: ReportTarget;
+  review: ComplaintReviewTarget | null;
   category: ReportCategory;
   reason: string;
   status: ReportStatus;
@@ -73,7 +87,7 @@ export async function getComplaintQueue(
 
     const parsed = QueueSchema.safeParse(raw ?? {});
     if (!parsed.success) return { error: 'Invalid filter.' };
-    const { status = 'open', category } = parsed.data;
+    const { status = 'open', category, target } = parsed.data;
     const page = parsePage(parsed.data.page);
 
     const now = new Date();
@@ -81,6 +95,7 @@ export async function getComplaintQueue(
 
     const filters: Prisma.ReportWhereInput[] = [];
     if (category) filters.push({ category });
+    if (target) filters.push({ targetType: target });
 
     switch (status) {
       case 'open':
@@ -116,6 +131,12 @@ export async function getComplaintQueue(
           user: { select: { name: true, email: true } },
           acknowledgedBy: { select: { name: true } },
           shop: { select: { id: true, name: true, slug: true, isSuspended: true, isUnderReview: true } },
+          review: {
+            select: {
+              id: true, rating: true, comment: true, createdAt: true, isHidden: true,
+              user: { select: { name: true } },
+            },
+          },
         },
       }),
       db.report.count({ where: { status: { in: [ReportStatus.OPEN, ReportStatus.UNDER_REVIEW] } } }),
@@ -143,6 +164,17 @@ export async function getComplaintQueue(
       data: {
         rows: rows.map((r) => ({
           id: r.id,
+          targetType: r.targetType,
+          review: r.review
+            ? {
+                id: r.review.id,
+                rating: r.review.rating,
+                comment: r.review.comment,
+                createdAt: r.review.createdAt,
+                isHidden: r.review.isHidden,
+                authorName: r.review.user?.name ?? null,
+              }
+            : null,
           category: r.category,
           reason: r.reason,
           status: r.status,
@@ -357,6 +389,12 @@ export async function getComplaint(
         user: { select: { name: true, email: true } },
         acknowledgedBy: { select: { name: true } },
         shop: { select: { id: true, name: true, slug: true, isSuspended: true, isUnderReview: true } },
+        review: {
+          select: {
+            id: true, rating: true, comment: true, createdAt: true, isHidden: true,
+            user: { select: { name: true } },
+          },
+        },
       },
     });
     if (!r) return { error: 'Report not found.' };
@@ -379,6 +417,17 @@ export async function getComplaint(
     return {
       data: {
         id: r.id,
+        targetType: r.targetType,
+        review: r.review
+          ? {
+              id: r.review.id,
+              rating: r.review.rating,
+              comment: r.review.comment,
+              createdAt: r.review.createdAt,
+              isHidden: r.review.isHidden,
+              authorName: r.review.user?.name ?? null,
+            }
+          : null,
         category: r.category,
         reason: r.reason,
         status: r.status,

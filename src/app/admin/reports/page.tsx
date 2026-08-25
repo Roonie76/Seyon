@@ -4,7 +4,7 @@ import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getComplaintQueue } from '@/backend/actions/complaints';
 import { ComplaintActions } from '@/frontend/components/admin/complaint-actions';
 import { REPORT_CATEGORY_LABELS, ACK_DEADLINE_HOURS, RESOLVE_DEADLINE_DAYS } from '@/shared/lib/complaints';
-import { ReportCategory } from '@prisma/client';
+import { ReportCategory, ReportTarget } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +15,17 @@ const FILTERS = ['open', 'overdue', 'acknowledged', 'closed', 'all'] as const;
 export default async function AdminComplaintsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; category?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; category?: string; target?: string; page?: string }>;
 }) {
   if (!(await isCurrentUserAdmin())) redirect('/');
 
   const sp = await searchParams;
-  const res = await getComplaintQueue({ status: sp.status, category: sp.category, page: sp.page });
+  const res = await getComplaintQueue({
+    status: sp.status,
+    category: sp.category,
+    target: sp.target,
+    page: sp.page,
+  });
 
   if ('error' in res) {
     return (
@@ -86,6 +91,17 @@ export default async function AdminComplaintsPage({
               <option key={c} value={c}>{REPORT_CATEGORY_LABELS[c]}</option>
             ))}
           </select>
+          <select
+            name="target"
+            defaultValue={sp.target ?? ''}
+            data-testid="complaint-target-filter"
+            className="rounded-lg border border-zinc-300 px-3 py-2 text-xs"
+          >
+            <option value="">Store and reviews</option>
+            {Object.values(ReportTarget).map((t) => (
+              <option key={t} value={t}>{t === 'REVIEW' ? 'About a review' : 'About the store'}</option>
+            ))}
+          </select>
           <button type="submit" data-testid="complaint-filter-submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-bold text-white">
             Apply
           </button>
@@ -118,6 +134,11 @@ export default async function AdminComplaintsPage({
                         </span>
                       ) : null}
                       <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700">{r.status}</span>
+                      {r.targetType === 'REVIEW' ? (
+                        <span data-testid="review-target-badge" className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-800">
+                          about a review{r.review?.isHidden ? ' · hidden' : ''}
+                        </span>
+                      ) : null}
                       {r.siblingOpenCount > 1 ? (
                         <span data-testid="pattern-badge" className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-800">
                           {r.siblingOpenCount} open against this store

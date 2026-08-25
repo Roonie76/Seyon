@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import RatingsStars from '@/components/shared/ratings-stars';
 import TrustBadge from '@/components/shared/trust-badge';
 import { WhatsAppButton, ReviewModal, ReportModal } from '@/components/store/store-client-buttons';
+import { ReportReviewButton } from '@/frontend/components/store/report-review-button';
 import { Send, ShieldCheck, ShoppingBag, ShieldAlert, Star, MapPin, PauseCircle } from 'lucide-react';
 import { ShareButton } from '@/components/shared/share-button';
 import { logger } from '@/backend/lib/logger';
@@ -326,6 +327,11 @@ export default async function StorePage({ params }: StorePageProps) {
                       <span className="text-[10px] text-muted-foreground/60 block mt-2 text-right">
                         {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
+                      <ReportReviewButton
+                        shopId={shop.id}
+                        reviewId={rev.id}
+                        authorName={rev.user.name || 'this buyer'}
+                      />
                     </div>
                   ))}
                 </div>
