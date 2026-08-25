@@ -4,7 +4,7 @@ import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { getStoreDetail } from '@/backend/actions/admin-stores';
 import { getShopReviewsForModeration } from '@/backend/actions/moderation';
 import { getShopNotices } from '@/backend/actions/notices';
-import { StoreActions, DeleteProductButton } from '@/frontend/components/admin/store-actions';
+import { StoreActions, DeleteProductButton, DeleteStoreButton } from '@/frontend/components/admin/store-actions';
 import { ReviewModeration } from '@/frontend/components/admin/review-moderation';
 import { UnderReviewControl, StoreNotices } from '@/frontend/components/admin/store-notices';
 
@@ -154,6 +154,13 @@ export default async function AdminStoreDetailPage({
             </ul>
           )}
         </div>
+        <DeleteStoreButton
+          shopId={s.id}
+          slug={s.slug}
+          name={s.name}
+          productCount={s.productCount}
+        />
+
       </div>
     </section>
   );

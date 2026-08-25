@@ -170,3 +170,65 @@ test('a non-admin reaches none of the three', async ({ browser }) => {
 
   await ctx.close();
 });
+
+/* ------------------------------------------------------------ store removal */
+
+/**
+ * Removing a store is the one admin action with no undo, so both gates are
+ * asserted separately: a reason alone must not be enough, and the right slug
+ * alone must not be enough either. This runs last in the file because it
+ * destroys a fixture the earlier tests navigate to.
+ */
+test('removing a store needs a reason and the exact address', async () => {
+  await ready(page, `${BASE}/admin/stores/audit-shop`);
+  await expect(page.getByTestId('delete-store')).toBeVisible({ timeout: 20000 });
+
+  await page.getByTestId('delete-store-open').click();
+  await expect(page.getByTestId('delete-store-confirm')).toBeDisabled();
+
+  // A reason on its own: still refused.
+  await page.getByTestId('delete-store-reason').fill('Selling counterfeit goods; three complaints upheld.');
+  await expect(page.getByTestId('delete-store-confirm')).toBeDisabled();
+
+  // The wrong address: still refused.
+  await page.getByTestId('delete-store-slug').fill('audit-shopp');
+  await expect(page.getByTestId('delete-store-confirm')).toBeDisabled();
+
+  // A near miss with the right prefix: still refused.
+  await page.getByTestId('delete-store-slug').fill('audit-sho');
+  await expect(page.getByTestId('delete-store-confirm')).toBeDisabled();
+
+  await page.getByTestId('delete-store-slug').fill('audit-shop');
+  await expect(page.getByTestId('delete-store-confirm')).toBeEnabled();
+});
+
+test('a removed store is gone from the admin list, and its record is not', async () => {
+  await ready(page, `${BASE}/admin/stores/audit-shop`);
+  await page.getByTestId('delete-store-open').click();
+  await page.getByTestId('delete-store-reason').fill('Selling counterfeit goods; three complaints upheld.');
+  await page.getByTestId('delete-store-slug').fill('audit-shop');
+  await page.getByTestId('delete-store-confirm').click();
+
+  // Redirected off the page that no longer has anything to show.
+  await page.waitForURL(/\/admin\/stores(\?|$)/, { timeout: 30000 });
+  await page.waitForLoadState('load');
+
+  // Gone from search.
+  await page.getByTestId('store-search').fill('audit-shop');
+  await page.getByTestId('store-search-submit').click();
+  await page.waitForLoadState('load');
+  await expect(page.getByTestId('store-empty')).toBeVisible();
+
+  // The storefront no longer shows the store. Asserted on content rather than
+  // status: a missing shop renders not-found copy with HTTP 200 in this route
+  // group — that is F-15, a known and separately tracked gap (see the fixme in
+  // audit-regression.spec.ts), and asserting 404 here would be testing that
+  // open issue rather than this deletion.
+  await ready(page, `${BASE}/store/audit-shop`);
+  await expect(page.getByText('Audit Regression Store')).toHaveCount(0);
+
+  // But the record of why survives, with the store described inside it.
+  await ready(page, `${BASE}/admin/audit?action=DELETE_SHOP`);
+  await expect(page.getByTestId('audit-log-action').first()).toHaveText('DELETE_SHOP');
+  await expect(page.getByTestId('audit-log-reason').first()).toContainText('counterfeit');
+});

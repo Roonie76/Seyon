@@ -11,6 +11,7 @@ import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 import { recordAdminAction, ADMIN_ACTIONS } from '../lib/admin-audit';
 import { requireAdmin } from '../lib/require-admin';
+import { roleAfterShopRemoval } from '@/shared/lib/shop-removal';
 import { ACK_DEADLINE_HOURS } from '@/shared/lib/complaints';
 import { issueNotice, emailNotice } from '../lib/notices';
 
@@ -431,6 +432,134 @@ export async function updateUserRoleAction(userId: string, role: Role, reason?: 
 
     revalidatePath('/admin', 'layout'); // covers /admin/stores and /admin/stores/[slug]
     return { success: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+  }
+}
+
+const DeleteShopSchema = z.object({
+  shopId: z.string().cuid('Invalid shop ID format'),
+  reason: z
+    .string()
+    .trim()
+    .min(10, 'Say why this store is being removed. It is destroying someone\'s business.')
+    .max(2000, 'Keep the reason under 2000 characters.'),
+  /** The store's slug, typed by the admin. */
+  confirmSlug: z.string().trim().toLowerCase(),
+});
+
+/**
+ * Remove a store permanently.
+ *
+ * `ADMIN_ACTIONS.DELETE_SHOP` and its database CHECK have existed since the
+ * audit work; nothing ever called them, so a fraudulent store could be
+ * suspended forever but never removed. Suspension is reversible by any admin,
+ * and some stores should stop existing.
+ *
+ * Three things make this different from suspending.
+ *
+ * The audit row is written *first*, inside the transaction, with everything
+ * worth keeping copied into `metadata`. Reviews, reports and notices all
+ * cascade with the shop, so the record of what the seller was told dies with
+ * the store — `AdminAction` does not cascade, and is the only thing that
+ * survives to answer "why is this store gone".
+ *
+ * It asks for the slug as well as a reason. A reason alone is the same gesture
+ * as suspending, and those two controls sit next to each other.
+ *
+ * The owner is emailed rather than sent a Notice, because a Notice row would be
+ * deleted by the same cascade a moment after being written.
+ */
+export async function deleteShopAsAdmin(raw: unknown) {
+  try {
+    const parsed = DeleteShopSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { shopId, reason, confirmSlug } = parsed.data;
+
+    const { actorId } = await verifyAdminAuth();
+
+    const shop = await db.shop.findUnique({
+      where: { id: shopId },
+      include: {
+        owner: { select: { id: true, email: true, name: true, role: true } },
+        products: { include: { images: { select: { url: true } } } },
+        _count: { select: { products: true, reviews: true, reports: true, notices: true } },
+      },
+    });
+    if (!shop) return { error: 'Store not found.' };
+
+    if (confirmSlug !== shop.slug) {
+      return { error: `Type the store address exactly — "${shop.slug}" — to confirm.` };
+    }
+
+    const imageUrls = shop.products.flatMap((p) => p.images.map((img) => img.url));
+
+    await db.$transaction(async (tx) => {
+      // First, and in the same transaction: everything below is about to be
+      // unrecoverable, and this row is the only thing that will still exist.
+      await recordAdminAction(
+        {
+          actorId,
+          action: ADMIN_ACTIONS.DELETE_SHOP,
+          targetType: 'Shop',
+          targetId: shop.id,
+          reason,
+          metadata: {
+            name: shop.name,
+            slug: shop.slug,
+            city: shop.city,
+            whatsapp: shop.whatsapp,
+            ownerId: shop.owner.id,
+            ownerEmail: shop.owner.email,
+            createdAt: shop.createdAt.toISOString(),
+            wasVerified: shop.isVerified,
+            wasSuspended: shop.isSuspended,
+            wasUnderReview: shop.isUnderReview,
+            productCount: shop._count.products,
+            reviewCount: shop._count.reviews,
+            reportCount: shop._count.reports,
+            noticeCount: shop._count.notices,
+          },
+        },
+        tx
+      );
+
+      await tx.shop.delete({ where: { id: shop.id } });
+
+      // Hand back the buyer role so the seller dashboard stops half-working.
+      // Only from SELLER — see roleAfterShopRemoval for why that matters.
+      const nextRole = roleAfterShopRemoval(shop.owner.role);
+      if (nextRole) {
+        await tx.user.update({ where: { id: shop.owner.id }, data: { role: nextRole } });
+      }
+    });
+
+    // Storage cleanup only after the delete has committed, so a failed
+    // transaction cannot leave a live store pointing at removed files.
+    const prefix = storagePrefixForShop(shop.id);
+    for (const url of imageUrls) {
+      try { await deleteFile(url, 'products', prefix); } catch { /* orphans are acceptable */ }
+    }
+    if (shop.logo) { try { await deleteFile(shop.logo, 'logos', prefix); } catch { /* best-effort */ } }
+    if (shop.banner) { try { await deleteFile(shop.banner, 'banners', prefix); } catch { /* best-effort */ } }
+
+    if (shop.owner.email) {
+      notify({
+        to: shop.owner.email,
+        subject: `Your storefront "${shop.name}" has been removed from Seyon`,
+        text:
+          `Your storefront "${shop.name}" has been removed from Seyon by a moderator, along with its ${shop._count.products} listing(s).\n\n` +
+          `Reason given:\n${reason}\n\n` +
+          'This cannot be undone from your side. If you believe it is a mistake, reply to this email.',
+      }).catch(() => undefined);
+    }
+
+    revalidateShopSurface(shop.slug);
+    revalidateMarketplace();
+    revalidatePath('/admin', 'layout');
+
+    logger.info('Storefront deleted by admin', { shopId: shop.id, slug: shop.slug, actorId });
+    return { success: true, slug: shop.slug };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
   }
