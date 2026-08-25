@@ -42,6 +42,8 @@ export const ADMIN_ACTIONS = {
   APPROVE_KYC: 'APPROVE_KYC',
   REJECT_KYC: 'REJECT_KYC',
   VIEW_KYC_DOCUMENT: 'VIEW_KYC_DOCUMENT',
+  /// Written by the nightly retention sweep, under the system account.
+  SWEEP_KYC_DOCUMENTS: 'SWEEP_KYC_DOCUMENTS',
 } as const;
 
 export type AdminActionName = (typeof ADMIN_ACTIONS)[keyof typeof ADMIN_ACTIONS];

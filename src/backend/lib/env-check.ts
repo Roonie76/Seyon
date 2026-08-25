@@ -83,6 +83,13 @@ export function checkEnvironment(env: NodeJS.ProcessEnv = process.env): {
         'Upstash is not configured. Rate limiting falls back to the Postgres backend, which is correct across instances but adds a write per limited request.',
     },
     {
+      name: 'CRON_SECRET',
+      level: 'warn',
+      failing: () => isPlaceholder(env.CRON_SECRET),
+      message:
+        'No CRON_SECRET: the nightly job route refuses every request, so abandoned identity documents are never swept, sellers who ignore a notice are never chased, and nobody is told when complaints are about to breach their deadline.',
+    },
+    {
       name: 'SENTRY_DSN',
       level: 'warn',
       failing: () => isPlaceholder(env.SENTRY_DSN) && isPlaceholder(env.NEXT_PUBLIC_SENTRY_DSN),

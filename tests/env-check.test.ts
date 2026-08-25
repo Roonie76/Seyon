@@ -11,6 +11,7 @@ const complete = {
   UPSTASH_REDIS_REST_URL: 'https://real.upstash.io',
   UPSTASH_REDIS_REST_TOKEN: 'real-token',
   SENTRY_DSN: 'https://abc@o1.ingest.sentry.io/1',
+  CRON_SECRET: 'a-real-cron-secret-of-sufficient-length',
   NEXT_PUBLIC_SITE_URL: 'https://seyon.example',
   NEXT_PUBLIC_GRIEVANCE_NAME: 'A. Sharma',
   NEXT_PUBLIC_GRIEVANCE_DESIGNATION: 'Grievance Officer',
@@ -82,5 +83,19 @@ describe('production configuration check', () => {
   it('never fails a development environment', () => {
     const { fatal } = checkEnvironment({ NODE_ENV: 'development' } as NodeJS.ProcessEnv);
     expect(fatal).toEqual([]);
+  });
+});
+
+describe('the scheduled job secret', () => {
+  it('warns when CRON_SECRET is missing in production', () => {
+    // Without it the route answers 503 to everything, so the nightly sweeps
+    // silently never run — the kind of failure that looks like nothing.
+    const { warnings } = checkEnvironment({ ...complete, CRON_SECRET: undefined });
+    expect(warnings.join(' ')).toContain('CRON_SECRET');
+  });
+
+  it('warns when CRON_SECRET is left as a placeholder', () => {
+    const { warnings } = checkEnvironment({ ...complete, CRON_SECRET: 'changeme' });
+    expect(warnings.join(' ')).toContain('CRON_SECRET');
   });
 });
