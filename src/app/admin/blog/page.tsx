@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Edit, FileText } from 'lucide-react';
+import { DeletePostButton } from '@/components/admin/delete-post-button';
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 
@@ -152,22 +153,11 @@ export default async function AdminBlogPage() {
                             </Button>
                           </Link>
 
-                          <form action={handleDelete} className="inline">
-                            <input type="hidden" name="id" value={post.id} />
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              type="submit"
-                              className="h-8 w-8 text-red-500 hover:bg-red-500/10 hover:text-red-500"
-                              onClick={(e) => {
-                                if (!confirm('Are you sure you want to delete this blog post? This action cannot be undone.')) {
-                                  e.preventDefault();
-                                }
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </form>
+                          <DeletePostButton
+                            id={post.id}
+                            title={post.title}
+                            action={handleDelete}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
