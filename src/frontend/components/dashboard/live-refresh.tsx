@@ -23,7 +23,7 @@ export function LiveRefresh({ intervalSeconds = 60, isPaused = false }: LiveRefr
   const { lastUpdated, syncing } = useLiveSync({ intervalSeconds, paused: isPaused });
 
   const base =
-    'inline-flex items-center gap-1.5 text-[10px] font-bold rounded-full px-2.5 py-1 select-none tracking-wider uppercase border';
+    'inline-flex items-center gap-1.5 text-[11px] font-bold rounded-full px-2.5 py-1 select-none tracking-wider uppercase border';
 
   if (isPaused) {
     return (

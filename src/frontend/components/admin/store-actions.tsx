@@ -181,11 +181,11 @@ export function DeleteProductButton({ productId, title }: { productId: string; t
           data-testid="delete-product-confirm"
           onClick={onDelete}
           disabled={reason.trim().length < 10 || busy}
-          className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+          className="rounded bg-red-600 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40"
         >
           Confirm
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="rounded border border-zinc-300 px-2 py-1 text-[10px] font-bold">
+        <button type="button" onClick={() => setOpen(false)} className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-bold">
           Cancel
         </button>
       </div>

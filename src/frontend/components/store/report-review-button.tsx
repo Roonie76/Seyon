@@ -56,7 +56,7 @@ export function ReportReviewButton({
 
   if (done) {
     return (
-      <p data-testid="report-review-done" className="mt-2 text-[10px] font-semibold text-emerald-700">
+      <p data-testid="report-review-done" className="mt-2 text-[11px] font-semibold text-emerald-700">
         Reported. A moderator will look at it.
       </p>
     );
@@ -68,7 +68,7 @@ export function ReportReviewButton({
         type="button"
         data-testid="report-review-open"
         onClick={() => { setOpen(true); setReason(''); setError(null); }}
-        className="mt-2 text-[10px] font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        className="mt-2 text-[11px] font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
       >
         Report this review
       </button>
@@ -77,12 +77,12 @@ export function ReportReviewButton({
 
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-zinc-200 bg-white p-2" data-testid="report-review-form">
-      <p className="text-[10px] font-bold text-foreground">
+      <p className="text-[11px] font-bold text-foreground">
         Report {authorName}&apos;s review
       </p>
 
       {error ? (
-        <p role="alert" data-testid="report-review-error" className="text-[10px] font-semibold text-red-600">
+        <p role="alert" data-testid="report-review-error" className="text-[11px] font-semibold text-red-600">
           {error}
         </p>
       ) : null}
@@ -115,14 +115,14 @@ export function ReportReviewButton({
           data-testid="report-review-submit"
           onClick={submit}
           disabled={reason.trim().length < 5 || busy}
-          className="rounded bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+          className="rounded bg-zinc-900 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40"
         >
           {busy ? 'Sending…' : 'Send'}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded border border-zinc-300 px-2 py-1 text-[10px] font-bold text-zinc-700"
+          className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-bold text-zinc-700"
         >
           Cancel
         </button>

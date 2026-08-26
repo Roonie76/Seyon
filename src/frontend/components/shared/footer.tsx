@@ -37,7 +37,7 @@ export function Footer() {
       <div className="container mx-auto px-4 sm:px-6">
         {/* Department links: internal link equity for the SEO category pages */}
         <nav aria-label="Shop by category" className="mb-8 pb-6 border-b border-zinc-800">
-          <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">SHOP BY CATEGORY</span>
+          <span className="text-[11px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">SHOP BY CATEGORY</span>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400">
             {['Fashion', 'Electronics', 'Beauty', 'Home & Living', 'Clay Crafts', 'DIY Crafts', 'Art & Collectibles', 'Food & Beverages'].map((cat) => (
               <Link
@@ -63,7 +63,7 @@ export function Footer() {
             </p>
             {/* Follow Us Section */}
             <div className="space-y-3 pt-2">
-              <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block">
+              <span className="text-[11px] uppercase font-bold text-[#A77F3A] tracking-wider block">
                 FOLLOW US
               </span>
               <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export function Footer() {
 
           {/* Column 2: Explore */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Explore</span>
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">Explore</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/category" className="hover:text-white transition-colors">Categories</Link>
@@ -100,7 +100,7 @@ export function Footer() {
 
           {/* Column 3: Sell on Seyon */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Sell on Seyon</span>
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">Sell on Seyon</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/sell" className="hover:text-white transition-colors">Sellers Home</Link>
@@ -113,7 +113,7 @@ export function Footer() {
 
           {/* Column 4: Support */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Support</span>
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">Support</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/faqs" className="hover:text-white transition-colors">FAQs</Link>
@@ -135,7 +135,7 @@ export function Footer() {
 
           {/* Column 4: Company */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Company</span>
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">Company</span>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li>
                 <Link href="/about" className="hover:text-white transition-colors">About</Link>

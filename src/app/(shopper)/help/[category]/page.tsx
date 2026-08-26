@@ -93,7 +93,7 @@ export default async function HelpCategoryPage({ params }: CategoryPageProps) {
             <div className="space-y-12">
               {Object.entries(grouped).map(([topic, arts]) => (
                 <section key={topic} className="space-y-6">
-                  <h3 className="text-[10px] font-bold text-[#B88A2E] uppercase tracking-widest border-l-2 border-[#B88A2E] pl-3 font-sans">
+                  <h3 className="text-[11px] font-bold text-[#B88A2E] uppercase tracking-widest border-l-2 border-[#B88A2E] pl-3 font-sans">
                     {topic}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -117,7 +117,7 @@ export default async function HelpCategoryPage({ params }: CategoryPageProps) {
                           <div className="border-t border-[#ECE5D9] pt-4 w-full mt-auto">
                             <Link
                               href={`/help/${category}/${art.slug}`}
-                              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#B88A2E] hover:text-[#C69A42] tracking-wider uppercase group-hover/link:translate-x-1 duration-200 transition-all font-sans"
+                              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#B88A2E] hover:text-[#C69A42] tracking-wider uppercase group-hover/link:translate-x-1 duration-200 transition-all font-sans"
                             >
                               Read Article <ArrowRight className="h-3 w-3" />
                             </Link>

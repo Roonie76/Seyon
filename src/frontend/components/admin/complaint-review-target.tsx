@@ -43,11 +43,11 @@ export function ComplaintReviewTargetCard({
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-zinc-950">The review complained about</h2>
         {review.isHidden ? (
-          <span data-testid="complaint-review-hidden" className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700">
+          <span data-testid="complaint-review-hidden" className="rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold text-zinc-700">
             hidden
           </span>
         ) : (
-          <span data-testid="complaint-review-visible" className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+          <span data-testid="complaint-review-visible" className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">
             visible to buyers
           </span>
         )}
@@ -58,7 +58,7 @@ export function ComplaintReviewTargetCard({
           <span className="font-semibold text-zinc-900" data-testid="complaint-review-author">
             {review.authorName ?? 'Anonymous'}
           </span>
-          <span className="text-[10px] text-zinc-500">
+          <span className="text-[11px] text-zinc-500">
             {review.rating}/5 · {review.createdAt.toLocaleDateString('en-IN')}
           </span>
         </div>
@@ -118,7 +118,7 @@ export function ComplaintReviewTargetCard({
               Cancel
             </button>
           </div>
-          <p className="text-[10px] text-zinc-500">
+          <p className="text-[11px] text-zinc-500">
             Hiding does not close the complaint. Close it separately, so the person who reported it
             is told what was decided.
           </p>

@@ -45,11 +45,11 @@ export function PreviewBlocks({ blocks }: { blocks: Block[] }) {
                 key={i}
                 className="my-6 rounded-xl border border-dashed border-[#D4AF37]/50 bg-[#D4AF37]/5 px-4 py-3"
               >
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[#D4AF37]">
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#D4AF37]">
                   Shop the story
                 </p>
                 <p className="mt-1 font-mono text-xs text-zinc-300 break-all">{block.slug}</p>
-                <p className="mt-1 text-[10px] text-zinc-500">
+                <p className="mt-1 text-[11px] text-zinc-500">
                   The live product card renders here. Saving fails if no active product has
                   this slug.
                 </p>

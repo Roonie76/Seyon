@@ -31,7 +31,7 @@ export default function HelpCenterPage() {
 
         {/* Hero Title Block */}
         <div className="text-center mb-16 space-y-4 relative z-10">
-          <span className="text-[10px] md:text-xs uppercase font-bold text-[#B88A2E] tracking-widest block font-sans">
+          <span className="text-[11px] md:text-xs uppercase font-bold text-[#B88A2E] tracking-widest block font-sans">
             HELP CENTER
           </span>
           <h1 className="text-4xl md:text-6xl font-normal text-[#1A1A18] tracking-tight font-serif">
@@ -130,7 +130,7 @@ export default function HelpCenterPage() {
           {/* Popular Articles */}
           <div className="space-y-5">
             <div>
-              <span className="text-[9px] uppercase font-bold text-[#B88A2E] tracking-widest block mb-1 font-sans">
+              <span className="text-[11px] uppercase font-bold text-[#B88A2E] tracking-widest block mb-1 font-sans">
                 HELP ARTICLES
               </span>
               <h2 className="text-xl font-bold text-[#1A1A18] font-serif border-b border-[#ECE5D9] pb-3">
@@ -153,7 +153,7 @@ export default function HelpCenterPage() {
                       {article.title}
                     </span>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full ${badgeTheme}`}>
+                      <span className={`text-[11px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full ${badgeTheme}`}>
                         {article.category}
                       </span>
                       <ChevronRight className="h-4 w-4 text-[#6F6A63] opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
@@ -167,7 +167,7 @@ export default function HelpCenterPage() {
           {/* Recently Updated */}
           <div className="space-y-5">
             <div>
-              <span className="text-[9px] uppercase font-bold text-[#B88A2E] tracking-widest block mb-1 font-sans">
+              <span className="text-[11px] uppercase font-bold text-[#B88A2E] tracking-widest block mb-1 font-sans">
                 HELP ARTICLES
               </span>
               <h2 className="text-xl font-bold text-[#1A1A18] font-serif border-b border-[#ECE5D9] pb-3 flex items-center gap-2">
@@ -187,10 +187,10 @@ export default function HelpCenterPage() {
                       {article.title}
                     </h4>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="bg-[#FAF8F4] border border-[#ECE5D9] text-[#6F6A63] text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full">
+                      <span className="bg-[#FAF8F4] border border-[#ECE5D9] text-[#6F6A63] text-[11px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full">
                         UPDATED
                       </span>
-                      <p className="text-[10px] text-[#6F6A63] font-medium font-sans">Updated {article.lastUpdated}</p>
+                      <p className="text-[11px] text-[#6F6A63] font-medium font-sans">Updated {article.lastUpdated}</p>
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-[#6F6A63] opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
@@ -223,7 +223,7 @@ export default function HelpCenterPage() {
               >
                 Contact Support &rarr;
               </Link>
-              <span className="text-[10px] text-[#6F6A63] mt-2 block font-medium font-sans">
+              <span className="text-[11px] text-[#6F6A63] mt-2 block font-medium font-sans">
                 Average response &lt; 24 Hours
               </span>
             </div>

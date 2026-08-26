@@ -182,7 +182,7 @@ export default async function AdminComplaintPage({
             <p className="whitespace-pre-wrap rounded bg-zinc-50 p-2 text-xs text-zinc-700">
               {c.resolutionNote ?? '—'}
             </p>
-            <p className="mt-2 text-[10px] text-zinc-500">The person who reported it was sent this.</p>
+            <p className="mt-2 text-[11px] text-zinc-500">The person who reported it was sent this.</p>
           </div>
         ) : (
           <>
@@ -214,7 +214,7 @@ export default async function AdminComplaintPage({
                 <li key={a.id} className="py-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-bold text-zinc-900" data-testid="complaint-audit-action">{a.action}</span>
-                    <span className="text-[10px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="text-[11px] text-zinc-600">
                     by {a.actorName ?? a.actorEmail ?? 'unknown'}

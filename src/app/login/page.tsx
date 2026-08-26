@@ -57,7 +57,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <CardContent className="space-y-6">
           {error && (
             <div className="p-3.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-500 border border-rose-500/20 flex flex-col gap-1">
-              <span className="font-bold uppercase tracking-wider text-[10px]">Sign-In Failed</span>
+              <span className="font-bold uppercase tracking-wider text-[11px]">Sign-In Failed</span>
               <span>
                 {error === 'AccessDenied' 
                   ? 'Access was denied or you cancelled the authentication request.' 

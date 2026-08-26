@@ -371,7 +371,7 @@ export function CartClient() {
         {/* Validation metadata info */}
         <div className="flex items-center gap-3">
           {validation && (
-            <span className="text-[10px] sm:text-xs font-semibold text-muted-foreground">
+            <span className="text-[11px] sm:text-xs font-semibold text-muted-foreground">
               Last verified: {getCartMeta().lastValidated ? new Date(getCartMeta().lastValidated!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
             </span>
           )}
@@ -471,26 +471,26 @@ export function CartClient() {
 
                     {/* Discrepancy Badges */}
                     {isDeletedProd && (
-                      <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
                         <XCircle size={10} /> Product no longer exists
                       </span>
                     )}
 
                     {!isDeletedProd && isVariantInvalid && (
-                      <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
                         <AlertTriangle size={10} /> {prodVal?.variantInvalidReason || 'Options configuration modified'}
                       </span>
                     )}
 
                     {!isDeletedProd && !isVariantInvalid && isProdBlocked && (
-                      <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded-md">
                         <XCircle size={10} /> {prodVal?.checkoutBlockedReason || 'Unavailable'}
                       </span>
                     )}
 
                     {/* Price Decreased Notice */}
                     {isPriceDecrease && (
-                      <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+                      <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
                         <Check size={10} /> Price dropped! (saved {formatCurrency(item.price - prodVal.price)})
                       </span>
                     )}
@@ -527,7 +527,7 @@ export function CartClient() {
                     <div className="text-sm font-black text-foreground">
                       {formatCurrency(livePrice * item.quantity)}
                     </div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
                       {item.quantity} × {formatCurrency(livePrice)}
                     </div>
                   </div>
@@ -593,7 +593,7 @@ export function CartClient() {
                   <div>
                     {isDeletedShop ? (
                       <h2 className="font-extrabold text-foreground text-sm flex items-center gap-1.5">
-                        Unknown Store <Badge variant="destructive" className="text-[9px]"><ShieldAlert size={8} /> Store Deleted</Badge>
+                        Unknown Store <Badge variant="destructive" className="text-[11px]"><ShieldAlert size={8} /> Store Deleted</Badge>
                       </h2>
                     ) : (
                       <h2 className="font-extrabold text-foreground text-sm flex items-center gap-1.5">
@@ -605,7 +605,7 @@ export function CartClient() {
                         )}
                       </h2>
                     )}
-                    <span className="text-[10px] text-muted-foreground font-semibold">
+                    <span className="text-[11px] text-muted-foreground font-semibold">
                       {items.length} {items.length === 1 ? 'item' : 'items'}
                     </span>
                   </div>
@@ -646,7 +646,7 @@ export function CartClient() {
                 {/* Summary / Order CTA Block */}
                 <div className="mt-4 pt-6 border-t border-zinc-200 flex flex-col sm:flex-row justify-between sm:items-center gap-6 pb-4">
                   <div>
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">Estimated Total</span>
+                    <span className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider block">Estimated Total</span>
                     <span className="text-2xl font-black text-foreground">{formatCurrency(totalItemsPrice)}</span>
                   </div>
 
@@ -656,7 +656,7 @@ export function CartClient() {
                       <p className="text-xs font-bold text-amber-900 leading-snug">
                         Did you send the message to {shopVal?.name || 'the store'} on WhatsApp?
                       </p>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
                         Opening WhatsApp draft opens a message request but doesn&rsquo;t complete the order until sent.
                       </p>
                       <div className="flex gap-2">
@@ -704,7 +704,7 @@ export function CartClient() {
             <ArrowLeft size={14} /> Back to marketplace
           </Button>
         </Link>
-        <span className="text-[10px] sm:text-xs text-muted-foreground italic font-medium">
+        <span className="text-[11px] sm:text-xs text-muted-foreground italic font-medium">
           Prices and availability are verified when this page loads. Items are not reserved.
         </span>
       </div>

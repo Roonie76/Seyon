@@ -77,7 +77,7 @@ export function OpenComplaints({
             <li key={r.id} className="py-2" data-testid="open-complaint-row">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-bold text-foreground">{REPORT_CATEGORY_LABELS[r.category]}</span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground">
                   {r.createdAt.toLocaleDateString('en-IN')}
                   {r.overdue ? ' · overdue' : ''}
                 </span>

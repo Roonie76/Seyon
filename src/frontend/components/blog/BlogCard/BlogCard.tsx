@@ -12,7 +12,7 @@ export function BlogCard({ post }: BlogCardProps) {
       {/* Cover Image Container */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-zinc-950">
         {/* Category Pill Floating */}
-        <span className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-sm">
+        <span className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md border border-white/10 text-white text-[11px] font-black uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-sm">
           {post.category}
         </span>
 
@@ -28,7 +28,7 @@ export function BlogCard({ post }: BlogCardProps) {
       {/* Card Info Content */}
       <div className="p-8 flex flex-col flex-grow space-y-4">
         {/* Meta row */}
-        <div className="flex flex-wrap items-center gap-3 text-[9px] font-black uppercase tracking-[0.15em] text-[#9D9D9D]">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-black uppercase tracking-[0.15em] text-[#9D9D9D]">
           <span className="inline-flex items-center gap-1">
             <Calendar className="h-3 w-3 text-[#D4AF37]" />
             {new Date(post.date).toLocaleDateString('en-US', {
@@ -62,7 +62,7 @@ export function BlogCard({ post }: BlogCardProps) {
         <div className="pt-4 border-t border-zinc-900/60 mt-auto">
           <Link
             href={`/blog/${post.slug}`}
-            className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:text-[#E4C29D] transition-colors duration-300"
+            className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:text-[#E4C29D] transition-colors duration-300"
           >
             Read Story
             <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" />

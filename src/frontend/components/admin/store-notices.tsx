@@ -226,7 +226,7 @@ export function StoreNotices({ shopId, notices }: { shopId: string; notices: (Se
             <li key={n.id} className="py-2" data-testid="store-notice-item">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-bold text-zinc-900">{n.subject}</span>
-                <span className="text-[10px] text-zinc-400">{n.sentAt.toLocaleString('en-IN')}</span>
+                <span className="text-[11px] text-zinc-400">{n.sentAt.toLocaleString('en-IN')}</span>
               </div>
               <div className="text-[11px] text-zinc-600">
                 {KIND_LABELS[n.kind]}

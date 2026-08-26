@@ -541,7 +541,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <circle cx="12" cy="12" r="3" stroke="white" strokeWidth="1.5" fill="none"/>
                     <circle cx="16.5" cy="7.5" r="1" fill="white"/>
                   </svg>
-                  <span className="text-[10px] font-extrabold text-zinc-700">Instagram</span>
+                  <span className="text-[11px] font-extrabold text-zinc-700">Instagram</span>
                 </span>
                 <span className="text-zinc-455">,</span>
                 <span className="inline-flex items-center gap-1 bg-white border border-zinc-150 rounded-full px-2 py-0.5 shadow-3xs hover:border-green-300 transition-colors cursor-default select-none">
@@ -549,7 +549,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <rect x="2" y="2" width="20" height="20" rx="5" fill="#25D366"/>
                     <path d="M12 6a5.9 5.9 0 0 0-5.1 8.9L6 18l3.2-.8A5.9 5.9 0 1 0 12 6zm2.8 7.8c-.1.3-.7.6-.9.6s-.5.1-1.5-.3a5.5 5.5 0 0 1-2.4-2.1c-.4-.7-.7-1.4-.7-2.1 0-.7.3-1 .5-1.2.2-.2.4-.2.5-.2h.4c.1 0 .2 0 .3.2.1.2.4 1 .4 1.1s0 .3-.1.4c-.1.1-.2.2-.3.3s-.2.1-.1.3a3.7 3.7 0 0 0 1.4 1.7 3.3 3.3 0 0 0 2 .7c.2 0 .4-.1.5-.2.1-.2.5-.6.6-.8s.2-.2.4-.1.9.4 1 .5c.1 0 .2.1.1.3z" fill="white"/>
                   </svg>
-                  <span className="text-[10px] font-extrabold text-zinc-700">WhatsApp</span>
+                  <span className="text-[11px] font-extrabold text-zinc-700">WhatsApp</span>
                 </span>
                 <span className="text-zinc-455">,</span>
                 <span className="inline-flex items-center gap-1 bg-white border border-zinc-150 rounded-full px-2 py-0.5 shadow-3xs hover:border-blue-300 transition-colors cursor-default select-none">
@@ -557,7 +557,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <rect x="2" y="2" width="20" height="20" rx="5" fill="#2196F3"/>
                     <path d="M6.8 11.5l9.2-3.6c.4-.2.8.1.7.6l-1.6 7.4c-.1.5-.4.6-.8.3l-2.5-1.9-1.2 1.2c-.1.1-.3.2-.4.2l.2-2.7 4.9-4.5c.2-.2 0-.3-.3-.1l-6.1 3.8-2.6-.8c-.6-.2-.6-.6.2-.9z" fill="white"/>
                   </svg>
-                  <span className="text-[10px] font-extrabold text-zinc-700">Telegram</span>
+                  <span className="text-[11px] font-extrabold text-zinc-700">Telegram</span>
                 </span>
                 <span className="text-zinc-700 font-semibold">&</span>
                 <span className="inline-flex items-center gap-1 bg-white border border-zinc-150 rounded-full px-2 py-0.5 shadow-3xs hover:border-red-300 transition-colors cursor-default select-none">
@@ -565,7 +565,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <rect x="2" y="2" width="20" height="20" rx="5" fill="#FF0000"/>
                     <path d="M10 8.5v7l6-3.5-6-3.5z" fill="white"/>
                   </svg>
-                  <span className="text-[10px] font-extrabold text-zinc-700">YouTube</span>
+                  <span className="text-[11px] font-extrabold text-zinc-700">YouTube</span>
                 </span>
                 <span className="text-zinc-700 font-semibold">.</span>
               </div>
@@ -593,26 +593,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               
               {/* Instagram Reel UI overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 flex flex-col justify-between p-3.5 z-10 text-white font-sans">
-                <div className="flex items-center justify-between mt-2.5 text-[9px] font-bold tracking-wide">
+                <div className="flex items-center justify-between mt-2.5 text-[11px] font-bold tracking-wide">
                   <span className="bg-white/10 px-2 py-0.5 rounded-full backdrop-blur-md">Reels</span>
                   <Play className="h-3.5 w-3.5 fill-white text-white opacity-80" />
                 </div>
 
                 <div className="flex flex-col w-full gap-3">
                   {/* Floating "DM to Order" / Link Tag */}
-                  <div className="self-center bg-[#A77F3A] border border-white/20 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-lg animate-bounce flex items-center gap-1">
+                  <div className="self-center bg-[#A77F3A] border border-white/20 text-white text-[11px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-lg animate-bounce flex items-center gap-1">
                     <MessageSquare className="h-3 w-3 fill-white" /> DM to Order
                   </div>
 
                   <div className="flex justify-between items-end gap-1 w-full">
                     <div className="flex flex-col text-left max-w-[75%]">
                       <div className="flex items-center gap-1 mb-1">
-                        <div className="h-5 w-5 rounded-full bg-amber-100 border border-white/20 flex items-center justify-center text-[8px] font-bold text-amber-700 overflow-hidden">
+                        <div className="h-5 w-5 rounded-full bg-amber-100 border border-white/20 flex items-center justify-center text-[11px] font-bold text-amber-700 overflow-hidden">
                           {heroShopName[0].toUpperCase()}
                         </div>
-                        <span className="text-[10px] font-bold truncate">{heroShopName.toLowerCase()}</span>
+                        <span className="text-[11px] font-bold truncate">{heroShopName.toLowerCase()}</span>
                       </div>
-                      <p className="text-[9px] text-zinc-200 line-clamp-2 leading-snug font-medium">
+                      <p className="text-[11px] text-zinc-200 line-clamp-2 leading-snug font-medium">
                         Oud that stays with you ✨ Comment &ldquo;LINK&rdquo; to get catalog. #socialcommerce
                       </p>
                     </div>
@@ -620,15 +620,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                     <div className="flex flex-col gap-2.5 items-center text-white pb-1">
                       <div className="flex flex-col items-center">
                         <Heart className="h-4 w-4 text-white fill-white" />
-                        <span className="text-[8px] font-bold mt-0.5">{heroStats.likes}</span>
+                        <span className="text-[11px] font-bold mt-0.5">{heroStats.likes}</span>
                       </div>
                       <div className="flex flex-col items-center">
                         <MessageSquare className="h-4 w-4 text-white fill-white" />
-                        <span className="text-[8px] font-bold mt-0.5">{heroStats.comments}</span>
+                        <span className="text-[11px] font-bold mt-0.5">{heroStats.comments}</span>
                       </div>
                       <div className="flex flex-col items-center">
                         <ArrowRight className="h-4 w-4 text-white rotate-45" />
-                        <span className="text-[8px] font-bold mt-0.5">{heroStats.shares}</span>
+                        <span className="text-[11px] font-bold mt-0.5">{heroStats.shares}</span>
                       </div>
                     </div>
                   </div>
@@ -698,7 +698,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                       shows that listing's real rating or nothing at all. */}
                   {heroShopRating != null && (
                     <div className="flex items-center gap-1 mb-0.5">
-                      <span className="text-[8px] font-extrabold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                      <span className="text-[11px] font-extrabold text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
                         ⭐ {heroShopRating.toFixed(1)} <span className="text-zinc-450 font-medium normal-case">({heroShopReviewCount} reviews)</span>
                       </span>
                     </div>
@@ -707,14 +707,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   <span className="text-[11px] font-bold text-zinc-950 leading-tight truncate group-hover:text-[#A77F3A] transition-colors">
                     {heroTitle}
                   </span>
-                  <span className="text-[9px] text-zinc-450 font-semibold">
+                  <span className="text-[11px] text-zinc-450 font-semibold">
                     by {heroShopName}
                   </span>
 
                   <span className="text-[11px] font-black text-[#1A1A18] mt-1 block">
                     ₹{heroPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[7px] text-zinc-400 font-semibold block leading-none mt-0.5">
+                  <span className="text-[11px] text-zinc-400 font-semibold block leading-none mt-0.5">
                     Inclusive of all taxes
                   </span>
 
@@ -733,7 +733,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   <div className="w-full bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-[20px] py-2 px-3 shadow-3xs flex items-center justify-between transition-all duration-300 group/btn cursor-pointer">
                     <div className="flex-1 text-center pl-4 select-none">
                       <span className="font-serif text-[11px] font-bold text-zinc-950 block leading-tight">Talk to Creator</span>
-                      <span className="text-[8px] text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
+                      <span className="text-[11px] text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
                     </div>
                     <ArrowRight className="h-3.5 w-3.5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-0.5 stroke-[2]" />
                   </div>
@@ -842,7 +842,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                       <h3 className="font-serif text-sm font-bold leading-tight tracking-tight group-hover:text-amber-400 transition-colors">
                         {label.title}
                       </h3>
-                      <span className="text-[9px] text-zinc-300 mt-1 font-semibold">
+                      <span className="text-[11px] text-zinc-300 mt-1 font-semibold">
                         {label.desc}
                       </span>
                     </div>
@@ -858,7 +858,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   {presentation.location && (
                     <div className="relative flex items-center gap-1 text-white mt-auto z-10">
                       <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping mr-0.5" />
-                      <span className="text-[10px] font-bold tracking-wide uppercase">{presentation.location}</span>
+                      <span className="text-[11px] font-bold tracking-wide uppercase">{presentation.location}</span>
                     </div>
                   )}
                 </Link>
@@ -924,11 +924,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                       {/* Rating block — real reviews only; never a placeholder */}
                       <div className="flex items-center gap-1 mt-1.5">
                         {presentation.rating != null ? (
-                          <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                          <span className="text-[11px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
                             ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-400 font-medium normal-case">({shop.reviewCount})</span>
                           </span>
                         ) : (
-                          <span className="text-[9px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
+                          <span className="text-[11px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
                             New seller
                           </span>
                         )}
@@ -936,19 +936,19 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
                       {/* Trust metrics */}
                       {presentation.trustTag && (
-                        <p className="text-[10px] text-zinc-450 mt-3 font-semibold flex items-center gap-1">
+                        <p className="text-[11px] text-zinc-450 mt-3 font-semibold flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           {presentation.trustTag}
                         </p>
                       )}
-                      <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
+                      <p className="text-[11px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
                         {presentation.location ? `${presentation.location} • ` : ''}{shop._count.products} Products
                       </p>
                     </div>
 
                     <Link
                       href={`/store/${shop.slug}`}
-                      className="w-full mt-5 py-2.5 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
+                      className="w-full mt-5 py-2.5 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
                     >
                       Visit Store
                     </Link>
@@ -998,14 +998,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         <div className="w-full h-full flex items-center justify-center text-xs text-zinc-400">No Image</div>
                       )}
                       {/* Top-Left Custom Badge overlay matching mockup */}
-                      <span className={`absolute top-2 left-2 z-10 text-[8px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm ${badge.color}`}>
+                      <span className={`absolute top-2 left-2 z-10 text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm ${badge.color}`}>
                         {badge.text}
                       </span>
                     </div>
 
                     <div className="flex flex-col flex-1 justify-between">
                       <div>
-                        <span className="text-[10px] text-zinc-450 font-semibold">
+                        <span className="text-[11px] text-zinc-450 font-semibold">
                           by {prod.shop.name}
                         </span>
                         <h3 className="text-xs font-bold text-zinc-950 leading-snug truncate mt-0.5 group-hover:text-[#A77F3A] transition-colors">
@@ -1059,9 +1059,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <h3 className="font-serif text-xl font-bold leading-tight tracking-tight">
                   Wedding Gifts
                 </h3>
-                <p className="text-[10px] text-zinc-300 mt-1 font-semibold">Thoughtful picks</p>
+                <p className="text-[11px] text-zinc-300 mt-1 font-semibold">Thoughtful picks</p>
               </div>
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
@@ -1085,9 +1085,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <h3 className="font-serif text-xl font-bold leading-tight tracking-tight">
                   Minimal Homes
                 </h3>
-                <p className="text-[10px] text-zinc-300 mt-1 font-semibold">Less is more</p>
+                <p className="text-[11px] text-zinc-300 mt-1 font-semibold">Less is more</p>
               </div>
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
@@ -1111,9 +1111,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <h3 className="font-serif text-xl font-bold leading-tight tracking-tight">
                   Trending on Instagram
                 </h3>
-                <p className="text-[10px] text-zinc-300 mt-1 font-semibold">Bestsellers you love</p>
+                <p className="text-[11px] text-zinc-300 mt-1 font-semibold">Bestsellers you love</p>
               </div>
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
@@ -1137,9 +1137,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <h3 className="font-serif text-xl font-bold leading-tight tracking-tight">
                   Made in India
                 </h3>
-                <p className="text-[10px] text-zinc-300 mt-1 font-semibold">Proudly local</p>
+                <p className="text-[11px] text-zinc-300 mt-1 font-semibold">Proudly local</p>
               </div>
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
@@ -1163,9 +1163,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <h3 className="font-serif text-xl font-bold leading-tight tracking-tight">
                   Under ₹1000
                 </h3>
-                <p className="text-[10px] text-zinc-300 mt-1 font-semibold">Budget friendly finds</p>
+                <p className="text-[11px] text-zinc-300 mt-1 font-semibold">Budget friendly finds</p>
               </div>
-              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white group-hover:text-amber-400 transition-colors flex items-center gap-1 mt-auto">
                 Explore <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </div>
@@ -1185,7 +1185,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </svg>
               <div className="text-left flex flex-col ml-1">
                 <span className="text-xs sm:text-[13px] font-bold text-zinc-900 leading-tight">Verified Creators</span>
-                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-tight">Quality sellers you can trust</span>
+                <span className="text-[11px] text-zinc-500 font-medium mt-0.5 leading-tight">Quality sellers you can trust</span>
               </div>
             </div>
 
@@ -1198,7 +1198,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </svg>
               <div className="text-left flex flex-col ml-1">
                 <span className="text-xs sm:text-[13px] font-bold text-zinc-900 leading-tight">Secure & Safe</span>
-                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-tight">Your privacy is important</span>
+                <span className="text-[11px] text-zinc-500 font-medium mt-0.5 leading-tight">Your privacy is important</span>
               </div>
             </div>
 
@@ -1210,7 +1210,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </svg>
               <div className="text-left flex flex-col ml-1">
                 <span className="text-xs sm:text-[13px] font-bold text-zinc-900 leading-tight">Chat on WhatsApp</span>
-                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-tight">Direct & transparent</span>
+                <span className="text-[11px] text-zinc-500 font-medium mt-0.5 leading-tight">Direct & transparent</span>
               </div>
             </div>
 
@@ -1222,7 +1222,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </svg>
               <div className="text-left flex flex-col ml-1">
                 <span className="text-xs sm:text-[13px] font-bold text-zinc-900 leading-tight">Easy Returns*</span>
-                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-tight">Hassle free returns</span>
+                <span className="text-[11px] text-zinc-500 font-medium mt-0.5 leading-tight">Hassle free returns</span>
               </div>
             </div>
 
@@ -1242,7 +1242,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </svg>
               <div className="text-left flex flex-col ml-1">
                 <span className="text-xs sm:text-[13px] font-bold text-zinc-900 leading-tight flex items-center gap-1">Made with <span className="text-red-500">❤️</span> in India</span>
-                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-tight">Supporting local businesses</span>
+                <span className="text-[11px] text-zinc-500 font-medium mt-0.5 leading-tight">Supporting local businesses</span>
               </div>
             </div>
           </div>
@@ -1291,7 +1291,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                         {shop.name}
                       </h3>
                       {(presentation.rating != null || presentation.location) && (
-                        <span className="text-[9px] text-[#A77F3A] mt-1 uppercase tracking-wider font-extrabold flex items-center gap-0.5">
+                        <span className="text-[11px] text-[#A77F3A] mt-1 uppercase tracking-wider font-extrabold flex items-center gap-0.5">
                           {presentation.rating != null && <>⭐ {presentation.rating.toFixed(1)}</>}
                           {presentation.rating != null && presentation.location && (
                             <span className="text-zinc-300 font-medium font-sans">|</span>
@@ -1299,14 +1299,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                           {presentation.location}
                         </span>
                       )}
-                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mt-2.5 bg-zinc-50 border border-zinc-100 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider mt-2.5 bg-zinc-50 border border-zinc-100 px-2.5 py-0.5 rounded-full">
                         {shop._count.products} Listings
                       </span>
                     </div>
 
                     <Link
                       href={`/store/${shop.slug}`}
-                      className="mt-4 px-5 py-2 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all w-full text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
+                      className="mt-4 px-5 py-2 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all w-full text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
                     >
                       Visit Store
                     </Link>
@@ -1401,7 +1401,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
                 {/* VS Badge */}
                 <div className="hidden sm:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                  <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[10px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
+                  <span className="h-8 w-8 rounded-full bg-[#A77F3A] text-white text-[11px] font-black flex items-center justify-center border-2 border-white shadow-[0_8px_18px_rgba(167,127,58,0.28)] select-none">VS</span>
                 </div>
 
                 {/* Seyon column */}

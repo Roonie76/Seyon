@@ -27,7 +27,7 @@ export function PrivacyCallout({ type, title, items, children }: PrivacyCalloutP
             ))}
           </ul>
         )}
-        <div className="text-[10px] text-zinc-500 font-semibold mt-4 border-t border-zinc-200/60 pt-3 select-none italic">
+        <div className="text-[11px] text-zinc-500 font-semibold mt-4 border-t border-zinc-200/60 pt-3 select-none italic">
           This summary is provided for convenience. The full policy below is the document that governs how your information is handled.
         </div>
       </div>

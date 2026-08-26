@@ -134,7 +134,7 @@ export default async function AdminStoreDetailPage({
                 <li key={r.id} className="py-2">
                   <div className="font-semibold text-zinc-900">{r.status}</div>
                   <div className="text-[11px] text-zinc-600">{r.reason}</div>
-                  <div className="text-[10px] text-zinc-400">{r.createdAt.toLocaleString('en-IN')}</div>
+                  <div className="text-[11px] text-zinc-400">{r.createdAt.toLocaleString('en-IN')}</div>
                 </li>
               ))}
             </ul>
@@ -152,7 +152,7 @@ export default async function AdminStoreDetailPage({
                 <li key={a.id} className="py-2" data-testid="audit-entry">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-bold text-zinc-900" data-testid="audit-action">{a.action}</span>
-                    <span className="text-[10px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="text-[11px] text-zinc-600">
                     by {a.actorName ?? a.actorEmail ?? 'unknown'}

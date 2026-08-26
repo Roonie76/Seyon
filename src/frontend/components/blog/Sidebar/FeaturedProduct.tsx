@@ -36,7 +36,7 @@ export function FeaturedProduct({ product, titleLabel = 'Featured Product' }: Fe
 
   return (
     <div className="space-y-6">
-      <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
+      <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
         {titleLabel}
       </h4>
 
@@ -51,7 +51,7 @@ export function FeaturedProduct({ product, titleLabel = 'Featured Product' }: Fe
               className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400">
               No image
             </span>
           )}
@@ -89,7 +89,7 @@ export function FeaturedProduct({ product, titleLabel = 'Featured Product' }: Fe
           <div className="pt-4">
             <Link
               href={getProductHref()}
-              className="inline-flex w-full items-center justify-center rounded-sm bg-[#050505] border border-zinc-800 py-3 text-[10px] font-black text-[#D4AF37] tracking-[0.15em] uppercase transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+              className="inline-flex w-full items-center justify-center rounded-sm bg-[#050505] border border-zinc-800 py-3 text-[11px] font-black text-[#D4AF37] tracking-[0.15em] uppercase transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
             >
               View Product
             </Link>

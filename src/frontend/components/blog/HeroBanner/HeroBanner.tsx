@@ -41,7 +41,7 @@ export function HeroBanner() {
           transform: `translate3d(${offset.x * 10}px, ${offset.y * 10}px, 0)`,
         }}
       >
-        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
+        <span className="text-[11px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
           Editorial Magazine
         </span>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif italic">

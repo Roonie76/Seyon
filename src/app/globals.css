@@ -51,9 +51,14 @@
   --radius-md: calc(0.75rem - 2px);
   --radius-sm: calc(0.75rem - 4px);
 
-  --font-sans: var(--font-geist-sans), sans-serif;
-  --font-serif: var(--font-serif-custom), Georgia, serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  /* One face in all three roles. Georgia and the generic families are the
+     fallbacks while the webfont loads or if it fails. */
+  --font-sans: var(--font-im-fell), Georgia, serif;
+  --font-serif: var(--font-im-fell), Georgia, serif;
+  --font-mono: var(--font-im-fell), Georgia, serif;
+  /* Kept so the handful of components that reference it by name still resolve
+     to the same face rather than falling back to Georgia on their own. */
+  --font-serif-custom: var(--font-im-fell);
 }
 
 @layer base {
@@ -68,6 +73,25 @@
     font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
+  }
+
+  /**
+   * No fake bold.
+   *
+   * IM Fell Double Pica has one weight. Asked for 600 or 900 -- which this
+   * codebase does in roughly a thousand places -- a browser will synthesise
+   * bold by smearing the outline, and on a face this irregular the result
+   * reads as a rendering fault rather than emphasis.
+   *
+   * Switching synthesis off means every weight utility renders at 400 and the
+   * page looks deliberate. Emphasis is carried by size, capitals, tracking and
+   * colour, which the design already uses heavily.
+   *
+   * Weight only: italic synthesis is left alone because the face ships a real
+   * italic, and nothing here needs a faked one.
+   */
+  * {
+    font-synthesis-weight: none;
   }
 
   h1,
@@ -203,8 +227,11 @@
 .gold-pill-badge {
   background: linear-gradient(135deg, #F5D373 0%, #D4AF37 50%, #A67C1E 100%) !important;
   color: #080808 !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-weight: 900 !important;
+  /* Was system-ui !important, which would have been the one element on the
+     site still set in a sans. Weight follows suit: 900 has nothing to resolve
+     to, and the badge already carries its emphasis through colour and caps. */
+  font-family: var(--font-sans) !important;
+  font-weight: 400 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   border: none !important;

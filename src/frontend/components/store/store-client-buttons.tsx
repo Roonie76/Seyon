@@ -55,7 +55,7 @@ export function WhatsAppButton({ shopId, whatsappNumber, shopName, productId, pr
     >
       <div className="flex-1 sm:flex-none text-center sm:text-left select-none">
         <span className="font-serif text-[11px] font-bold text-zinc-950 block leading-tight">Talk to Creator</span>
-        <span className="text-[8px] text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
+        <span className="text-[11px] text-zinc-450 font-bold block mt-0.5">on WhatsApp</span>
       </div>
       <ArrowRight className="h-3.5 w-3.5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-0.5 stroke-[2]" />
     </button>

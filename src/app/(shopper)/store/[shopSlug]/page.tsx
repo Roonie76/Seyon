@@ -310,11 +310,11 @@ export default async function StorePage({ params }: StorePageProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg bg-zinc-50 border border-zinc-100 text-center">
                   <span className="text-2xl font-bold text-foreground">{activeProducts.length}</span>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Listed Products</p>
+                  <p className="text-[11px] text-muted-foreground uppercase font-semibold mt-1">Listed Products</p>
                 </div>
                 <div className="p-4 rounded-lg bg-zinc-50 border border-zinc-100 text-center">
                   <span className="text-2xl font-bold text-foreground">{reviewCount}</span>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Total Reviews</p>
+                  <p className="text-[11px] text-muted-foreground uppercase font-semibold mt-1">Total Reviews</p>
                 </div>
               </div>
             </Card>
@@ -339,7 +339,7 @@ export default async function StorePage({ params }: StorePageProps) {
                         <RatingsStars rating={rev.rating} size={11} />
                       </div>
                       <p className="text-muted-foreground leading-relaxed">{rev.comment}</p>
-                      <span className="text-[10px] text-muted-foreground/60 block mt-2 text-right">
+                      <span className="text-[11px] text-muted-foreground/60 block mt-2 text-right">
                         {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <ReportReviewButton

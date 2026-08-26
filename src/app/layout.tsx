@@ -1,26 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { IM_Fell_Double_Pica } from "next/font/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
 import { JourneyProvider } from "@/components/shared/journey-context";
 import { SITE_URL } from "@/lib/site";
 import { generateWebsiteJSONLD, generateOrganizationJSONLD, safeJsonLdStringify } from "@/lib/seo";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/**
+ * One face, everywhere.
+ *
+ * IM Fell Double Pica is a revival of a 17th-century English cut and ships a
+ * single weight -- 400, roman and italic. There is no bold. Rather than let the
+ * browser smear a fake one across the ~1,000 places this codebase asks for
+ * bold, `font-synthesis-weight: none` in globals.css turns synthesis off, and
+ * hierarchy is carried by size, capitals, letter-spacing and colour instead,
+ * which is how the face was set when it was cut.
+ *
+ * It fills all three roles -- sans, serif and mono -- because uniformity was
+ * the point. The mono slot is the one to revisit if figures in tables read
+ * badly: the numerals here are proportional, not tabular.
+ */
+const imFell = IM_Fell_Double_Pica({
+  variable: "--font-im-fell",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const cormorantGaramond = Cormorant_Garamond({
-  variable: "--font-serif-custom",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["italic", "normal"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -51,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} h-full antialiased dark`}
+      className={`${imFell.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground animate-fade-in">
         <script

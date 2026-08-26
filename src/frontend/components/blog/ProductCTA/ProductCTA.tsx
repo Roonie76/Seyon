@@ -54,7 +54,7 @@ export async function ProductCTA({ slug }: ProductCTAProps) {
             className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-400">
             No image
           </span>
         )}
@@ -63,7 +63,7 @@ export async function ProductCTA({ slug }: ProductCTAProps) {
       {/* Product Info */}
       <div className="flex-grow space-y-3 text-center sm:text-left">
         <div>
-          <span className="text-[9px] font-black uppercase tracking-[0.25em] text-[#D4AF37]">
+          <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37]">
             Shop This Story
           </span>
           <h4 className="text-lg font-bold text-white uppercase tracking-wider line-clamp-1 mt-1">
@@ -85,7 +85,7 @@ export async function ProductCTA({ slug }: ProductCTAProps) {
         <div className="pt-2">
           <Link
             href={displayProduct.href}
-            className="inline-flex items-center justify-center rounded-sm bg-black border border-zinc-800 px-6 py-2.5 text-[9px] font-black text-[#D4AF37] tracking-[0.15em] uppercase transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
+            className="inline-flex items-center justify-center rounded-sm bg-black border border-zinc-800 px-6 py-2.5 text-[11px] font-black text-[#D4AF37] tracking-[0.15em] uppercase transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#D4AF37] hover:text-black"
           >
             View Product
           </Link>

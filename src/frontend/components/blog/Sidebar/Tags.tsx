@@ -29,7 +29,7 @@ export function Tags({ tags }: TagsProps) {
 
   return (
     <div className="space-y-6">
-      <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
+      <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
         Tags
       </h4>
       <div className="flex flex-wrap gap-2">
@@ -40,7 +40,7 @@ export function Tags({ tags }: TagsProps) {
               key={tag}
               type="button"
               onClick={() => handleTagClick(tag)}
-              className={`px-4 py-2 text-[9px] font-black uppercase tracking-[0.15em] border rounded-sm transition-all duration-300 ${
+              className={`px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] border rounded-sm transition-all duration-300 ${
                 isSelected
                   ? 'bg-[#D4AF37] text-black border-[#D4AF37]'
                   : 'bg-[#0f0f0f] text-zinc-400 border-zinc-900 hover:bg-[#D4AF37] hover:text-black hover:border-[#D4AF37]'

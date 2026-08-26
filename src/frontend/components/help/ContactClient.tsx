@@ -79,7 +79,7 @@ Regards,`;
           {/* Left Column: Timeline Steps */}
           <div className="lg:col-span-7 space-y-8">
             <div className="space-y-3">
-              <span className="text-[10px] uppercase font-bold text-[#B88A2E] tracking-widest block">
+              <span className="text-[11px] uppercase font-bold text-[#B88A2E] tracking-widest block">
                 CONTACT US
               </span>
               <h1 className="text-3xl md:text-5xl font-normal text-[#1A1A18] tracking-tight font-serif leading-tight">
@@ -173,13 +173,13 @@ Regards,`;
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] text-[#6F6A63] font-semibold uppercase tracking-wider block">
+                <span className="text-[11px] text-[#6F6A63] font-semibold uppercase tracking-wider block">
                   Average response
                 </span>
                 <p className="text-sm font-bold text-[#1A1A18]">
                   Within 24 Hours
                 </p>
-                <span className="text-[10px] text-[#6F6A63] font-medium block">
+                <span className="text-[11px] text-[#6F6A63] font-medium block">
                   (Mon–Sat)
                 </span>
               </div>

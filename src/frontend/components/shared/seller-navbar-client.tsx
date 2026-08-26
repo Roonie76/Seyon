@@ -95,7 +95,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 style={{ fontFamily: 'Georgia, serif' }}
               >
                 seyon
-                <span className="text-[9px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase self-end mb-1">
+                <span className="text-[11px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase self-end mb-1">
                   sellers
                 </span>
               </Link>
@@ -135,7 +135,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   {/* Categories */}
                   {suggestions.categories.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         {suggestions.categories.map((cat) => (
                           <a
@@ -154,7 +154,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   {/* Shops */}
                   {suggestions.shops.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
                         {suggestions.shops.map((shop) => (
                           <a
@@ -166,7 +166,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                             {shop.logo ? (
                               <img src={shop.logo} alt={shop.name} className="h-6 w-6 rounded-full object-cover border border-zinc-200" />
                             ) : (
-                              <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
+                              <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center text-[11px] font-bold text-zinc-600">
                                 {shop.name[0].toUpperCase()}
                               </div>
                             )}
@@ -180,7 +180,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   {/* Products */}
                   {suggestions.products.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
                       <div className="space-y-1 mt-1.5">
                         {suggestions.products.map((prod) => (
                           <a
@@ -225,7 +225,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 >
                   <Heart className="h-5 w-5 stroke-[1.5]" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[11px] text-white font-extrabold rounded-full flex items-center justify-center">
                       {wishlistCount}
                     </span>
                   )}
@@ -292,7 +292,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 {/* Categories */}
                 {suggestions.categories.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {suggestions.categories.map((cat) => (
                         <a
@@ -311,7 +311,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 {/* Creators */}
                 {suggestions.shops.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
                     <div className="space-y-1.5 mt-1">
                       {suggestions.shops.map((shop) => (
                         <a
@@ -323,7 +323,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                           {shop.logo ? (
                             <img src={shop.logo} alt={shop.name} className="h-5 w-5 rounded-full object-cover" />
                           ) : (
-                            <div className="h-5 w-5 rounded-full bg-zinc-200 flex items-center justify-center text-[9px] font-bold text-zinc-600">
+                            <div className="h-5 w-5 rounded-full bg-zinc-200 flex items-center justify-center text-[11px] font-bold text-zinc-600">
                               {shop.name[0]}
                             </div>
                           )}
@@ -337,7 +337,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 {/* Products */}
                 {suggestions.products.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
                     <div className="space-y-1 mt-1">
                       {suggestions.products.map((prod) => (
                         <a
@@ -385,7 +385,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                 style={{ fontFamily: 'Georgia, serif' }}
               >
                 seyon
-                <span className="text-[8px] text-[#A77F3A] font-sans tracking-wider font-bold uppercase">
+                <span className="text-[11px] text-[#A77F3A] font-sans tracking-wider font-bold uppercase">
                   sellers
                 </span>
               </Link>
@@ -400,7 +400,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
             {/* Menu Links */}
             <nav className="flex-1 space-y-6">
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Seller Portal</span>
+                <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Seller Portal</span>
                 <Link
                   href="/dashboard"
                   onClick={closeAll}
@@ -439,7 +439,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
               </div>
 
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Navigation</span>
+                <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Navigation</span>
                 <a
                   href={`${buyerMarketUrl}/marketplace`}
                   onClick={closeAll}
@@ -459,7 +459,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
               </div>
 
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
+                <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
                 <a
                   href={`mailto:${LEGAL_CONTACTS.support}`}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#A77F3A] py-1 transition-colors"
@@ -493,7 +493,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-zinc-800">{user.name}</span>
-                    <span className="text-[10px] text-zinc-450 capitalize">{user.role?.toLowerCase() || ''}</span>
+                    <span className="text-[11px] text-zinc-450 capitalize">{user.role?.toLowerCase() || ''}</span>
                   </div>
                 </div>
                 <Link

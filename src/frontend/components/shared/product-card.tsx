@@ -243,7 +243,7 @@ export function ProductCard({
               </div>
               
               {isSoldOut ? (
-                <span className="text-[10px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
+                <span className="text-[11px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
                   Sold out
                 </span>
               ) : (
@@ -316,13 +316,13 @@ export function ProductCard({
             )}
 
             {/* Floating Badge */}
-            <span className={`absolute top-2.5 left-2.5 z-10 text-[8px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md ${badge.bg} text-white shadow-sm scale-90 origin-top-left`}>
+            <span className={`absolute top-2.5 left-2.5 z-10 text-[11px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-md ${badge.bg} text-white shadow-sm scale-90 origin-top-left`}>
               {badge.text}
             </span>
 
             {/* Sold Out Badge */}
             {isSoldOut && (
-              <span className="absolute bottom-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md bg-zinc-950/80 text-white text-[8px] font-bold uppercase tracking-wide">
+              <span className="absolute bottom-2.5 left-2.5 z-10 px-2 py-0.5 rounded-md bg-zinc-950/80 text-white text-[11px] font-bold uppercase tracking-wide">
                 Sold out
               </span>
             )}
@@ -353,13 +353,13 @@ export function ProductCard({
           )}
 
           {/* Floating Badge */}
-          <span className={`absolute top-3 left-3 z-10 text-[8px] sm:text-[9px] font-black tracking-wider uppercase px-2.5 py-1 rounded-[4px] ${badge.bg} text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]`}>
+          <span className={`absolute top-3 left-3 z-10 text-[11px] sm:text-[11px] font-black tracking-wider uppercase px-2.5 py-1 rounded-[4px] ${badge.bg} text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]`}>
             {badge.text}
           </span>
 
           {/* Sold Out Badge */}
           {isSoldOut && (
-            <span className="absolute bottom-3 left-3 z-10 px-2 py-0.5 rounded-md bg-zinc-950/80 text-white text-[9px] font-bold uppercase tracking-wide">
+            <span className="absolute bottom-3 left-3 z-10 px-2 py-0.5 rounded-md bg-zinc-950/80 text-white text-[11px] font-bold uppercase tracking-wide">
               Sold out
             </span>
           )}
@@ -389,7 +389,7 @@ export function ProductCard({
             </div>
 
             {isSoldOut ? (
-              <span className="text-[10px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
+              <span className="text-[11px] text-zinc-400 font-bold px-2 py-0.5 bg-zinc-50 border border-zinc-200 rounded-md">
                 Sold out
               </span>
             ) : (

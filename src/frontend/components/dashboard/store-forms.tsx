@@ -214,12 +214,12 @@ export function StoreOnboardingForm() {
                 value={formData.deliveryNote}
                 onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
               />
-              <span className="text-[10px] text-muted-foreground font-normal normal-case">
+              <span className="text-[11px] text-muted-foreground font-normal normal-case">
                 {"Separate multiple offers with a semicolon (e.g. 'Free shipping; Ships in 24h; 10% Off'). These will render as beautiful colored badges on your products."}
               </span>
               {formData.deliveryNote && (
                 <div className="mt-2 p-2.5 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
-                  <span className="text-[9px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
+                  <span className="text-[11px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
                   <DeliveryOffersRow deliveryNote={formData.deliveryNote} isPreview />
                 </div>
               )}
@@ -630,12 +630,12 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
                 value={formData.deliveryNote}
                 onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
               />
-              <span className="text-[10px] text-muted-foreground font-normal normal-case">
+              <span className="text-[11px] text-muted-foreground font-normal normal-case">
                 {"Separate multiple offers with a semicolon (e.g. 'Free shipping; Ships in 24h; 10% Off'). These will render as beautiful colored badges on your products."}
               </span>
               {formData.deliveryNote && (
                 <div className="mt-2 p-2.5 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
-                  <span className="text-[9px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
+                  <span className="text-[11px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
                   <DeliveryOffersRow deliveryNote={formData.deliveryNote} isPreview />
                 </div>
               )}

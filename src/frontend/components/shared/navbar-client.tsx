@@ -164,7 +164,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                   {/* Categories */}
                   {suggestions.categories.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
                       <div className="flex flex-wrap gap-2 mt-1.5">
                         {suggestions.categories.map((cat) => (
                           <Link
@@ -183,7 +183,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                   {/* Shops */}
                   {suggestions.shops.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
                         {suggestions.shops.map((shop) => (
                           <Link
@@ -196,7 +196,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={shop.logo} alt={shop.name} className="h-6 w-6 rounded-full object-cover border border-zinc-200" />
                             ) : (
-                              <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-bold text-zinc-600">
+                              <div className="h-6 w-6 rounded-full bg-zinc-200 flex items-center justify-center text-[11px] font-bold text-zinc-600">
                                 {shop.name[0].toUpperCase()}
                               </div>
                             )}
@@ -210,7 +210,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                   {/* Products */}
                   {suggestions.products.length > 0 && (
                     <div className="py-2 px-3">
-                      <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
+                      <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
                       <div className="space-y-1 mt-1.5">
                         {suggestions.products.map((prod) => (
                           <Link
@@ -251,7 +251,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                 >
                   <Heart className="h-5 w-5 stroke-[1.5]" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-rose-500 text-[11px] text-white font-extrabold rounded-full flex items-center justify-center">
                       {wishlistCount}
                     </span>
                   )}
@@ -265,7 +265,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                 >
                   <ShoppingCart className="h-5 w-5 stroke-[1.5]" />
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 text-[8px] text-white font-extrabold rounded-full flex items-center justify-center animate-fade-in">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-amber-500 text-[11px] text-white font-extrabold rounded-full flex items-center justify-center animate-fade-in">
                       {cartCount > 99 ? '99+' : cartCount}
                     </span>
                   )}
@@ -334,7 +334,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                 {/* Categories */}
                 {suggestions.categories.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Categories</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {suggestions.categories.map((cat) => (
                         <Link
@@ -353,7 +353,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                 {/* Creators */}
                 {suggestions.shops.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Creators</span>
                     <div className="space-y-1.5 mt-1">
                       {suggestions.shops.map((shop) => (
                         <Link
@@ -365,7 +365,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                           {shop.logo ? (
                             <img src={shop.logo} alt={shop.name} className="h-5 w-5 rounded-full object-cover" />
                           ) : (
-                            <div className="h-5 w-5 rounded-full bg-zinc-200 flex items-center justify-center text-[9px] font-bold text-zinc-600">
+                            <div className="h-5 w-5 rounded-full bg-zinc-200 flex items-center justify-center text-[11px] font-bold text-zinc-600">
                               {shop.name[0]}
                             </div>
                           )}
@@ -379,7 +379,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                 {/* Products */}
                 {suggestions.products.length > 0 && (
                   <div className="py-2 px-2">
-                    <span className="text-[8px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
+                    <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Products</span>
                     <div className="space-y-1 mt-1">
                       {suggestions.products.map((prod) => (
                         <Link
@@ -455,7 +455,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                   <span className="flex items-center gap-2">
                     My Basket
                     {cartCount > 0 && (
-                      <span className="bg-amber-500 text-[10px] text-white px-2 py-0.5 rounded-full font-extrabold">
+                      <span className="bg-amber-500 text-[11px] text-white px-2 py-0.5 rounded-full font-extrabold">
                         {cartCount}
                       </span>
                     )}
@@ -465,7 +465,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
               </div>
 
               <div className="space-y-3">
-                <span className="text-[9px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
+                <span className="text-[11px] uppercase font-bold text-zinc-400 tracking-wider">Support</span>
                 <a
                   href={`mailto:${LEGAL_CONTACTS.support}`}
                   className="flex items-center justify-between text-sm font-semibold text-zinc-700 hover:text-[#D4AF37] py-1 transition-colors"
@@ -499,7 +499,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-zinc-800">{user.name}</span>
-                    <span className="text-[10px] text-zinc-450 capitalize">{user.role?.toLowerCase() || ''}</span>
+                    <span className="text-[11px] text-zinc-450 capitalize">{user.role?.toLowerCase() || ''}</span>
                   </div>
                 </div>
                 <Link

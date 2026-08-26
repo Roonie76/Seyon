@@ -9,7 +9,7 @@ interface RecentPostsProps {
 export function RecentPosts({ posts }: RecentPostsProps) {
   return (
     <div className="space-y-6">
-      <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
+      <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
         Recent Articles
       </h4>
       <div className="space-y-4">
@@ -31,7 +31,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
 
             {/* Info */}
             <div className="space-y-1.5 transition-transform duration-300 group-hover:translate-x-1">
-              <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.15em] text-zinc-500">
+              <span className="flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.15em] text-zinc-500">
                 <Calendar className="h-2.5 w-2.5 text-[#D4AF37]" />
                 {new Date(post.date).toLocaleDateString('en-US', {
                   month: 'short',

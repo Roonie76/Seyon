@@ -43,8 +43,8 @@ function StatusPill({ listed }: { listed: boolean }) {
       data-testid="listing-status"
       className={
         listed
-          ? 'rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700'
-          : 'rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-800'
+          ? 'rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700'
+          : 'rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-800'
       }
     >
       {listed ? 'Listed in marketplace' : 'Not yet listed'}

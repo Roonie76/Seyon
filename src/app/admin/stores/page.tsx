@@ -82,7 +82,7 @@ export default async function AdminStoresPage({
         ) : (
           <div className="overflow-x-auto rounded-xl border border-zinc-200">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 text-[10px] uppercase tracking-wider text-zinc-500">
+              <thead className="bg-zinc-50 text-[11px] uppercase tracking-wider text-zinc-500">
                 <tr>
                   <th className="px-3 py-2">Store</th>
                   <th className="px-3 py-2">Owner</th>
@@ -159,7 +159,7 @@ function Pill({ tone, children }: { tone: 'red' | 'amber' | 'green' | 'zinc'; ch
     zinc: 'bg-zinc-100 text-zinc-600 border-zinc-200',
   } as const;
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${tones[tone]}`}>
+    <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${tones[tone]}`}>
       {children}
     </span>
   );

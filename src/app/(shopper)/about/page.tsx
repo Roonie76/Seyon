@@ -1,22 +1,15 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ChevronDown } from 'lucide-react';
-import { Plus_Jakarta_Sans, Cormorant_Garamond } from 'next/font/google';
 import { Reveal } from './_components/reveal';
 import { CaseStudies } from './_components/case-studies';
 
-const sansFont = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '600', '700', '800'],
-  variable: '--font-sans-custom',
-});
-
-const serifFont = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['300', '400', '600', '700'],
-  style: ['italic', 'normal'],
-  variable: '--font-serif-custom',
-});
+/*
+ * This page used to load Plus Jakarta Sans and Cormorant Garamond of its own
+ * accord and override --font-sans-custom / --font-serif-custom locally, so it
+ * was the one page that would have ignored a site-wide font change. Both are
+ * gone; it inherits the root face like everything else.
+ */
 
 export const metadata: Metadata = {
   title: 'About Seyon — Social-Commerce Storefronts for Independent Sellers',
@@ -157,7 +150,7 @@ const ArrowRight = () => (
 
 export default function AboutPage() {
   return (
-    <div className={`relative w-full overflow-hidden bg-black text-zinc-300 min-h-screen ${sansFont.variable} ${serifFont.variable} font-sans`}>
+    <div className="relative w-full overflow-hidden bg-black text-zinc-300 min-h-screen font-sans">
       {/* Custom CSS Animation Styles Stylesheet */}
       <style>{`
         @keyframes subtlePulse {
@@ -228,7 +221,7 @@ export default function AboutPage() {
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-7 space-y-8">
               <Reveal>
-                <span className="animate-manifesto-badge inline-flex items-center rounded-full border border-zinc-800 bg-zinc-950/45 px-5 py-2 text-[9px] font-black uppercase tracking-[0.3em] text-[#E5C07B]">
+                <span className="animate-manifesto-badge inline-flex items-center rounded-full border border-zinc-800 bg-zinc-950/45 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-[#E5C07B]">
                   THE SEYON MANIFESTO
                 </span>
               </Reveal>
@@ -274,7 +267,7 @@ export default function AboutPage() {
           </div>
 
           <Reveal delay={320}>
-            <div className="mt-20 flex flex-col sm:flex-row sm:items-center gap-y-3 gap-x-8 text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500 border-t border-zinc-900/60 pt-8">
+            <div className="mt-20 flex flex-col sm:flex-row sm:items-center gap-y-3 gap-x-8 text-[11px] font-black uppercase tracking-[0.25em] text-zinc-500 border-t border-zinc-900/60 pt-8">
               <span>LIVE IN 5 MINUTES</span>
               <span className="hidden sm:inline text-zinc-800">•</span>
               <span>WHATSAPP · INSTAGRAM · TELEGRAM</span>
@@ -291,7 +284,7 @@ export default function AboutPage() {
               {/* The Old Way Card */}
               <div className="lg:col-span-5 relative group overflow-hidden rounded-3xl border border-zinc-900 bg-zinc-950/20 p-8 sm:p-12 transition-all duration-500 hover:border-zinc-850 hover:bg-zinc-950/30">
                 <Reveal>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-600">
+                  <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-zinc-600">
                     The Industry Standard
                   </span>
                   <h3 className="mt-4 text-3xl font-extralight text-zinc-400 uppercase tracking-tight">
@@ -325,7 +318,7 @@ export default function AboutPage() {
                 <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#E5C07B]/30 to-transparent" />
                 
                 <Reveal delay={100}>
-                  <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
+                  <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
                     The Seyon Paradigm
                   </span>
                   <h3 className="mt-4 text-3xl font-extralight text-white uppercase tracking-tight">
@@ -357,7 +350,7 @@ export default function AboutPage() {
         {/* TRUST ROW / CATEGORIES */}
         <section className="max-w-7xl mx-auto px-6 py-16 text-center border-b border-zinc-900/60">
           <Reveal>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-600 mb-6">
+            <p className="text-[11px] font-black uppercase tracking-[0.25em] text-zinc-600 mb-6">
               Supporting Makers in Every Niche
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -376,7 +369,7 @@ export default function AboutPage() {
         {/* ASYMMETRICAL SUPERPOWERS GRID */}
         <section className="max-w-7xl mx-auto px-6 py-24 sm:py-32 border-b border-zinc-900">
           <Reveal className="text-center mb-20">
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
               Platform Architecture
             </span>
             <h2 className="mt-4 text-4xl sm:text-6xl font-black text-white uppercase tracking-tight">
@@ -415,7 +408,7 @@ export default function AboutPage() {
                       <p className="text-4xl sm:text-5xl font-extralight tracking-tight text-[#E5C07B] font-mono group-hover:scale-105 group-hover:brightness-110 transition-all duration-500">
                         {s.value}
                       </p>
-                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.25em]">
+                      <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.25em]">
                         {s.label}
                       </p>
                     </div>
@@ -429,7 +422,7 @@ export default function AboutPage() {
         {/* TIMELINE: HOW IT WORKS */}
         <section className="max-w-4xl mx-auto px-6 py-24 sm:py-32 border-b border-zinc-900">
           <Reveal className="text-center mb-20">
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
               The Journey
             </span>
             <h2 className="mt-4 text-4xl sm:text-6xl font-black text-white uppercase tracking-tight">
@@ -466,7 +459,7 @@ export default function AboutPage() {
         {/* SELLER STORIES (CASE STUDIES) */}
         <section className="max-w-7xl mx-auto px-6 py-24 sm:py-32 border-b border-zinc-900">
           <Reveal className="text-center mb-16">
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
               Case Studies
             </span>
             <h2 className="mt-4 text-4xl sm:text-6xl font-black text-white uppercase tracking-tight">
@@ -484,7 +477,7 @@ export default function AboutPage() {
         {/* Accordion FAQ Section */}
         <section className="max-w-4xl mx-auto px-6 py-24 sm:py-32 border-b border-zinc-900">
           <Reveal className="text-center mb-16">
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
+            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]">
               Questions
             </span>
             <h2 className="mt-4 text-4xl sm:text-6xl font-black text-white uppercase tracking-tight">
@@ -517,7 +510,7 @@ export default function AboutPage() {
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(229,192,123,0.1),transparent_60%)]" />
               
               <div className="relative z-10 space-y-8">
-                <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-950/50 px-5 py-2 text-[9px] font-black uppercase tracking-[0.3em] text-[#E5C07B]">
+                <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-950/50 px-5 py-2 text-[11px] font-black uppercase tracking-[0.3em] text-[#E5C07B]">
                   JOIN SEYON
                 </span>
                 

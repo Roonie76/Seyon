@@ -90,21 +90,21 @@ function NoticeCard({ notice }: { notice: SellerNotice }) {
       >
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${KIND_STYLES[notice.kind]}`} data-testid="notice-kind">
+            <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${KIND_STYLES[notice.kind]}`} data-testid="notice-kind">
               {KIND_LABELS[notice.kind]}
             </span>
             {!notice.readAt ? (
-              <span data-testid="notice-unread" className="rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] font-bold text-white">new</span>
+              <span data-testid="notice-unread" className="rounded bg-zinc-900 px-1.5 py-0.5 text-[11px] font-bold text-white">new</span>
             ) : null}
             {overdue ? (
-              <span data-testid="notice-overdue" className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
+              <span data-testid="notice-overdue" className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-800">
                 response overdue
               </span>
             ) : null}
           </div>
           <h3 className="mt-1 text-sm font-bold text-zinc-950" data-testid="notice-subject">{notice.subject}</h3>
         </div>
-        <span className="shrink-0 text-[10px] text-zinc-500">{notice.sentAt.toLocaleDateString('en-IN')}</span>
+        <span className="shrink-0 text-[11px] text-zinc-500">{notice.sentAt.toLocaleDateString('en-IN')}</span>
       </button>
 
       {open ? (
@@ -121,7 +121,7 @@ function NoticeCard({ notice }: { notice: SellerNotice }) {
 
           {notice.respondedAt ? (
             <div className="rounded-lg bg-zinc-100 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
                 Your response · {notice.respondedAt.toLocaleDateString('en-IN')}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-800" data-testid="notice-response">{notice.response}</p>

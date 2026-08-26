@@ -211,7 +211,7 @@ export function ProductCTA({
           {groups.map((group) => (
             <div key={group.label ?? '_'} className="flex flex-col gap-1.5">
               {group.label && (
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider">
                   {group.label}
                 </span>
               )}
@@ -397,7 +397,7 @@ export function ProductCTA({
               </ul>
             </div>
 
-            <p className="text-[10px] text-zinc-500 italic leading-relaxed pt-1 select-text">
+            <p className="text-[11px] text-zinc-500 italic leading-relaxed pt-1 select-text">
               These are recommended safety practices to help reduce risk when buying directly from independent sellers.
             </p>
 
@@ -428,7 +428,7 @@ export function ProductCTA({
                 Why am I seeing this?
               </button>
               {showWhyLink && (
-                <p className="text-[10px] text-zinc-500 bg-zinc-50/80 p-2.5 rounded-xl border border-zinc-200/60 animate-in fade-in duration-200 select-text leading-relaxed">
+                <p className="text-[11px] text-zinc-500 bg-zinc-50/80 p-2.5 rounded-xl border border-zinc-200/60 animate-in fade-in duration-200 select-text leading-relaxed">
                   Seyon connects buyers directly with independent sellers. These reminders are shown to help you shop more safely and confidently.
                 </p>
               )}

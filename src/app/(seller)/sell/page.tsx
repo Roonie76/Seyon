@@ -336,7 +336,7 @@ export default async function HomePage() {
                   </div>
                   <div className="p-4 flex flex-col justify-between flex-grow">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-amber-700 mb-1 block">
+                      <span className="text-[11px] uppercase font-bold text-amber-700 mb-1 block">
                         {prod.category}
                       </span>
                       <h3 className="font-bold text-foreground text-sm sm:text-base line-clamp-1 group-hover:text-amber-600 transition-colors">

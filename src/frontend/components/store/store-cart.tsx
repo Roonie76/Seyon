@@ -244,7 +244,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="text-[10px] text-zinc-400 font-bold uppercase">No Image</div>
+                        <div className="text-[11px] text-zinc-400 font-bold uppercase">No Image</div>
                       )}
                     </div>
                     <div className="min-w-0">
@@ -256,7 +256,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
                           {Object.entries(item.selections).map(([k, v]) => (
                             <span
                               key={k}
-                              className="text-[9px] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded-sm font-semibold"
+                              className="text-[11px] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded-sm font-semibold"
                             >
                               {k}: {v}
                             </span>
@@ -307,7 +307,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
                   <div className="font-extrabold flex items-center gap-1">
                     Saved Shipping Details <ClipboardCheck className="h-3.5 w-3.5 text-emerald-500" />
                   </div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
                     {[address.addressLine1, address.city, address.postalCode].filter(Boolean).join(', ')}
                   </div>
                 </div>
@@ -317,7 +317,7 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
                 <MapPin className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
                 <div>
                   <div className="font-bold">No saved shipping details</div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                     Add address in Shopper Settings to auto-append it to WhatsApp messages.
                   </div>
                 </div>

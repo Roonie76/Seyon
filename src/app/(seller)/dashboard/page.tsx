@@ -141,7 +141,7 @@ export default async function DashboardPage() {
               {unreadNotices > 0 ? (
                 <span
                   data-testid="dashboard-notices-badge"
-                  className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white"
+                  className="ml-1 rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white"
                 >
                   {unreadNotices}
                 </span>
@@ -266,12 +266,12 @@ export default async function DashboardPage() {
                     </div>
                     <p className="text-muted-foreground leading-relaxed">{rev.comment}</p>
                     {rev.isHidden ? (
-                      <p className="mt-2 rounded bg-white/70 p-2 text-[10px] font-semibold text-zinc-600">
+                      <p className="mt-2 rounded bg-white/70 p-2 text-[11px] font-semibold text-zinc-600">
                         Hidden by the Seyon team, and not counted towards your rating.
                         {rev.hiddenReason ? ` Reason: ${rev.hiddenReason}` : ''}
                       </p>
                     ) : null}
-                    <span className="text-[10px] text-muted-foreground/60 block mt-2 text-right">
+                    <span className="text-[11px] text-muted-foreground/60 block mt-2 text-right">
                       {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
@@ -293,10 +293,10 @@ export default async function DashboardPage() {
                 shop.reports.map((rep) => (
                   <div key={rep.id} className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs">
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border capitalize ${rep.status === 'OPEN' ? 'text-red-750 bg-red-100 border-red-200 animate-pulse' : rep.status === 'RESOLVED' ? 'text-emerald-700 bg-emerald-100 border-emerald-200' : 'text-amber-705 bg-amber-100 border-amber-200'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border capitalize ${rep.status === 'OPEN' ? 'text-red-750 bg-red-100 border-red-200 animate-pulse' : rep.status === 'RESOLVED' ? 'text-emerald-700 bg-emerald-100 border-emerald-200' : 'text-amber-705 bg-amber-100 border-amber-200'}`}>
                         {rep.status.replace('_', ' ').toLowerCase()}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground">
                         {new Date(rep.createdAt).toLocaleDateString()}
                       </span>
                     </div>

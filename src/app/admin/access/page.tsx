@@ -89,14 +89,14 @@ export default async function AdminAccessPage({
                     </Link>
                     <span
                       data-testid="access-role"
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
                         u.role === 'ADMIN' ? 'bg-red-100 text-red-800' : 'bg-zinc-100 text-zinc-700'
                       }`}
                     >
                       {u.role}
                     </span>
                     {u.isSelf ? (
-                      <span data-testid="access-self" className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-800">you</span>
+                      <span data-testid="access-self" className="rounded bg-blue-100 px-1.5 py-0.5 text-[11px] font-bold text-blue-800">you</span>
                     ) : null}
                   </div>
                   <div className="truncate text-[11px] text-zinc-600">
@@ -144,7 +144,7 @@ export default async function AdminAccessPage({
                 <li key={c.id} className="py-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-bold text-zinc-900" data-testid="role-history-action">{c.action}</span>
-                    <span className="text-[10px] text-zinc-400">{c.createdAt.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-zinc-400">{c.createdAt.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="text-[11px] text-zinc-600">
                     by {c.actorName ?? c.actorEmail ?? 'unknown'}

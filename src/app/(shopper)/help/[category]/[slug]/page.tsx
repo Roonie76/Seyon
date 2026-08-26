@@ -197,7 +197,7 @@ export default async function HelpArticlePage({ params }: ArticlePageProps) {
                       <span className="text-xs font-bold text-[#1A1A18] font-serif leading-snug group-hover:text-[#B88A2E] transition-colors line-clamp-2">
                         {art.title}
                       </span>
-                      <span className="text-[10px] text-[#B88A2E] font-bold uppercase tracking-wider font-sans group-hover:translate-x-1 duration-200 transition-all">
+                      <span className="text-[11px] text-[#B88A2E] font-bold uppercase tracking-wider font-sans group-hover:translate-x-1 duration-200 transition-all">
                         Read Guide &rarr;
                       </span>
                     </Link>

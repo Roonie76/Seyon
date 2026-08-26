@@ -161,7 +161,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
           {/* Categories Suggestions */}
           {suggestions.categories.length > 0 && (
             <div className="p-2 border-b border-zinc-100">
-              <div className="flex items-center gap-1 text-[10px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
+              <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
                 <Tag className="h-3 w-3" /> Categories
               </div>
               <div className="space-y-0.5">
@@ -181,7 +181,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
           {/* Stores Suggestions */}
           {suggestions.shops.length > 0 && (
             <div className="p-2 border-b border-zinc-100">
-              <div className="flex items-center gap-1 text-[10px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
+              <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
                 <Store className="h-3 w-3" /> Shops
               </div>
               <div className="space-y-0.5">
@@ -202,7 +202,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
           {/* Products Suggestions */}
           {suggestions.products.length > 0 && (
             <div className="p-2">
-              <div className="flex items-center gap-1 text-[10px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
+              <div className="flex items-center gap-1 text-[11px] uppercase font-extrabold text-muted-foreground px-3 py-1.5 tracking-wider">
                 <ShoppingBag className="h-3 w-3" /> Products
               </div>
               <div className="space-y-0.5">

@@ -243,7 +243,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                     <button
                       type="button"
                       onClick={generateSlug}
-                      className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline font-normal normal-case"
+                      className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-normal normal-case"
                     >
                       <Sparkles size={10} /> Auto-generate
                     </button>
@@ -292,7 +292,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                         key={t}
                         type="button"
                         onClick={() => setTab(t)}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        className={`px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           tab === t
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-transparent text-muted-foreground hover:text-foreground'
@@ -319,7 +319,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                   </>
                 ) : (
                   <div className="rounded-md border border-border bg-zinc-950 p-3 min-h-[22rem] overflow-y-auto">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">
                       {blocks.length} block{blocks.length === 1 ? '' : 's'} — rendered by the same
                       parser the article page uses
                     </p>
@@ -379,7 +379,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
               <div className="flex items-center justify-between p-3 border border-border/60 bg-zinc-950/20 rounded-lg">
                 <div>
                   <p className="text-xs font-bold uppercase text-foreground">Published</p>
-                  <p className="text-[10px] text-muted-foreground">Visible to general visitors</p>
+                  <p className="text-[11px] text-muted-foreground">Visible to general visitors</p>
                 </div>
                 <input
                   type="checkbox"
@@ -392,7 +392,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
               <div className="flex items-center justify-between p-3 border border-border/60 bg-zinc-950/20 rounded-lg">
                 <div>
                   <p className="text-xs font-bold uppercase text-foreground">Featured</p>
-                  <p className="text-[10px] text-muted-foreground">Pin as main widescreen hero</p>
+                  <p className="text-[11px] text-muted-foreground">Pin as main widescreen hero</p>
                 </div>
                 <input
                   type="checkbox"
@@ -451,7 +451,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                     Unsplash and Google. Say so here rather than letting the
                     reader find an empty hero. */}
                 {(coverError || !coverCheck.ok) && (
-                  <p className="text-[10px] text-destructive leading-relaxed">
+                  <p className="text-[11px] text-destructive leading-relaxed">
                     {coverError ?? coverCheck.reason}
                   </p>
                 )}
@@ -489,7 +489,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                   value={featuredProduct}
                   onChange={(e) => setFeaturedProduct(e.target.value)}
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   Associates a shop product to this article for conversion tracking and calls to action.
                 </p>
               </div>

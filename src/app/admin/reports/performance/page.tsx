@@ -167,12 +167,12 @@ export default async function SlaPerformancePage({
                         {m.kind === 'ACKNOWLEDGEMENT' ? 'Not acknowledged in time' : 'Not disposed of in time'}
                       </span>
                       {m.stillOpen ? (
-                        <span data-testid="miss-open-badge" className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
+                        <span data-testid="miss-open-badge" className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-800">
                           still open
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-[10px] tabular-nums text-zinc-500">
+                    <span className="text-[11px] tabular-nums text-zinc-500">
                       {m.lateBy}
                       {m.kind === 'ACKNOWLEDGEMENT' ? 'h' : 'd'} late
                     </span>
@@ -198,7 +198,7 @@ export default async function SlaPerformancePage({
           ) : null}
         </div>
 
-        <p className="mt-6 text-[10px] text-zinc-400">
+        <p className="mt-6 text-[11px] text-zinc-400">
           Generated {generatedAt.toLocaleString('en-IN')} from complaint timestamps. Nothing here is
           stored or cached, so changing a deadline corrects every past month rather than only new ones.
         </p>
@@ -210,7 +210,7 @@ export default async function SlaPerformancePage({
 
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
-    <th className={`px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-zinc-500 ${right ? 'text-right' : ''}`}>
+    <th className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-zinc-500 ${right ? 'text-right' : ''}`}>
       {children}
     </th>
   );

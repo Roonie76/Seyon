@@ -24,7 +24,7 @@ export function FeaturedStory({ post }: FeaturedStoryProps) {
 
       {/* Floating Category Tag */}
       <div className="absolute top-6 left-6 z-20">
-        <span className="bg-[#D4AF37] text-black text-[10px] font-black uppercase tracking-[0.25em] px-4 py-2 rounded-sm shadow-lg">
+        <span className="bg-[#D4AF37] text-black text-[11px] font-black uppercase tracking-[0.25em] px-4 py-2 rounded-sm shadow-lg">
           {post.category}
         </span>
       </div>
@@ -32,7 +32,7 @@ export function FeaturedStory({ post }: FeaturedStoryProps) {
       {/* Content */}
       <div className="absolute bottom-0 inset-x-0 p-8 sm:p-12 md:p-16 z-10 flex flex-col justify-end max-w-3xl space-y-4">
         {/* Meta info */}
-        <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9D9D9D]">
+        <div className="flex flex-wrap items-center gap-4 text-[11px] font-bold uppercase tracking-[0.2em] text-[#9D9D9D]">
           <span className="inline-flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5 text-[#D4AF37]" />
             {new Date(post.date).toLocaleDateString('en-US', {

@@ -185,7 +185,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div className="lg:col-span-2 flex flex-col gap-8">
           {/* Mobile-only: Title + Price above gallery so user sees product name first */}
           <div className="lg:hidden">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 mb-2 capitalize">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 mb-2 capitalize">
               <Tag size={10} /> {product.category}
             </span>
             <h1 className="text-xl font-extrabold text-foreground tracking-tight leading-tight mb-1">
@@ -196,7 +196,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {product.compareAtPrice != null && product.compareAtPrice > product.price && (
                 <>
                   <span className="text-sm text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
-                  <Badge variant="gold-pill" className="text-[10px]">
+                  <Badge variant="gold-pill" className="text-[11px]">
                     {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
                   </Badge>
                 </>
@@ -221,7 +221,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Purchase CTA and Store Widget Sidebar */}
         <div className="flex flex-col gap-6">
           <Card className="glass p-6">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 mb-4 capitalize">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20 mb-4 capitalize">
               <Tag size={10} /> {product.category}
             </span>
 
@@ -235,7 +235,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.compareAtPrice != null && product.compareAtPrice > product.price && (
                   <>
                     <span className="text-base text-muted-foreground line-through">₹{product.compareAtPrice.toFixed(2)}</span>
-                    <Badge variant="gold-pill" className="text-[10px]">
+                    <Badge variant="gold-pill" className="text-[11px]">
                       {Math.round((1 - product.price / product.compareAtPrice) * 100)}% OFF
                     </Badge>
                   </>
@@ -312,7 +312,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {reviewCount > 0 && (
               <div className="my-4 pt-3 border-t border-zinc-150 dark:border-zinc-800">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Seller Feedback</span>
+                <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider block mb-2">Seller Feedback</span>
                 <RatingsHistogram reviews={shop.reviews} />
               </div>
             )}

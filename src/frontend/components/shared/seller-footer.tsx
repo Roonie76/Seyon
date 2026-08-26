@@ -34,7 +34,7 @@ export async function SellerFooter() {
         
         {/* Top resources navigation bar - matching shopper's category strip */}
         <nav aria-label="Seller resources" className="mb-8 pb-6 border-b border-zinc-800">
-          <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">
+          <span className="text-[11px] uppercase font-bold text-[#A77F3A] tracking-wider block mb-3">
             SELLER RESOURCES
           </span>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-zinc-400">
@@ -69,7 +69,7 @@ export async function SellerFooter() {
               style={{ fontFamily: 'Georgia, serif' }}
             >
               seyon
-              <span className="text-[9px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase self-end mb-1">
+              <span className="text-[11px] text-[#A77F3A] ml-1.5 font-sans tracking-widest font-bold uppercase self-end mb-1">
                 sellers
               </span>
             </Link>
@@ -79,7 +79,7 @@ export async function SellerFooter() {
             
             {/* Follow Us Section */}
             <div className="space-y-3 pt-2">
-              <span className="text-[10px] uppercase font-bold text-[#A77F3A] tracking-wider block">
+              <span className="text-[11px] uppercase font-bold text-[#A77F3A] tracking-wider block">
                 FOLLOW US
               </span>
               <div className="flex items-center gap-3">
@@ -116,7 +116,7 @@ export async function SellerFooter() {
 
           {/* Column 2: Seller Tools */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">
               Seller Tools
             </span>
             <ul className="space-y-2 text-sm text-zinc-400">
@@ -141,7 +141,7 @@ export async function SellerFooter() {
 
           {/* Column 3: Support & Legal */}
           <div className="space-y-3">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">
+            <span className="text-[11px] uppercase font-bold text-zinc-500 tracking-wider block">
               Support & Legal
             </span>
             <ul className="space-y-2 text-sm text-zinc-400">

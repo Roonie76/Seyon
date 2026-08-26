@@ -68,7 +68,7 @@ export function SellerLegalDetails({
           Seller details
         </h2>
         {kycStatus === KycStatus.APPROVED ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
             <BadgeCheck className="h-3 w-3" aria-hidden="true" />
             Identity verified
           </span>

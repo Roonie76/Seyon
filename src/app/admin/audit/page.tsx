@@ -136,7 +136,7 @@ export default async function AdminAuditPage({
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-zinc-950" data-testid="audit-log-action">{a.action}</span>
-                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700">
+                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-bold text-zinc-700">
                         {a.targetType}
                       </span>
                       {href ? (
@@ -145,7 +145,7 @@ export default async function AdminAuditPage({
                         </Link>
                       ) : null}
                     </div>
-                    <span className="text-[10px] text-zinc-500">{a.createdAt.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-zinc-500">{a.createdAt.toLocaleString('en-IN')}</span>
                   </div>
                   <p className="mt-1 text-[11px] text-zinc-600" data-testid="audit-log-actor">
                     by {a.actorName ?? a.actorEmail ?? 'unknown'}
@@ -181,7 +181,7 @@ export default async function AdminAuditPage({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">{label}</span>
       {children}
     </label>
   );

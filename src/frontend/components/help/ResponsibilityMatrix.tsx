@@ -31,7 +31,7 @@ export function ResponsibilityMatrix() {
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs md:text-sm">
           <thead>
-            <tr className="border-b border-[#ECE5D9] bg-[#FAF8F4]/80 text-[10px] font-bold uppercase tracking-widest text-[#6F6A63]">
+            <tr className="border-b border-[#ECE5D9] bg-[#FAF8F4]/80 text-[11px] font-bold uppercase tracking-widest text-[#6F6A63]">
               <th className="px-5 py-3">Responsibility</th>
               <th className="px-5 py-3 text-center">Buyer</th>
               <th className="px-5 py-3 text-center">Seller</th>

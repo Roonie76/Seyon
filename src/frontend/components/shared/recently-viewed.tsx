@@ -89,7 +89,7 @@ export function RecentlyViewedStrip({ excludeId }: { excludeId?: string }) {
               {item.image ? (
                 <Image src={item.image} alt={item.title} fill className="object-cover" sizes="144px" />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[10px]">No image</div>
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground text-[11px]">No image</div>
               )}
             </div>
             <div className="p-2">

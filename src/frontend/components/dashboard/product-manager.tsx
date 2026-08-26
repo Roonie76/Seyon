@@ -565,7 +565,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                   value={formData.options}
                   onChange={(e) => setFormData((prev) => ({ ...prev, options: e.target.value }))}
                 />
-                <span className="text-[10px] text-muted-foreground">Buyers pick these and they are included in their WhatsApp message.</span>
+                <span className="text-[11px] text-muted-foreground">Buyers pick these and they are included in their WhatsApp message.</span>
               </div>
             </div>
 
@@ -636,7 +636,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                         </button>
                       </div>
                       {img.isPrimary && (
-                        <div className="absolute top-1 left-1 bg-amber-500 text-black text-[8px] font-extrabold px-1 rounded-sm z-10">
+                        <div className="absolute top-1 left-1 bg-amber-500 text-black text-[11px] font-extrabold px-1 rounded-sm z-10">
                           COVER
                         </div>
                       )}

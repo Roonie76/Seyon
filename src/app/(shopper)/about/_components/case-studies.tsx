@@ -111,7 +111,7 @@ export function CaseStudies() {
 
             <div className="space-y-6">
               <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]/60 mb-2">
+                <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]/60 mb-2">
                   The Hurdle
                 </h4>
                 <p className="text-zinc-400 text-base leading-relaxed font-light">
@@ -119,7 +119,7 @@ export function CaseStudies() {
                 </p>
               </div>
               <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E5C07B]/60 mb-2">
+                <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#E5C07B]/60 mb-2">
                   The Transformation
                 </h4>
                 <p className="text-zinc-200 text-base leading-relaxed font-normal">
@@ -155,7 +155,7 @@ export function CaseStudies() {
                 <p className="text-3xl sm:text-4xl font-extralight tracking-tight text-[#E5C07B] font-sans">
                   {stat.value}
                 </p>
-                <p className="mt-1 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] transition-colors group-hover/metric:text-zinc-400">
+                <p className="mt-1 text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] transition-colors group-hover/metric:text-zinc-400">
                   {stat.label}
                 </p>
               </div>

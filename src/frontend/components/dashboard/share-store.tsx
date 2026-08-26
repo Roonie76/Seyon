@@ -86,7 +86,7 @@ export function ShareStoreCard({ shopSlug, buyerMarketUrl }: ShareStoreCardProps
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-100">
-          <span className="text-[10px] uppercase font-bold text-muted-foreground block w-full mb-1">
+          <span className="text-[11px] uppercase font-bold text-muted-foreground block w-full mb-1">
             Quick Share
           </span>
           <a

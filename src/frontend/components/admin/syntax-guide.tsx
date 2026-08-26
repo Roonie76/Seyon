@@ -13,7 +13,7 @@ import { BLOCK_SYNTAX, INLINE_SYNTAX } from '@/shared/blog/blocks';
  */
 export function SyntaxGuide({ onInsert }: { onInsert?: (snippet: string) => void }) {
   return (
-    <div className="text-[10px] bg-zinc-950 rounded-md border border-border divide-y divide-border">
+    <div className="text-[11px] bg-zinc-950 rounded-md border border-border divide-y divide-border">
       <Group title="Blocks — each on its own, separated by a blank line" items={BLOCK_SYNTAX} onInsert={onInsert} />
       <Group title="Inline — anywhere within a line" items={INLINE_SYNTAX} onInsert={onInsert} />
     </div>
@@ -39,7 +39,7 @@ function Group({
               type="button"
               onClick={() => onInsert?.(item.syntax)}
               disabled={!onInsert}
-              className="font-mono text-[10px] bg-zinc-900 text-zinc-200 px-1.5 py-0.5 rounded border border-zinc-800 enabled:hover:border-primary enabled:hover:text-primary transition-colors text-left whitespace-pre disabled:cursor-default"
+              className="font-mono text-[11px] bg-zinc-900 text-zinc-200 px-1.5 py-0.5 rounded border border-zinc-800 enabled:hover:border-primary enabled:hover:text-primary transition-colors text-left whitespace-pre disabled:cursor-default"
               title={onInsert ? 'Insert at the cursor' : undefined}
             >
               {item.syntax}

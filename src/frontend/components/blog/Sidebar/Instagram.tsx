@@ -18,7 +18,7 @@ export function Instagram() {
 
   return (
     <div className="space-y-6">
-      <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
+      <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
         Follow Along
       </h4>
 

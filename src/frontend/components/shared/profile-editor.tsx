@@ -181,7 +181,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
           </span>
           <div className="flex items-center gap-2 mt-1.5">
             <span
-              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${roleBadgeColor[user.role] || roleBadgeColor.USER}`}
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${roleBadgeColor[user.role] || roleBadgeColor.USER}`}
             >
               <Shield className="h-3 w-3" />
               {user.role}
@@ -212,7 +212,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
             <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-600">
               <Mail className="h-3.5 w-3.5 text-zinc-400" />
               Email
-              <span className="text-[9px] font-normal normal-case tracking-normal text-zinc-550 ml-1">(cannot be changed)</span>
+              <span className="text-[11px] font-normal normal-case tracking-normal text-zinc-550 ml-1">(cannot be changed)</span>
             </label>
             <div className="w-full rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-500 cursor-not-allowed select-none">
               {user.email || '—'}
@@ -241,7 +241,7 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
                 <h3 className="text-sm font-bold text-zinc-800 uppercase tracking-wider mb-1 flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-[#A77F3A]" /> Shipping Address (WhatsApp Pre-fill)
                 </h3>
-                <p className="text-[10px] text-zinc-500 leading-normal mb-4">
+                <p className="text-[11px] text-zinc-500 leading-normal mb-4">
                   This address will be automatically appended to WhatsApp inquiry messages.
                 </p>
               </div>

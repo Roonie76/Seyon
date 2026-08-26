@@ -36,14 +36,14 @@ export function ResendNoticeButton({
   return (
     <div className="mt-2">
       {error ? (
-        <p role="alert" data-testid="resend-error" className="mb-1 text-[10px] font-semibold text-red-600">{error}</p>
+        <p role="alert" data-testid="resend-error" className="mb-1 text-[11px] font-semibold text-red-600">{error}</p>
       ) : null}
       <button
         type="button"
         data-testid="resend-notice"
         onClick={resend}
         disabled={busy || sent}
-        className="text-[10px] font-bold text-[#A77F3A] hover:underline disabled:opacity-40 disabled:no-underline"
+        className="text-[11px] font-bold text-[#A77F3A] hover:underline disabled:opacity-40 disabled:no-underline"
       >
         {sent ? 'Email sent' : busy ? 'Sending…' : everEmailed ? 'Email it again' : 'Try emailing it'}
       </button>

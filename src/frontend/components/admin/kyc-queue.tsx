@@ -89,8 +89,8 @@ export function KycQueue({ items }: { items: KycQueueItem[] }) {
               <span
                 className={
                   item.ageHours >= 48
-                    ? 'rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-700'
-                    : 'rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600'
+                    ? 'rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[11px] font-bold text-red-700'
+                    : 'rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-bold text-zinc-600'
                 }
               >
                 waiting {item.ageHours}h

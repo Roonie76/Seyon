@@ -32,14 +32,14 @@ export function TopicSidebar({ category, articles, activeSlug }: TopicSidebarPro
     <aside className="w-full md:w-64 shrink-0 space-y-6 font-sans">
       {/* Category header */}
       <div className="border-b border-[#ECE5D9] pb-4">
-        <span className="text-[9px] uppercase font-bold tracking-widest text-[#6F6A63]/60">Section</span>
+        <span className="text-[11px] uppercase font-bold tracking-widest text-[#6F6A63]/60">Section</span>
         <h2 className="text-xl font-normal text-[#1A1A18] font-serif mt-1">{categoryLabels[category]}</h2>
       </div>
 
       <nav className="space-y-6">
         {Object.entries(grouped).map(([topic, arts]) => (
           <div key={topic} className="space-y-2">
-            <h3 className="text-[9px] uppercase font-bold tracking-widest text-[#B88A2E]">
+            <h3 className="text-[11px] uppercase font-bold tracking-widest text-[#B88A2E]">
               {topic}
             </h3>
             <ul className="space-y-1">

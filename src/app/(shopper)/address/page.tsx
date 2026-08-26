@@ -75,7 +75,7 @@ export default function AddressPage() {
             <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 space-y-2">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-[#A77F3A]" />
-                <p className="text-[10px] font-bold text-[#A77F3A] uppercase tracking-wider">Weekdays</p>
+                <p className="text-[11px] font-bold text-[#A77F3A] uppercase tracking-wider">Weekdays</p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm text-zinc-950 font-bold">Monday – Friday</p>
@@ -85,7 +85,7 @@ export default function AddressPage() {
             <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-5 space-y-2">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-[#A77F3A]" />
-                <p className="text-[10px] font-bold text-[#A77F3A] uppercase tracking-wider">Saturday</p>
+                <p className="text-[11px] font-bold text-[#A77F3A] uppercase tracking-wider">Saturday</p>
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm text-zinc-950 font-bold">Saturday</p>

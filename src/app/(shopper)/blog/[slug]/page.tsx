@@ -130,14 +130,14 @@ export default async function BlogArticlePage({ params }: PageProps) {
         <header className="max-w-4xl mx-auto px-6 pt-28 sm:pt-36 pb-12 flex flex-col items-center text-center">
           <Link
             href="/blog"
-            className="group inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.3em] text-[#9D9D9D] hover:text-white transition-colors duration-300 mb-8 border border-zinc-900 bg-zinc-950/40 px-5 py-2 rounded-sm"
+            className="group inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.3em] text-[#9D9D9D] hover:text-white transition-colors duration-300 mb-8 border border-zinc-900 bg-zinc-950/40 px-5 py-2 rounded-sm"
           >
             <ArrowLeft className="h-3 w-3 transition-transform duration-200 group-hover:-translate-x-0.5" />
             Back to Blog
           </Link>
 
           <div className="space-y-4">
-            <span className="inline-block bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.25em] px-4 py-1.5 rounded-sm">
+            <span className="inline-block bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] text-[11px] font-black uppercase tracking-[0.25em] px-4 py-1.5 rounded-sm">
               {post.category}
             </span>
 
@@ -146,7 +146,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
             </h1>
 
             {/* Meta Row */}
-            <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9D9D9D] pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#9D9D9D] pt-4">
               <span>{post.author}</span>
               <span>•</span>
               <span className="inline-flex items-center gap-1">
@@ -189,7 +189,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
         {relatedPosts.length > 0 && (
           <section className="max-w-5xl mx-auto px-6 pb-28 space-y-10">
             <div className="text-center">
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#D4AF37]">
+              <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37]">
                 Continue Reading
               </span>
               <h3 className="text-2xl sm:text-4xl font-light text-white font-serif uppercase tracking-tight mt-2">

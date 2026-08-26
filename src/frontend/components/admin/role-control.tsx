@@ -52,7 +52,7 @@ export function RoleControl({
 
   if (blocked) {
     return (
-      <p data-testid="role-self-locked" className="max-w-64 text-right text-[10px] font-semibold text-zinc-500">
+      <p data-testid="role-self-locked" className="max-w-64 text-right text-[11px] font-semibold text-zinc-500">
         You cannot change your own admin access. Ask another admin.
       </p>
     );
@@ -60,7 +60,7 @@ export function RoleControl({
 
   if (isLastAdmin) {
     return (
-      <p data-testid="role-last-admin-locked" className="max-w-64 text-right text-[10px] font-semibold text-zinc-500">
+      <p data-testid="role-last-admin-locked" className="max-w-64 text-right text-[11px] font-semibold text-zinc-500">
         The only admin. Promote someone else first.
       </p>
     );
@@ -102,14 +102,14 @@ export function RoleControl({
               data-testid="role-confirm"
               onClick={apply}
               disabled={busy || (involvesAdmin && reason.trim().length < 10)}
-              className="rounded bg-zinc-900 px-2 py-1 text-[10px] font-bold text-white disabled:opacity-40"
+              className="rounded bg-zinc-900 px-2 py-1 text-[11px] font-bold text-white disabled:opacity-40"
             >
               {currentRole} → {target}
             </button>
             <button
               type="button"
               onClick={() => { setTarget(null); setError(null); }}
-              className="rounded border border-zinc-300 px-2 py-1 text-[10px] font-bold"
+              className="rounded border border-zinc-300 px-2 py-1 text-[11px] font-bold"
             >
               Cancel
             </button>

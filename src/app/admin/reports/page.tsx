@@ -138,24 +138,24 @@ export default async function AdminComplaintsPage({
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-zinc-950">{REPORT_CATEGORY_LABELS[r.category]}</span>
                       {r.severe ? (
-                        <span data-testid="severe-badge" className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        <span data-testid="severe-badge" className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
                           serious
                         </span>
                       ) : null}
-                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700">{r.status}</span>
+                      <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-bold text-zinc-700">{r.status}</span>
                       {r.targetType === 'REVIEW' ? (
-                        <span data-testid="review-target-badge" className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-800">
+                        <span data-testid="review-target-badge" className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-bold text-violet-800">
                           about a review{r.review?.isHidden ? ' · hidden' : ''}
                         </span>
                       ) : null}
                       {r.siblingOpenCount > 1 ? (
-                        <span data-testid="pattern-badge" className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-800">
+                        <span data-testid="pattern-badge" className="rounded bg-orange-100 px-1.5 py-0.5 text-[11px] font-bold text-orange-800">
                           {r.siblingOpenCount} open against this store
                         </span>
                       ) : null}
                     </div>
                     <div className="flex items-baseline gap-3">
-                      <span className="text-[10px] text-zinc-500">{r.createdAt.toLocaleString('en-IN')}</span>
+                      <span className="text-[11px] text-zinc-500">{r.createdAt.toLocaleString('en-IN')}</span>
                       <Link
                         href={`/admin/reports/${r.id}`}
                         data-testid="complaint-open"

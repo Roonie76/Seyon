@@ -52,7 +52,7 @@ export default async function AdminAccountPage({
             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
               <span
                 data-testid="account-role"
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
                   u.role === 'ADMIN'
                     ? 'bg-red-100 text-red-800'
                     : u.role === 'SELLER'
@@ -63,7 +63,7 @@ export default async function AdminAccountPage({
                 {u.role}
               </span>
               {u.isSelf ? (
-                <span data-testid="account-self" className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-800">
+                <span data-testid="account-self" className="rounded bg-blue-100 px-1.5 py-0.5 text-[11px] font-bold text-blue-800">
                   you
                 </span>
               ) : null}
@@ -132,7 +132,7 @@ export default async function AdminAccountPage({
                 <li key={a.id} className="py-2" data-testid="account-audit-row">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-bold text-zinc-900" data-testid="account-audit-action">{a.action}</span>
-                    <span className="text-[10px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
+                    <span className="text-[11px] text-zinc-400">{a.createdAt.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="text-[11px] text-zinc-600">
                     by {a.actorName ?? a.actorEmail ?? 'unknown'}

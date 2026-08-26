@@ -52,7 +52,7 @@ export function HelpSearch({ articles }: { articles: HelpArticle[] }) {
         <div className="absolute top-full left-0 right-0 mt-3 border border-[#ECE5D9] rounded-2xl bg-[#FFFEFC] shadow-[0_12px_24px_rgba(0,0,0,0.05)] divide-y divide-[#ECE5D9] p-2 animate-fade-in z-50 overflow-hidden">
           {results.length > 0 ? (
             <>
-              <div className="px-3 py-2 text-[9px] uppercase font-bold text-[#B88A2E] tracking-widest">
+              <div className="px-3 py-2 text-[11px] uppercase font-bold text-[#B88A2E] tracking-widest">
                 Matching Articles
               </div>
               <div className="space-y-0.5">
@@ -69,7 +69,7 @@ export function HelpSearch({ articles }: { articles: HelpArticle[] }) {
                       <h4 className="text-sm font-semibold text-[#1A1A18] truncate group-hover:text-[#B88A2E] transition-colors">
                         {article.title}
                       </h4>
-                      <p className="text-[10px] text-[#6F6A63] font-medium truncate mt-0.5">
+                      <p className="text-[11px] text-[#6F6A63] font-medium truncate mt-0.5">
                         {article.topic} &middot; {article.category.toUpperCase()} HELP
                       </p>
                     </div>

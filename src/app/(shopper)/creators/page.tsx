@@ -118,11 +118,11 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
                     {/* Rating block — real reviews only; never a placeholder */}
                     <div className="flex items-center gap-1 mt-1.5">
                       {presentation.rating != null ? (
-                        <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
+                        <span className="text-[11px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 uppercase tracking-wide flex items-center gap-0.5 leading-none">
                           ⭐ {presentation.rating.toFixed(1)} <span className="text-zinc-455 font-medium normal-case">({shop.reviewCount})</span>
                         </span>
                       ) : (
-                        <span className="text-[9px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
+                        <span className="text-[11px] font-extrabold text-zinc-500 bg-zinc-50 px-1.5 py-0.5 rounded border border-zinc-150 uppercase tracking-wide leading-none">
                           New seller
                         </span>
                       )}
@@ -130,19 +130,19 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
 
                     {/* Trust metrics */}
                     {presentation.trustTag && (
-                      <p className="text-[10px] text-zinc-600 mt-3 font-semibold flex items-center gap-1">
+                      <p className="text-[11px] text-zinc-600 mt-3 font-semibold flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         {presentation.trustTag}
                       </p>
                     )}
-                    <p className="text-[9px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
+                    <p className="text-[11px] text-zinc-400 mt-1 uppercase tracking-wider font-bold">
                       {presentation.location ? `${presentation.location} • ` : ''}{shop._count.products} Products
                     </p>
                   </div>
 
                   <Link
                     href={`/store/${shop.slug}`}
-                    className="w-full mt-5 py-2.5 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[10px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
+                    className="w-full mt-5 py-2.5 bg-zinc-50 hover:bg-[#1A1A18] text-zinc-800 hover:text-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl border border-zinc-200 hover:border-[#1A1A18] transition-all text-center block shadow-2xs select-none active:scale-97 cursor-pointer"
                   >
                     Visit Store
                   </Link>

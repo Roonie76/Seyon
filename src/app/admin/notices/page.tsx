@@ -108,16 +108,16 @@ export default async function AdminNoticesPage({
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-zinc-950">{n.subject}</span>
-                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700">
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-bold text-zinc-700">
                       {n.kind.replace(/_/g, ' ').toLowerCase()}
                     </span>
                     {n.overdue ? (
-                      <span data-testid="notice-overdue-badge" className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
+                      <span data-testid="notice-overdue-badge" className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-800">
                         no response
                       </span>
                     ) : null}
                   </div>
-                  <span className="text-[10px] text-zinc-500">{n.sentAt.toLocaleString('en-IN')}</span>
+                  <span className="text-[11px] text-zinc-500">{n.sentAt.toLocaleString('en-IN')}</span>
                 </div>
 
                 <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-xs text-zinc-700">{n.body}</p>

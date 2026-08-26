@@ -304,7 +304,7 @@ export default async function CategoryIndexPage() {
 
                 {/* Card Footer: Dynamic count + Action Arrow indicator */}
                 <div className="flex items-center justify-between pt-6 border-t border-zinc-200/40 mt-5">
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                  <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider">
                     {cat.count.toLocaleString()} {cat.count === 1 ? 'Product' : 'Products'}
                   </span>
                   

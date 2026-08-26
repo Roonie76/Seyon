@@ -94,7 +94,7 @@ export function PrivacySidebar({ sections }: PrivacySidebarProps) {
 
       {/* On This Page List */}
       <div>
-        <h2 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-4">
+        <h2 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-4">
           On This Page
         </h2>
         <nav aria-label="Table of Contents" className="border-l border-zinc-200">

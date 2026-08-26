@@ -56,7 +56,7 @@ export function StickyBuyBar({
   return (
     <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-zinc-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] flex items-center justify-between gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="min-w-0">
-        <p className="text-[10px] uppercase font-bold text-muted-foreground truncate">{productName}</p>
+        <p className="text-[11px] uppercase font-bold text-muted-foreground truncate">{productName}</p>
         <p className="text-lg font-black text-foreground leading-tight flex items-baseline gap-1.5">
           ₹{price.toFixed(2)}
           {onSale && compareAtPrice != null && (
@@ -71,8 +71,8 @@ export function StickyBuyBar({
           className="shrink-0 bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-full py-1.5 px-4 shadow-3xs flex items-center gap-2.5 transition-all duration-300 group/btn cursor-pointer active:scale-[0.98]"
         >
           <div className="text-right select-none">
-            <span className="font-serif text-[10px] font-bold text-zinc-950 block leading-none">Talk to Creator</span>
-            <span className="text-[7px] text-zinc-450 font-bold block mt-0.5 leading-none">on WhatsApp</span>
+            <span className="font-serif text-[11px] font-bold text-zinc-950 block leading-none">Talk to Creator</span>
+            <span className="text-[11px] text-zinc-450 font-bold block mt-0.5 leading-none">on WhatsApp</span>
           </div>
           <ArrowRight className="h-3.5 w-3.5 text-zinc-950 shrink-0 transition-transform group-hover/btn:translate-x-0.5 stroke-[2]" />
         </button>

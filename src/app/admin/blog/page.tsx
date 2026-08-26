@@ -120,18 +120,18 @@ export default async function AdminBlogPage() {
                       </TableCell>
                       <TableCell>
                         {post.published ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px]">
+                          <Badge className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[11px]">
                             Published
                           </Badge>
                         ) : (
-                          <Badge className="bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 text-[10px]">
+                          <Badge className="bg-zinc-500/10 text-zinc-400 border border-zinc-500/20 text-[11px]">
                             Draft
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         {post.featured ? (
-                          <Badge className="bg-primary/10 text-primary border border-primary/20 text-[10px]">
+                          <Badge className="bg-primary/10 text-primary border border-primary/20 text-[11px]">
                             Hero Post
                           </Badge>
                         ) : (
