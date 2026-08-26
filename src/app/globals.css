@@ -53,12 +53,12 @@
 
   /* One face in all three roles. Georgia and the generic families are the
      fallbacks while the webfont loads or if it fails. */
-  --font-sans: var(--font-im-fell), Georgia, serif;
-  --font-serif: var(--font-im-fell), Georgia, serif;
-  --font-mono: var(--font-im-fell), Georgia, serif;
+  --font-sans: var(--font-fraunces), Georgia, serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-mono: var(--font-fraunces), Georgia, serif;
   /* Kept so the handful of components that reference it by name still resolve
      to the same face rather than falling back to Georgia on their own. */
-  --font-serif-custom: var(--font-im-fell);
+  --font-serif-custom: var(--font-fraunces);
 }
 
 @layer base {
@@ -76,22 +76,19 @@
   }
 
   /**
-   * No fake bold.
+   * Optical sizing, left to the browser.
    *
-   * IM Fell Double Pica has one weight. Asked for 600 or 900 -- which this
-   * codebase does in roughly a thousand places -- a browser will synthesise
-   * bold by smearing the outline, and on a face this irregular the result
-   * reads as a rendering fault rather than emphasis.
+   * `auto` is the default, so this is documentation rather than instruction:
+   * Fraunces carries an `opsz` axis and the browser interpolates it from the
+   * computed font-size. It is called out because the previous face had no such
+   * axis, and a future change to a static family would silently lose it.
    *
-   * Switching synthesis off means every weight utility renders at 400 and the
-   * page looks deliberate. Emphasis is carried by size, capitals, tracking and
-   * colour, which the design already uses heavily.
-   *
-   * Weight only: italic synthesis is left alone because the face ships a real
-   * italic, and nothing here needs a faked one.
+   * Nothing disables weight synthesis any more. That rule existed only while
+   * the site was set in a single-weight face; with a real 300-800 range it
+   * would flatten every bold on the site.
    */
-  * {
-    font-synthesis-weight: none;
+  body {
+    font-optical-sizing: auto;
   }
 
   h1,
@@ -228,10 +225,9 @@
   background: linear-gradient(135deg, #F5D373 0%, #D4AF37 50%, #A67C1E 100%) !important;
   color: #080808 !important;
   /* Was system-ui !important, which would have been the one element on the
-     site still set in a sans. Weight follows suit: 900 has nothing to resolve
-     to, and the badge already carries its emphasis through colour and caps. */
+     site still set in a sans. It follows the shared variable now. */
   font-family: var(--font-sans) !important;
-  font-weight: 400 !important;
+  font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   border: none !important;

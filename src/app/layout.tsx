@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IM_Fell_Double_Pica } from "next/font/google";
+import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/shared/posthog-provider";
 import { JourneyProvider } from "@/components/shared/journey-context";
@@ -9,23 +9,33 @@ import { generateWebsiteJSONLD, generateOrganizationJSONLD, safeJsonLdStringify 
 /**
  * One face, everywhere.
  *
- * IM Fell Double Pica is a revival of a 17th-century English cut and ships a
- * single weight -- 400, roman and italic. There is no bold. Rather than let the
- * browser smear a fake one across the ~1,000 places this codebase asks for
- * bold, `font-synthesis-weight: none` in globals.css turns synthesis off, and
- * hierarchy is carried by size, capitals, letter-spacing and colour instead,
- * which is how the face was set when it was cut.
+ * Fraunces is a variable family: a weight axis from 300 to 800 and an optical
+ * size axis, which is the part that matters here. `opsz` means the 48px hero
+ * and the 11px uppercase label are drawn as different shapes rather than the
+ * same shape scaled -- thicker hairlines and looser spacing at small sizes,
+ * finer contrast at large ones. Browsers apply it automatically via
+ * `font-optical-sizing: auto`, which is the default.
  *
- * It fills all three roles -- sans, serif and mono -- because uniformity was
- * the point. The mono slot is the one to revisit if figures in tables read
- * badly: the numerals here are proportional, not tabular.
+ * That axis is why this replaced IM Fell Double Pica. IM Fell was one static
+ * cut drawn for roughly 22pt, so it had nothing to give at 11px and no bold at
+ * all -- and this codebase asks for bold in about a thousand places. Fraunces
+ * has real weights, so no synthesis rule is needed and none should be added:
+ * `font-synthesis-weight: none` would now flatten every one of them.
+ *
+ * It fills all three roles -- sans, serif and mono -- because a single face was
+ * the brief. Fraunces carries tabular figures, so prices and table columns
+ * still line up.
  */
-const imFell = IM_Fell_Double_Pica({
-  variable: "--font-im-fell",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
   display: "swap",
+  // next/font ships only the weight axis unless the others are asked for by
+  // name. Without this line the font file carries `wght` alone,
+  // `font-optical-sizing: auto` has nothing to act on, and the reason this
+  // family was chosen quietly does not happen. Verified by reading the `fvar`
+  // table out of the built woff2 rather than trusting the CSS.
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -56,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${imFell.variable} h-full antialiased dark`}
+      className={`${fraunces.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground animate-fade-in">
         <script
