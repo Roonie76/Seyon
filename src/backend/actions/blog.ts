@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
 import { BlogPostInput } from '@/types/blog';
+import { productSlugsIn, wordCount } from '@/shared/blog/parse';
+import { checkCoverUrl } from '@/shared/blog/cover';
 
 // Validation Schema for incoming blog inputs
 const BlogPostInputSchema = z.object({
@@ -36,10 +38,48 @@ async function verifyAdminAuth() {
   return session;
 }
 
-/** Calculate reading time (roughly 200 words per minute) */
+/** Calculate reading time (roughly 200 words per minute). */
 function calculateReadingTime(content: string): number {
-  const words = content.trim().split(/\s+/).length;
-  return Math.max(1, Math.ceil(words / 200));
+  // Counts prose only: a `[shop-the-story:…]` directive is a card, not
+  // something the reader reads.
+  return Math.max(1, Math.ceil(wordCount(content) / 200));
+}
+
+/**
+ * Everything about a draft that has to be true before it is stored.
+ *
+ * Both create and update run this, because a post that was valid when written
+ * can be edited into an invalid one, and the failure modes are all silent at
+ * read time: a cover from a blocked host renders as an empty hero, and a
+ * product slug that does not resolve used to render an invented product.
+ */
+async function checkReferences(parsed: {
+  cover: string;
+  content: string;
+  featuredProduct?: string | null;
+}): Promise<string | null> {
+  const cover = checkCoverUrl(parsed.cover);
+  if (!cover.ok) return cover.reason ?? 'The cover image is not usable.';
+
+  const slugs = new Set(productSlugsIn(parsed.content));
+  if (parsed.featuredProduct) slugs.add(parsed.featuredProduct.trim());
+  if (slugs.size === 0) return null;
+
+  const found = await db.product.findMany({
+    where: { slug: { in: Array.from(slugs) }, status: 'ACTIVE' },
+    select: { slug: true },
+  });
+
+  const known = new Set(found.map((p) => p.slug));
+  const missing = Array.from(slugs).filter((s) => !known.has(s));
+
+  if (missing.length > 0) {
+    return missing.length === 1
+      ? `No active product has the slug "${missing[0]}".`
+      : `No active product has these slugs: ${missing.join(', ')}.`;
+  }
+
+  return null;
 }
 
 export async function getBlogPosts(options?: { publishedOnly?: boolean }) {
@@ -78,53 +118,59 @@ export async function getBlogPostBySlug(slug: string) {
   }
 }
 
+/** The column values shared by create and update. */
+function toRow(parsed: ReturnType<typeof BlogPostInputSchema.parse>, readingTime: number) {
+  return {
+    title: parsed.title,
+    slug: parsed.slug,
+    excerpt: parsed.excerpt,
+    cover: parsed.cover,
+    author: parsed.author || 'Seyon Team',
+    category: parsed.category,
+    tags: parsed.tags,
+    readingTime,
+    featured: parsed.featured ?? false,
+    featuredProduct: parsed.featuredProduct ?? null,
+    seoTitle: parsed.seoTitle ?? parsed.title,
+    seoDescription: parsed.seoDescription ?? parsed.excerpt,
+    seoKeywords: parsed.seoKeywords ?? [],
+    content: parsed.content,
+    published: parsed.published ?? true,
+  };
+}
+
 export async function createBlogPost(data: BlogPostInput) {
   try {
     await verifyAdminAuth();
 
     const parsed = BlogPostInputSchema.parse(data);
+    const readingTime = parsed.readingTime ?? calculateReadingTime(parsed.content);
 
-    // Compute reading time if not supplied
-    const computedReadingTime = parsed.readingTime ?? calculateReadingTime(parsed.content);
-
-    // Check slug uniqueness
-    const existing = await db.blogPost.findUnique({
-      where: { slug: parsed.slug },
-    });
-
+    const existing = await db.blogPost.findUnique({ where: { slug: parsed.slug } });
     if (existing) {
       return { success: false, error: 'A blog post with this slug already exists' };
     }
 
-    // If this post is marked featured, unfeature previous posts
-    if (parsed.featured) {
-      await db.blogPost.updateMany({
-        where: { featured: true },
-        data: { featured: false },
-      });
+    const badReference = await checkReferences(parsed);
+    if (badReference) {
+      return { success: false, error: badReference };
     }
 
-    const post = await db.blogPost.create({
-      data: {
-        title: parsed.title,
-        slug: parsed.slug,
-        excerpt: parsed.excerpt,
-        cover: parsed.cover,
-        author: parsed.author || 'Seyon Team',
-        category: parsed.category,
-        tags: parsed.tags,
-        readingTime: computedReadingTime,
-        featured: parsed.featured ?? false,
-        featuredProduct: parsed.featuredProduct ?? null,
-        seoTitle: parsed.seoTitle ?? parsed.title,
-        seoDescription: parsed.seoDescription ?? parsed.excerpt,
-        seoKeywords: parsed.seoKeywords ?? [],
-        content: parsed.content,
-        published: parsed.published ?? true,
-      },
+    /**
+     * One transaction, because these two statements only make sense together.
+     * Unfeaturing every other post and then failing to insert this one leaves
+     * the blog with no featured story and nothing to show for it.
+     */
+    const post = await db.$transaction(async (tx) => {
+      if (parsed.featured) {
+        await tx.blogPost.updateMany({
+          where: { featured: true },
+          data: { featured: false },
+        });
+      }
+      return tx.blogPost.create({ data: toRow(parsed, readingTime) });
     });
 
-    // Revalidate paths for static update
     revalidatePath('/blog');
     revalidatePath(`/blog/${post.slug}`);
     revalidatePath('/admin/blog');
@@ -144,57 +190,38 @@ export async function updateBlogPost(id: string, data: BlogPostInput) {
     await verifyAdminAuth();
 
     const parsed = BlogPostInputSchema.parse(data);
+    const readingTime = parsed.readingTime ?? calculateReadingTime(parsed.content);
 
-    // Compute reading time
-    const computedReadingTime = parsed.readingTime ?? calculateReadingTime(parsed.content);
-
-    // Check slug uniqueness against other posts
-    const existing = await db.blogPost.findFirst({
-      where: {
-        slug: parsed.slug,
-        id: { not: id },
-      },
+    const clash = await db.blogPost.findFirst({
+      where: { slug: parsed.slug, id: { not: id } },
     });
-
-    if (existing) {
+    if (clash) {
       return { success: false, error: 'A blog post with this slug already exists' };
     }
 
-    // If this post is marked featured, unfeature previous posts
-    if (parsed.featured) {
-      await db.blogPost.updateMany({
-        where: {
-          featured: true,
-          id: { not: id },
-        },
-        data: { featured: false },
-      });
+    const badReference = await checkReferences(parsed);
+    if (badReference) {
+      return { success: false, error: badReference };
     }
 
-    const post = await db.blogPost.update({
-      where: { id },
-      data: {
-        title: parsed.title,
-        slug: parsed.slug,
-        excerpt: parsed.excerpt,
-        cover: parsed.cover,
-        author: parsed.author || 'Seyon Team',
-        category: parsed.category,
-        tags: parsed.tags,
-        readingTime: computedReadingTime,
-        featured: parsed.featured ?? false,
-        featuredProduct: parsed.featuredProduct ?? null,
-        seoTitle: parsed.seoTitle ?? parsed.title,
-        seoDescription: parsed.seoDescription ?? parsed.excerpt,
-        seoKeywords: parsed.seoKeywords ?? [],
-        content: parsed.content,
-        published: parsed.published ?? true,
-      },
+    const previous = await db.blogPost.findUnique({ where: { id }, select: { slug: true } });
+
+    const post = await db.$transaction(async (tx) => {
+      if (parsed.featured) {
+        await tx.blogPost.updateMany({
+          where: { featured: true, id: { not: id } },
+          data: { featured: false },
+        });
+      }
+      return tx.blogPost.update({ where: { id }, data: toRow(parsed, readingTime) });
     });
 
-    // Revalidate paths
     revalidatePath('/blog');
     revalidatePath(`/blog/${post.slug}`);
+    // A renamed post leaves its old address cached; clear that too.
+    if (previous && previous.slug !== post.slug) {
+      revalidatePath(`/blog/${previous.slug}`);
+    }
     revalidatePath('/admin/blog');
 
     return { success: true, post };

@@ -52,9 +52,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
         ...queryFilter,
         ...tagFilter,
       },
+      // `id` is the tie-break. Ordering by `date` alone is not deterministic
+      // when posts share a timestamp, and offset paging over a non-deterministic
+      // order silently drops rows and repeats others between pages.
       orderBy: [
         { featured: 'desc' },
         { date: 'desc' },
+        { id: 'desc' },
       ],
       skip: (currentPage - 1) * postsPerPage,
       take: postsPerPage,
@@ -107,7 +111,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
       },
       include: {
         images: { orderBy: { displayOrder: 'asc' }, take: 1 },
-        shop: { select: { slug: true } },
+        // averageRating is the shop's, maintained from real reviews. The card
+        // used to be handed a literal 5 regardless.
+        shop: { select: { slug: true, averageRating: true, reviewCount: true } },
       },
     });
 
@@ -115,10 +121,11 @@ export default async function BlogPage({ searchParams }: PageProps) {
       sidebarProduct = {
         title: dbProduct.title,
         price: dbProduct.price,
-        imageUrl: dbProduct.images[0]?.url || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400',
+        imageUrl: dbProduct.images[0]?.url ?? null,
         slug: dbProduct.slug,
         shopSlug: dbProduct.shop.slug,
-        rating: 5,
+        // Undefined rather than a made-up number when nobody has reviewed it.
+        rating: dbProduct.shop.reviewCount > 0 ? dbProduct.shop.averageRating : undefined,
       };
     }
   }
@@ -166,10 +173,35 @@ export default async function BlogPage({ searchParams }: PageProps) {
             {/* Articles Grid */}
             {gridPosts.length === 0 ? (
               <div className="text-center py-20 border border-zinc-900 bg-[#0f0f0f] rounded-3xl space-y-4">
-                <p className="text-sm text-zinc-500 font-light">No articles match your search criteria.</p>
-                <Link href="/blog" className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline">
-                  Clear Filters
-                </Link>
+                {isFiltering ? (
+                  <>
+                    <p className="text-sm text-zinc-500 font-light">
+                      No articles match your search criteria.
+                    </p>
+                    <Link
+                      href="/blog"
+                      className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline"
+                    >
+                      Clear Filters
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-zinc-400 font-light">
+                      No stories published yet.
+                    </p>
+                    <p className="text-xs text-zinc-600 font-light max-w-sm mx-auto">
+                      The first editorial pieces are being written. Come back shortly, or
+                      browse the marketplace in the meantime.
+                    </p>
+                    <Link
+                      href="/marketplace"
+                      className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline"
+                    >
+                      Explore the marketplace
+                    </Link>
+                  </>
+                )}
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-8">

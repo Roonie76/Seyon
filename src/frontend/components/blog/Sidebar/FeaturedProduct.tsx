@@ -4,7 +4,7 @@ import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 interface ProductData {
   title: string;
   price: number;
-  imageUrl: string;
+  imageUrl: string | null;
   slug: string;
   shopSlug?: string;
   rating?: number;
@@ -16,14 +16,16 @@ interface FeaturedProductProps {
 }
 
 export function FeaturedProduct({ product, titleLabel = 'Featured Product' }: FeaturedProductProps) {
-  // Graceful fallback to luxury mock jewelry item
-  const displayProduct: ProductData = product || {
-    title: 'Cape Gold For Women',
-    price: 9999,
-    imageUrl: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600',
-    slug: 'cape-gold-for-women',
-    rating: 5,
-  };
+  /**
+   * Nothing to show means nothing is shown.
+   *
+   * This used to fall back to "Cape Gold For Women, Rs 9999" at five stars --
+   * an invented product with an invented price and an invented rating, which
+   * on a marketplace with no catalogue is the only thing a reader would see.
+   */
+  if (!product) return null;
+
+  const displayProduct: ProductData = product;
 
   const getProductHref = () => {
     if (displayProduct.shopSlug) {
@@ -41,22 +43,39 @@ export function FeaturedProduct({ product, titleLabel = 'Featured Product' }: Fe
       <div className="group relative rounded-2xl overflow-hidden border border-zinc-900 bg-[#0f0f0f] p-6 text-center transition-all duration-500 hover:border-zinc-800 hover:shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
         {/* Product Image */}
         <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-white mb-6 flex items-center justify-center p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={displayProduct.imageUrl}
-            alt={displayProduct.title}
-            className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
-          />
+          {displayProduct.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={displayProduct.imageUrl}
+              alt={displayProduct.title}
+              className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+              No image
+            </span>
+          )}
         </div>
 
         {/* Info */}
         <div className="space-y-2">
-          {/* Stars */}
-          <div className="flex justify-center items-center gap-1 text-[#D4AF37]">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={12} className="fill-current" />
-            ))}
-          </div>
+          {/* Five filled stars used to render regardless of the rating passed
+              in -- and the rating passed in was a literal 5. Show the real one,
+              and show nothing at all until somebody has actually reviewed. */}
+          {typeof displayProduct.rating === 'number' && (
+            <div
+              className="flex justify-center items-center gap-1 text-[#D4AF37]"
+              aria-label={`Rated ${displayProduct.rating.toFixed(1)} out of 5`}
+            >
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  size={12}
+                  className={i < Math.round(displayProduct.rating!) ? 'fill-current' : 'opacity-30'}
+                />
+              ))}
+            </div>
+          )}
 
           <h5 className="text-sm font-bold text-white uppercase tracking-wider line-clamp-1">
             {displayProduct.title}

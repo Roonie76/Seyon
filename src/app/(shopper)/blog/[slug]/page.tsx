@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { ReadingProgress } from '@/components/blog/ReadingProgress/ReadingProgress';
-import { ProductCTA } from '@/components/blog/ProductCTA/ProductCTA';
 import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
+import { RenderBlocks } from '@/components/blog/render-blocks';
+import { parseBlocks } from '@/shared/blog/parse';
 import { Calendar, Clock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -53,6 +54,23 @@ export default async function BlogArticlePage({ params }: PageProps) {
     notFound();
   }
 
+  /**
+   * A draft is not merely unlisted.
+   *
+   * This page used to fetch by slug alone, so an unpublished post was absent
+   * from /blog and served in full to anyone who had, or guessed, its URL.
+   * "Save as draft" has to mean the reader cannot read it.
+   *
+   * The check is a plain column comparison rather than an admin session lookup
+   * on purpose: reading cookies here would opt the whole route out of static
+   * generation for every reader, to serve a preview one person needs. Previews
+   * live in the editor instead, where the Preview tab renders the same blocks
+   * through the same parser.
+   */
+  if (!postRaw.published) {
+    notFound();
+  }
+
   const post = postRaw as unknown as BlogPost;
 
   // Fetch two recent other posts for the continue reading section
@@ -67,66 +85,9 @@ export default async function BlogArticlePage({ params }: PageProps) {
 
   const relatedPosts = relatedPostsRaw as unknown as BlogPost[];
 
-  // Custom Editorial Markdown Compiler for Server Components
-  const renderContent = (markdown: string) => {
-    const blocks = markdown.split('\n\n').filter(Boolean);
-
-    return blocks.map((block, idx) => {
-      const trimmed = block.trim();
-
-      // 1. Shop The Story CTA Integration
-      const productMatch = trimmed.match(/^\[shop-the-story:(.+)\]$/);
-      if (productMatch) {
-        const productSlug = productMatch[1];
-        return <ProductCTA key={idx} slug={productSlug} />;
-      }
-
-      // 2. Blockquotes
-      if (trimmed.startsWith('>')) {
-        const quoteText = trimmed.replace(/^>\s*/, '');
-        return (
-          <blockquote
-            key={idx}
-            className="my-10 pl-6 border-l-2 border-[#D4AF37] font-serif italic text-lg sm:text-xl text-[#E4C29D] leading-relaxed"
-          >
-            {quoteText}
-          </blockquote>
-        );
-      }
-
-      // 3. Section Headers
-      if (trimmed.startsWith('## ')) {
-        return (
-          <h2
-            key={idx}
-            className="text-2xl sm:text-3xl font-light text-white font-serif tracking-tight mt-12 mb-4 uppercase"
-          >
-            {trimmed.replace(/^##\s*/, '')}
-          </h2>
-        );
-      }
-      if (trimmed.startsWith('### ')) {
-        return (
-          <h3
-            key={idx}
-            className="text-xl sm:text-2xl font-light text-white font-serif tracking-tight mt-10 mb-3 uppercase"
-          >
-            {trimmed.replace(/^###\s*/, '')}
-          </h3>
-        );
-      }
-
-      // 4. Standard Paragraph
-      return (
-        <p
-          key={idx}
-          className="text-base sm:text-lg text-[#b5b5b5] leading-[1.85] font-light mb-6"
-        >
-          {trimmed}
-        </p>
-      );
-    });
-  };
+  // Content is parsed by the shared blog parser, the same one the admin
+  // preview renders, so the editor cannot show one thing and the page another.
+  const blocks = parseBlocks(post.content);
 
   return (
     <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-300 min-h-screen">
@@ -205,7 +166,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
         {/* Long-Form Text Content */}
         <article className="max-w-2xl sm:max-w-3xl mx-auto px-6 py-8 border-b border-zinc-900/60 mb-16">
           <div className="prose prose-invert max-w-none">
-            {renderContent(post.content)}
+            <RenderBlocks blocks={blocks} />
           </div>
         </article>
 

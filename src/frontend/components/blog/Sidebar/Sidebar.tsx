@@ -3,13 +3,12 @@ import { RecentPosts } from './RecentPosts';
 import { FeaturedProduct } from './FeaturedProduct';
 import { Tags } from './Tags';
 import { Instagram } from './Instagram';
-import { Newsletter } from './Newsletter';
 import { BlogPost } from '@/types/blog';
 
 interface ProductData {
   title: string;
   price: number;
-  imageUrl: string;
+  imageUrl: string | null;
   slug: string;
   shopSlug?: string;
   rating?: number;
@@ -42,9 +41,6 @@ export function Sidebar({
 
       {/* Instagram Grid & Moodboard Collage */}
       <Instagram />
-
-      {/* Newsletter Signup Form */}
-      <Newsletter />
     </aside>
   );
 }

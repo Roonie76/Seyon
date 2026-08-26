@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BlogPost, BlogPostInput } from '@/types/blog';
 import { createBlogPost, updateBlogPost } from '@/backend/actions/blog';
@@ -8,8 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Sparkles, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Sparkles, Loader2, Save, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { parseBlocks } from '@/shared/blog/parse';
+import { checkCoverUrl } from '@/shared/blog/cover';
+import { PreviewBlocks } from '@/components/blog/preview-blocks';
+import { SyntaxGuide } from './syntax-guide';
 
 interface BlogFormProps {
   initialPost?: BlogPost;
@@ -18,6 +22,11 @@ interface BlogFormProps {
 export function BlogForm({ initialPost }: BlogFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<'write' | 'preview'>('write');
+  const [uploading, setUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -107,6 +116,67 @@ export function BlogForm({ initialPost }: BlogFormProps) {
       setLoading(false);
     }
   };
+
+  // Parsed once per keystroke and shared by the preview. The article page runs
+  // the same function over the same text, which is the point: the editor
+  // cannot advertise a syntax the reader will not get.
+  const blocks = useMemo(() => parseBlocks(content), [content]);
+
+  /** Drop a snippet in at the cursor rather than making the writer type it. */
+  function insertSnippet(snippet: string) {
+    const el = contentRef.current;
+    if (!el) {
+      setContent((c) => (c ? `${c}\n\n${snippet}` : snippet));
+      return;
+    }
+    const start = el.selectionStart ?? content.length;
+    const end = el.selectionEnd ?? start;
+    const before = content.slice(0, start);
+    const after = content.slice(end);
+    // Block-level snippets need their own paragraph; inline ones do not.
+    const isBlock = /^(#|>|-|\d\.|\[shop-the-story)/.test(snippet);
+    const lead = isBlock && before && !before.endsWith('\n\n') ? '\n\n' : '';
+    const next = `${before}${lead}${snippet}${after}`;
+    setContent(next);
+    const caret = before.length + lead.length + snippet.length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
+  /**
+   * Upload a cover rather than paste a link to one.
+   *
+   * The site's content policy only loads images from Supabase, Unsplash and
+   * Google avatars, so a cover from anywhere else is blocked by the browser
+   * with no visible error. Uploading puts it in Supabase, which is always
+   * allowed. `banners` is reused as the bucket -- a cover is a banner, and a
+   * new bucket would be infrastructure for no gain.
+   */
+  async function uploadCover(file: File) {
+    setCoverError(null);
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('bucket', 'banners');
+      const res = await fetch('/api/upload', { method: 'POST', body });
+      const json = await res.json();
+      if (!res.ok) {
+        setCoverError(json?.error || 'Upload failed.');
+        return;
+      }
+      setCover(json.url ?? json.publicUrl ?? '');
+    } catch {
+      setCoverError('Upload failed. Check your connection and try again.');
+    } finally {
+      setUploading(false);
+      if (coverFileRef.current) coverFileRef.current.value = '';
+    }
+  }
+
+  const coverCheck = cover.trim() ? checkCoverUrl(cover) : { ok: true as const };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl">
@@ -214,21 +284,48 @@ export function BlogForm({ initialPost }: BlogFormProps) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-foreground">
-                  Content (Markdown Supported)
-                </label>
-                <div className="text-[10px] text-muted-foreground bg-zinc-950 p-2.5 rounded-md mb-2 space-y-1 border border-border">
-                  <p>✏️ <strong>Standard Markdown</strong>: Use <code>## Header</code> for sections, normal text for paragraphs, and <code>&gt; quote</code> for blockquotes.</p>
-                  <p>🛍️ <strong>Shop-The-Story Integration</strong>: Add <code>[shop-the-story:product-slug]</code> on its own line to embed an interactive product checkout card in-article!</p>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <label className="text-xs font-bold uppercase text-foreground">Content</label>
+                  <div className="flex rounded-md border border-border overflow-hidden">
+                    {(['write', 'preview'] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTab(t)}
+                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                          tab === t
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-transparent text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <Textarea
-                  required
-                  rows={15}
-                  className="font-mono text-xs leading-relaxed"
-                  placeholder="Write article here..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                />
+
+                {tab === 'write' ? (
+                  <>
+                    <Textarea
+                      ref={contentRef}
+                      required
+                      rows={15}
+                      className="font-mono text-xs leading-relaxed"
+                      placeholder="Write article here..."
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                    />
+                    <SyntaxGuide onInsert={insertSnippet} />
+                  </>
+                ) : (
+                  <div className="rounded-md border border-border bg-zinc-950 p-3 min-h-[22rem] overflow-y-auto">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">
+                      {blocks.length} block{blocks.length === 1 ? '' : 's'} — rendered by the same
+                      parser the article page uses
+                    </p>
+                    <PreviewBlocks blocks={blocks} />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -314,14 +411,52 @@ export function BlogForm({ initialPost }: BlogFormProps) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase text-foreground">Cover Image (URL)</label>
+                <label className="text-xs font-bold uppercase text-foreground">Cover Image</label>
+
+                <input
+                  ref={coverFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadCover(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={uploading}
+                  onClick={() => coverFileRef.current?.click()}
+                >
+                  {uploading ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</>
+                  ) : (
+                    <><Upload className="h-3.5 w-3.5" /> Upload an image</>
+                  )}
+                </Button>
+
                 <Input
                   required
-                  placeholder="https://images.unsplash.com/photo-..."
+                  placeholder="…or paste a URL"
                   value={cover}
-                  onChange={(e) => setCover(e.target.value)}
+                  onChange={(e) => {
+                    setCover(e.target.value);
+                    setCoverError(null);
+                  }}
                 />
-                {cover && (
+
+                {/* The content policy blocks images from anywhere but Supabase,
+                    Unsplash and Google. Say so here rather than letting the
+                    reader find an empty hero. */}
+                {(coverError || !coverCheck.ok) && (
+                  <p className="text-[10px] text-destructive leading-relaxed">
+                    {coverError ?? coverCheck.reason}
+                  </p>
+                )}
+
+                {cover && coverCheck.ok && (
                   <div className="mt-2 rounded-lg border border-border overflow-hidden h-28 relative bg-zinc-950">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
