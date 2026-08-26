@@ -13,13 +13,28 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  const posts = await db.blogPost.findMany({
-    where: { published: true },
-    select: { slug: true },
-  });
-  return posts.map((post) => ({ slug: post.slug }));
-}
+/**
+ * Rendered per request, like every other page in this group.
+ *
+ * The shared Navbar calls `auth()`, which reads cookies, so nothing under
+ * (shopper) can be prerendered -- which is why /blog already carries this
+ * export. This page did not, and had `generateStaticParams` instead. With an
+ * empty database at build time that produced a static route with no params,
+ * and the first request for any article bailed:
+ *
+ *   digest: 'DYNAMIC_SERVER_USAGE'  ->  500
+ *
+ * Reproduced on production the moment the first post existed. The route was
+ * never able to serve an article on that build; it simply had no article to
+ * fail on. `generateStaticParams` is removed rather than left in place,
+ * because `force-dynamic` ignores it and a reader of this file should not have
+ * to work out which one wins.
+ *
+ * The deeper fix is to stop the Navbar forcing the whole group dynamic. That
+ * is a change to every shopper page, not to the blog, and is noted rather than
+ * attempted here.
+ */
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
