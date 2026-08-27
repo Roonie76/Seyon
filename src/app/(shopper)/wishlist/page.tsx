@@ -12,6 +12,14 @@ import { NoImagePlaceholder } from '@/components/shared/no-image-placeholder';
 import { Breadcrumbs } from '@/components/shared/breadcrumbs';
 import { BackButton } from '@/components/shared/back-button';
 import { ProductCard } from '@/components/shared/product-card';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Wishlist',
+  description: 'Products you have saved on Seyon.',
+  // Personal and behind a login: useful to name, not to index.
+  robots: { index: false, follow: true },
+};
 
 export default async function WishlistPage() {
   const session = await auth();

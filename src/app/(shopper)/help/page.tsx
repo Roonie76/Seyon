@@ -5,11 +5,41 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BackButton } from '@/components/shared/back-button';
 import { helpArticles } from '@/shared/data/help';
 import { HelpSearch } from '@/components/help/HelpSearch';
+import { generateFAQJSONLD, safeJsonLdStringify } from '@/lib/seo';
 
 export const metadata = {
   title: 'Help Center',
-  description: 'Learn how Seyon operates, discovery rules, buyer/seller responsibilities, and WhatsApp ordering mechanics.',
+  description:
+    'How Seyon works: discovery rules, what buyers and sellers are each responsible for, and how ordering over WhatsApp actually happens.',
+  alternates: { canonical: '/help' },
 };
+
+/**
+ * Every help article, as a FAQPage.
+ *
+ * These 32 articles are the most quotable thing on the site -- each one is a
+ * question with a written answer, which is the exact shape a search engine
+ * pulls into a rich result and an assistant pulls into a citation. They were
+ * carrying no structured data at all, so none of that could happen.
+ *
+ * The whole set rather than the popular few: the long tail is where the
+ * specific questions live ("does Seyon take commission", "who handles a
+ * refund"), and those are the ones somebody actually asks an assistant.
+ *
+ * Answers are trimmed because FAQPage wants a self-contained answer, not an
+ * essay, and the full article is one link away.
+ */
+function faqEntries() {
+  return helpArticles.map((article) => ({
+    question: article.title,
+    answer: article.content
+      .replace(/\*\*/g, '')
+      .replace(/^#+\s*/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 900),
+  }));
+}
 
 export default function HelpCenterPage() {
   const popularArticles = helpArticles.filter((a) => a.isPopular);
@@ -19,6 +49,14 @@ export default function HelpCenterPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#1A1A18] relative">
+      {/* FAQPage covering all help articles. Rendered through
+          safeJsonLdStringify, which escapes the sequences that would let
+          article text break out of the script tag. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(generateFAQJSONLD(faqEntries())) }}
+      />
+
       {/* Editorial Luxury Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative">
         {/* Background glow styling */}

@@ -10,6 +10,14 @@ import { ShoppingBag, ArrowRight, MessageSquare, ShieldCheck, Globe } from 'luci
 import { Product, Review } from '@prisma/client';
 import { logger } from '@/backend/lib/logger';
 import { generateFAQJSONLD, safeJsonLdStringify } from '@/lib/seo';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Sell on Seyon — a free storefront for Instagram and WhatsApp sellers',
+  description:
+    'List your products on Seyon for free, share one link instead of answering the same questions in DMs, and keep taking orders on WhatsApp. No commission, no checkout, no payment gateway to set up.',
+  alternates: { canonical: '/sell' },
+};
 
 const SELLER_FAQ = [
   {

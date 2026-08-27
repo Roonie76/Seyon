@@ -19,6 +19,25 @@ import { RecentlyViewedStrip } from '@/components/shared/recently-viewed';
 import { logger } from '@/backend/lib/logger';
 import { fetchShopperProducts, fetchShopperCategoriesAndCities, type ShopperProduct } from '@/backend/lib/shopper-products';
 import { Button } from '@/components/ui/button';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  // The homepage is the one page that should carry the brand first: it is what
+  // a search for "Seyon" returns and what an assistant reads to decide what
+  // this site is.
+  title: {
+    absolute: 'Seyon — Find and buy from independent Instagram and WhatsApp sellers in India',
+  },
+  description:
+    'Seyon is a free catalogue for independent Indian sellers on Instagram, WhatsApp and Telegram. Browse storefronts, search products by category and price, then message the seller directly to order. No checkout, no commission.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'Seyon — independent Instagram and WhatsApp storefronts, searchable',
+    description:
+      'Browse independent Indian sellers, then order directly over WhatsApp. No checkout, no commission.',
+    type: 'website',
+  },
+};
 
 // 12. Cached Query: Just Discovered (Unexpected mixed feed, 5 min TTL)
 const getJustDiscovered = unstable_cache(
