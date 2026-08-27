@@ -104,15 +104,10 @@ describe('seeded article markdown', () => {
   });
 
   it('links only to articles that exist', () => {
+    // Only the live set counts. A link to a retired post is a link to a 404,
+    // because an unpublished post is notFound() rather than merely unlisted --
+    // which is the whole reason `retired/` is a subdirectory this glob skips.
     const slugs = new Set(files.map((f) => f.replace(/\.md$/, '')));
-    // The three earlier posts live in posts.json, not in md/.
-    for (const extra of [
-      'the-link-in-your-bio-is-a-dead-end',
-      'what-buyers-check-before-they-message-you',
-      'selling-on-whatsapp-without-losing-the-thread',
-    ]) {
-      slugs.add(extra);
-    }
     let total = 0;
     for (const { file, body } of posts) {
       for (const [, href] of body.matchAll(/\]\((\/blog\/[^)#?]+)\)/g)) {

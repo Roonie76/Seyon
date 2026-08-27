@@ -46,19 +46,24 @@ describe('blog topic hubs', () => {
   });
 
   it('resolves by slug and rejects anything else', () => {
-    expect(topicBySlug(BLOG_TOPICS[0].slug)?.slug).toBe(BLOG_TOPICS[0].slug);
-    expect(topicBySlug('SELLING-ON-SOCIAL')?.slug).toBe('selling-on-social');
+    const first = BLOG_TOPICS[0];
+    expect(topicBySlug(first.slug)?.slug).toBe(first.slug);
+    // Matching is case-insensitive, so a link typed in caps still resolves.
+    expect(topicBySlug(first.slug.toUpperCase())?.slug).toBe(first.slug);
     expect(topicBySlug('not-a-topic')).toBeUndefined();
     expect(topicBySlug('')).toBeUndefined();
   });
 
   it('matches a post to hubs case-insensitively and in declaration order', () => {
-    const found = topicsForPost(['operations', 'TRUST']);
-    expect(found.map((t) => t.slug)).toEqual(
-      BLOG_TOPICS.filter((t) => ['buyer-trust', 'running-your-shop'].includes(t.slug)).map(
-        (t) => t.slug
-      )
-    );
+    // Take one tag from the last hub and one from the first; the result must
+    // come back in declaration order, not in the order the tags were given.
+    const firstTag = BLOG_TOPICS[0].tags[0];
+    const lastTag = BLOG_TOPICS[BLOG_TOPICS.length - 1].tags[0];
+    const found = topicsForPost([lastTag.toLowerCase(), firstTag]);
+    expect(found.map((t) => t.slug)).toEqual([
+      BLOG_TOPICS[0].slug,
+      BLOG_TOPICS[BLOG_TOPICS.length - 1].slug,
+    ]);
   });
 
   it('returns no hubs for a post with no matching tags', () => {

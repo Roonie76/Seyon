@@ -17,11 +17,12 @@ import {
 export const dynamic = 'force-dynamic';
 
 /**
- * The old title and description described an editorial magazine about
- * craftsmanship. What is actually published here are practical guides for
- * people selling on Instagram and WhatsApp in India, which is also what
- * anyone arriving from a search is looking for. A title that does not match
- * the page costs the click.
+ * The title and description describe what a shopper is searching for, because
+ * that is who this page is now for. It has been through two positions: an
+ * "editorial magazine about craftsmanship", which described nothing, and then
+ * guides for sellers, which brought the wrong side of the marketplace. A title
+ * that does not match what the reader wanted costs the click before the page
+ * is ever read.
  */
 export const metadata: Metadata = {
   title: 'Blog — Guides for Independent Sellers in India',
@@ -29,9 +30,9 @@ export const metadata: Metadata = {
     'Practical guides for independent sellers in India: selling on Instagram and WhatsApp, pricing, product photography, shipping, returns, GST and earning buyer trust.',
   alternates: { canonical: '/blog' },
   openGraph: {
-    title: 'Seyon Blog — Guides for Independent Sellers in India',
+    title: 'Seyon Blog — Indian Craft, Explained for Buyers',
     description:
-      'Practical guides for independent sellers in India: selling on Instagram and WhatsApp, pricing, photography, shipping, returns and buyer trust.',
+      'Guides to buying Indian craft well: jewellery vocabulary, reading cloth before you own it, which metal is safe for food, and what handmade is allowed to mean.',
     type: 'website',
     url: '/blog',
   },

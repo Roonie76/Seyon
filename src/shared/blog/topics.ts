@@ -42,56 +42,56 @@ export interface BlogTopic {
 
 export const BLOG_TOPICS: BlogTopic[] = [
   {
-    slug: 'selling-on-social',
-    label: 'Selling on social',
-    heading: 'Selling on Instagram and WhatsApp',
-    seoTitle: 'Selling on Instagram & WhatsApp in India',
+    slug: 'jewellery',
+    label: 'Jewellery',
+    heading: 'Jewellery worth understanding before you buy it',
+    seoTitle: 'Indian Jewellery: A Buyer\u2019s Guide',
     description:
-      'Practical guides to selling on Instagram and WhatsApp in India: setting up the account, the catalogue, prices, captions, and where each platform stops being enough.',
+      'What kundan, polki, jadau and meenakari actually mean, how to read a hallmark, and how to tell craft from finish when you are holding the piece.',
     intro: [
-      'Almost every independent seller in India starts on Instagram or WhatsApp, and for good reason. Both are free, both are where buyers already are, and a reel can put your work in front of people no shopfront ever would.',
-      'What neither was built for is the part after the interest: the stranger who wants to know the price without asking, the buyer who is trying to work out whether you are a real business, the order that has to be found again three weeks later. These pieces cover getting the most out of both platforms, and knowing where each one stops.',
+      'Almost every word used to sell Indian jewellery describes a technique, and almost none of them are explained at the counter. Kundan and polki are not the same thing. Jadau is a method, not a stone. Meenakari is on the back of the piece, which is where a good one hides its best work.',
+      'These are guides to the vocabulary and to the checks worth doing with the piece in your hand — what the hallmark is legally required to tell you, what it is not, and which differences change the price by a factor of ten.',
     ],
-    tags: ['SOCIAL-SELLING', 'INSTAGRAM', 'WHATSAPP', 'STOREFRONT', 'STRATEGY'],
+    tags: ['JEWELLERY', 'SILVER', 'GOLD', 'GEMSTONES'],
   },
   {
-    slug: 'getting-found',
-    label: 'Getting found',
-    heading: 'Getting found and finding your first customers',
-    seoTitle: 'Getting Found Online as a Small Seller',
+    slug: 'textiles',
+    label: 'Textiles',
+    heading: 'Textiles, and how to read one before you own it',
+    seoTitle: 'Indian Textiles: How to Read Cloth Before Buying',
     description:
-      'How small sellers get found and win their first customers: product photography, descriptions that answer real questions, and where the first ten orders actually come from.',
+      'Handloom against powerloom, block print against screen print, and the weaves worth knowing by name — each with the checks you can do standing in a shop.',
     intro: [
-      'Reach is the problem every new seller thinks they have, and the listing is the problem they usually have instead. A buyer who arrives and cannot tell the size, the material, or the price does not message you — they leave, and nothing in your numbers records it.',
-      'These guides cover the work that makes someone findable and then makes the visit count: photographs taken on a phone, descriptions written for someone who has not held the item, and an honest account of where the first ten customers come from.',
+      'Cloth is the easiest thing in India to be sold a story about, because the difference between the real thing and the convincing copy is often invisible in a photograph and obvious in the hand. A block print has a heartbeat — tiny registration shifts where the wooden block landed a hair off. A screen print does not.',
+      'These pieces are about learning what to look for: the selvedge, the reverse, the repeat, the weight. None of it requires expertise. All of it is the difference between paying for handwork and paying for the word.',
     ],
-    tags: ['DISCOVERY', 'PHOTOGRAPHY', 'LISTINGS', 'SEO'],
+    tags: ['TEXTILES', 'SAREES', 'HANDLOOM', 'BLOCK-PRINT'],
   },
   {
-    slug: 'buyer-trust',
-    label: 'Buyer trust',
-    heading: 'Earning trust from buyers who have never heard of you',
-    seoTitle: 'Buyer Trust for Small Online Sellers',
+    slug: 'home',
+    label: 'For the home',
+    heading: 'Objects for the home that are built to be used',
+    seoTitle: 'Handmade Homeware: Metal, Clay and Wood',
     description:
-      'What buyers check before they send money to an unfamiliar seller, and how a new shop makes the risk visibly small: proof, specifics, reviews and being findable.',
+      'Brass against bronze against copper, terracotta against stoneware against porcelain, and lacquered wood — what each is actually good for, and how to keep it.',
     intro: [
-      'A first-time buyer is not evaluating your product. They are evaluating the risk that you are not real — and in a market where anyone can post photographs they did not take, that is a rational thing to be careful about.',
-      'These pieces are about what gets checked, in what order, and what a shop with no reviews yet can do about it. Most of it is not marketing. It is being specific about facts that other sellers leave vague.',
+      'The pleasure of a handmade object at home is that it is meant to be used, and the anxiety is that you will ruin it. Most of that anxiety comes from not knowing what the material can take: which metal minds the lemon, which clay minds the flame, which finish minds the dishwasher.',
+      'These guides cover what each material is for, what will happen to it over years, and the care that is genuinely necessary as opposed to the care everyone repeats.',
     ],
-    tags: ['TRUST', 'BUYERS', 'REVIEWS'],
+    tags: ['HOME', 'CERAMICS', 'METALWARE', 'DECOR'],
   },
   {
-    slug: 'running-your-shop',
-    label: 'Running your shop',
-    heading: 'Running a small shop properly',
-    seoTitle: 'Pricing, Shipping, Returns & GST for Small Shops',
+    slug: 'buying-well',
+    label: 'Buying well',
+    heading: 'Buying well from people who make things',
+    seoTitle: 'Buying Handmade: What to Know First',
     description:
-      'The unglamorous half of selling: pricing that survives a slow month, shipping decisions made before the first order, a returns policy written in advance, and where GST fits.',
+      'What “handmade” is allowed to mean, things independent Indian makers sell that most people never discover, and how to give a gift that lands.',
     intro: [
-      'The parts of a small business that decide whether it lasts are rarely the parts anyone enjoys. Pricing worked out rather than guessed. A shipping rate that is not quietly losing money on every far-zone order. A returns policy written before the argument that needs it.',
-      'These guides cover that half of the work, in the order it usually becomes urgent. Where a piece touches tax or law, it says what the rule is, names the section, and tells you to check it with someone qualified rather than pretending an article can decide it for you.',
+      'Buying from someone who made the thing is a different transaction from buying from a shelf. The variation is the point rather than the defect, the person answering you is the person who made it, and the questions worth asking are not the ones you would ask a shop.',
+      'These pieces are about that difference — what the words on a listing are and are not allowed to claim, what exists out there that you would never think to search for, and how to buy for someone else without guessing.',
     ],
-    tags: ['OPERATIONS', 'PRICING', 'SHIPPING', 'RETURNS', 'TAX', 'ORDERS'],
+    tags: ['BUYING-GUIDE', 'GIFTING', 'CARE', 'CRAFT'],
   },
 ];
 

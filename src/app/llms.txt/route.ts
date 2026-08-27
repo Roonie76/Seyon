@@ -68,7 +68,8 @@ export async function GET() {
 - ${site}/category — browse by category
 - ${site}/sell — how selling works, and seller sign-up
 - ${site}/help — ${helpArticles.length} help articles covering ${topics.length} topics
-- ${site}/blog — editorial on selling direct to buyers
+- ${site}/blog — buyer's guides to Indian craft: jewellery terms, reading cloth,
+  metals and food safety, what "handmade" is allowed to mean
 - ${site}/about — what Seyon is and who it is for
 - ${site}/privacy, ${site}/terms, ${site}/returns — policies
 

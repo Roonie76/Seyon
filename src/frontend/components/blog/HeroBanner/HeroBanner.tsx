@@ -44,16 +44,15 @@ export function HeroBanner() {
           transform: `translate3d(${offset.x * 10}px, ${offset.y * 10}px, 0)`,
         }}
       >
-        {/* The heading used to read "Editorial Magazine / Luxury Stories",
-            which described neither what is published here nor what anyone
-            arriving from a search is looking for. The h1 is the strongest
-            on-page signal of what a page is about; spending it on a mood was
-            expensive. */}
+        {/* The h1 is the strongest on-page signal of what a page is about.
+            It read "Luxury Stories" under "Editorial Magazine", which
+            described neither what is published here nor what anyone arriving
+            from a search wants. */}
         <span className="text-[11px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
           The Seyon Blog
         </span>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif">
-          Guides for independent sellers
+          Things worth knowing before you buy them
         </h1>
         <p className="text-xs uppercase tracking-[0.25em] text-[#9D9D9D]">
           <Link href="/" className="hover:text-white transition-colors">HOME</Link>
