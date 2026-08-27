@@ -44,3 +44,32 @@ describe('checkCoverUrl', () => {
     expect(checkCoverUrl('https://Images.Unsplash.COM/photo-1').ok).toBe(true);
   });
 });
+
+describe('local cover paths', () => {
+  it('accepts a root-relative path to a cover we ship', () => {
+    expect(checkCoverUrl('/blog/how-to-sell-on-instagram-in-india.webp')).toEqual({ ok: true });
+    expect(checkCoverUrl('/blog/nested/cover.webp')).toEqual({ ok: true });
+  });
+
+  it('rejects a protocol-relative URL wearing a relative path as a disguise', () => {
+    const result = checkCoverUrl('//evil.example.com/cover.jpg');
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects a local path with characters that do not belong in one', () => {
+    expect(checkCoverUrl('/blog/a b.webp').ok).toBe(false);
+    expect(checkCoverUrl('/blog/<script>.webp').ok).toBe(false);
+    expect(checkCoverUrl('/blog/x.webp?onerror=1').ok).toBe(false);
+  });
+
+  it('rejects a local path that is not an image file', () => {
+    expect(checkCoverUrl('/').ok).toBe(false);
+    expect(checkCoverUrl('/blog').ok).toBe(false);
+    expect(checkCoverUrl('/blog/cover.txt').ok).toBe(false);
+  });
+
+  it('still rejects an empty value', () => {
+    expect(checkCoverUrl('').ok).toBe(false);
+    expect(checkCoverUrl('   ').ok).toBe(false);
+  });
+});

@@ -202,6 +202,84 @@ export function generateBreadcrumbJSONLD(items: { name: string; url: string }[])
 }
 
 /**
+ * Schema.org BlogPosting for an article.
+ *
+ * The blog had no article-level structured data at all, while product and
+ * store pages have carried it for months. For a page whose entire job is to
+ * be found, that is the wrong way round: BlogPosting is what lets a search
+ * engine or an assistant state who wrote a piece, when, and what it is about,
+ * rather than inferring it from the markup.
+ *
+ * `image` takes a root-relative path for our own covers and is absolutised
+ * here, because consumers of JSON-LD do not resolve relative URLs.
+ */
+export function generateBlogPostingJSONLD(post: {
+  slug: string;
+  title: string;
+  excerpt: string;
+  cover: string;
+  author: string;
+  date: Date;
+  updatedAt: Date;
+  keywords?: string[];
+  wordCount?: number;
+}) {
+  const url = `${PLATFORM_URL}/blog/${post.slug}`;
+  const image = post.cover.startsWith('http') ? post.cover : `${PLATFORM_URL}${post.cover}`;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    '@id': url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    headline: post.title.slice(0, 110),
+    description: post.excerpt,
+    image,
+    url,
+    datePublished: post.date.toISOString(),
+    dateModified: post.updatedAt.toISOString(),
+    author: { '@type': 'Organization', name: post.author, url: PLATFORM_URL },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Seyon',
+      url: PLATFORM_URL,
+      logo: { '@type': 'ImageObject', url: `${PLATFORM_URL}/favicon.ico` },
+    },
+    ...(post.keywords && post.keywords.length ? { keywords: post.keywords.join(', ') } : {}),
+    ...(post.wordCount ? { wordCount: post.wordCount } : {}),
+    isAccessibleForFree: true,
+  };
+}
+
+/**
+ * Schema.org Blog for /blog and the topic hubs, carrying the posts it lists.
+ */
+export function generateBlogJSONLD(
+  name: string,
+  description: string,
+  path: string,
+  posts: { slug: string; title: string; excerpt: string; date: Date }[]
+) {
+  const url = `${PLATFORM_URL}${path}`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    '@id': url,
+    name,
+    description,
+    url,
+    publisher: { '@type': 'Organization', name: 'Seyon', url: PLATFORM_URL },
+    blogPost: posts.map((p) => ({
+      '@type': 'BlogPosting',
+      headline: p.title.slice(0, 110),
+      description: p.excerpt,
+      url: `${PLATFORM_URL}/blog/${p.slug}`,
+      datePublished: p.date.toISOString(),
+    })),
+  };
+}
+
+/**
  * Schema.org ItemList for product collection pages (marketplace, categories).
  */
 export function generateItemListJSONLD(

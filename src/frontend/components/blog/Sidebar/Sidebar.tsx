@@ -16,13 +16,11 @@ interface ProductData {
 
 interface SidebarProps {
   recentPosts: BlogPost[];
-  tags: string[];
   featuredProduct?: ProductData | null;
 }
 
 export function Sidebar({
   recentPosts,
-  tags,
   featuredProduct,
 }: SidebarProps) {
   return (
@@ -36,8 +34,8 @@ export function Sidebar({
       {/* Featured Catalog Product Card */}
       <FeaturedProduct product={featuredProduct} />
 
-      {/* Tag Cloud - Client side URL param coordinator */}
-      <Tags tags={tags} />
+      {/* Topic hubs -- real links to real pages, not a query-param filter */}
+      <Tags />
 
       {/* Instagram Grid & Moodboard Collage */}
       <Instagram />

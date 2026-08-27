@@ -3,6 +3,7 @@ import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/site';
 import { logger } from '@/backend/lib/logger';
+import { BLOG_TOPICS } from '@/shared/blog/topics';
 
 // Regenerate hourly at runtime. Without this the sitemap is baked once at
 // build time (verified in prod testing: a DB hiccup during build shipped an
@@ -78,6 +79,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // Topic hubs are a fixed list in code, so they need no database round trip
+  // and cannot be missing from the sitemap because of a query failure.
+  const blogTopicUrls: MetadataRoute.Sitemap = BLOG_TOPICS.map((topic) => ({
+    url: `${baseUrl}/blog/topic/${topic.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
   let blogPostUrls: MetadataRoute.Sitemap = [];
   try {
     const dbPosts = await db.blogPost.findMany({
@@ -94,5 +104,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     logger.warn('Failed to query blog posts for sitemap', { error });
   }
 
-  return [...routes, ...blogPostUrls, ...categoryUrls, ...shopUrls, ...productUrls];
+  return [
+    ...routes,
+    ...blogTopicUrls,
+    ...blogPostUrls,
+    ...categoryUrls,
+    ...shopUrls,
+    ...productUrls,
+  ];
 }

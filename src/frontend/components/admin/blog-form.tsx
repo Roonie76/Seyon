@@ -14,6 +14,10 @@ import { parseBlocks } from '@/shared/blog/parse';
 import { checkCoverUrl } from '@/shared/blog/cover';
 import { PreviewBlocks } from '@/components/blog/preview-blocks';
 import { SyntaxGuide } from './syntax-guide';
+import { BLOG_TOPICS, topicsForPost } from '@/shared/blog/topics';
+
+/** Every tag that places a post under a hub, de-duplicated, in hub order. */
+const HUB_TAGS = Array.from(new Set(BLOG_TOPICS.flatMap((t) => t.tags)));
 
 interface BlogFormProps {
   initialPost?: BlogPost;
@@ -177,6 +181,12 @@ export function BlogForm({ initialPost }: BlogFormProps) {
   }
 
   const coverCheck = cover.trim() ? checkCoverUrl(cover) : { ok: true as const };
+
+  const matchedTopics = topicsForPost(
+
+    tags.split(',').map((t) => t.trim()).filter(Boolean)
+
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl">
@@ -439,7 +449,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
 
                 <Input
                   required
-                  placeholder="…or paste a URL"
+                  placeholder="…or paste a URL, or a path like /blog/cover.webp"
                   value={cover}
                   onChange={(e) => {
                     setCover(e.target.value);
@@ -447,9 +457,9 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                   }}
                 />
 
-                {/* The content policy blocks images from anywhere but Supabase,
-                    Unsplash and Google. Say so here rather than letting the
-                    reader find an empty hero. */}
+                {/* The content policy blocks images from anywhere but this
+                    site, Supabase, Unsplash and Google. Say so here rather
+                    than letting the reader find an empty hero. */}
                 {(coverError || !coverCheck.ok) && (
                   <p className="text-[11px] text-destructive leading-relaxed">
                     {coverError ?? coverCheck.reason}
@@ -474,10 +484,46 @@ export function BlogForm({ initialPost }: BlogFormProps) {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-foreground">Tags (Comma Separated)</label>
                 <Input
-                  placeholder="GOLD, JEWELRY, TRENDS"
+                  placeholder="OPERATIONS, SHIPPING"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                 />
+                {/* Tags are what place a post under a topic hub, and a post
+                    under no hub is reachable only from the index. Showing
+                    which tags do that -- and which hubs the current tags
+                    resolve to -- is cheaper than an author finding out later
+                    that nothing links to their article. */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1">
+                    {HUB_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          const current = tags
+                            .split(',')
+                            .map((t) => t.trim().toUpperCase())
+                            .filter(Boolean);
+                          if (current.includes(tag)) return;
+                          setTags([...current, tag].join(', '));
+                        }}
+                        className="rounded border border-border px-2 py-0.5 text-[11px] font-bold uppercase text-muted-foreground hover:bg-muted"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {matchedTopics.length > 0 ? (
+                      <>Appears under: {matchedTopics.map((t) => t.label).join(', ')}</>
+                    ) : (
+                      <>
+                        No topic hub matches these tags yet — the post will only be
+                        reachable from the blog index.
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-1.5">

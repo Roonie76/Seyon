@@ -24,7 +24,10 @@ export function HeroBanner() {
       <div
         className="absolute inset-0 bg-cover bg-center opacity-25 scale-105 transition-transform duration-300 ease-out pointer-events-none"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?q=80&w=1200")',
+          // Was an Unsplash photograph: a third-party connection on the LCP
+          // path of the page meant to bring people in, for a backdrop that is
+          // blurred to the point of being texture. Drawn locally instead.
+          backgroundImage: 'url("/blog/hero.webp")',
           transform: `translate3d(${offset.x * -15}px, ${offset.y * -15}px, 0) scale(1.05)`,
           filter: 'blur(3px) brightness(0.6)',
         }}
@@ -41,11 +44,16 @@ export function HeroBanner() {
           transform: `translate3d(${offset.x * 10}px, ${offset.y * 10}px, 0)`,
         }}
       >
+        {/* The heading used to read "Editorial Magazine / Luxury Stories",
+            which described neither what is published here nor what anyone
+            arriving from a search is looking for. The h1 is the strongest
+            on-page signal of what a page is about; spending it on a mood was
+            expensive. */}
         <span className="text-[11px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
-          Editorial Magazine
+          The Seyon Blog
         </span>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif italic">
-          Luxury Stories
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif">
+          Guides for independent sellers
         </h1>
         <p className="text-xs uppercase tracking-[0.25em] text-[#9D9D9D]">
           <Link href="/" className="hover:text-white transition-colors">HOME</Link>

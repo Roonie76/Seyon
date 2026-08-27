@@ -7,14 +7,34 @@ import { Sidebar } from '@/components/blog/Sidebar/Sidebar';
 import { Pagination } from '@/components/blog/Pagination/Pagination';
 import { BlogPost } from '@/types/blog';
 import type { Metadata } from 'next';
+import { BLOG_TOPICS } from '@/shared/blog/topics';
+import {
+  generateBlogJSONLD,
+  generateBreadcrumbJSONLD,
+  safeJsonLdStringify,
+} from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * The old title and description described an editorial magazine about
+ * craftsmanship. What is actually published here are practical guides for
+ * people selling on Instagram and WhatsApp in India, which is also what
+ * anyone arriving from a search is looking for. A title that does not match
+ * the page costs the click.
+ */
 export const metadata: Metadata = {
-  title: 'Seyon Blog — Luxury Stories & Craftsmanship Guides',
+  title: 'Blog — Guides for Independent Sellers in India',
   description:
-    'Discover editorial stories, design craftsmanship insights, and guides to direct selling and buyer trust on Seyon.',
+    'Practical guides for independent sellers in India: selling on Instagram and WhatsApp, pricing, product photography, shipping, returns, GST and earning buyer trust.',
   alternates: { canonical: '/blog' },
+  openGraph: {
+    title: 'Seyon Blog — Guides for Independent Sellers in India',
+    description:
+      'Practical guides for independent sellers in India: selling on Instagram and WhatsApp, pricing, photography, shipping, returns and buyer trust.',
+    type: 'website',
+    url: '/blog',
+  },
 };
 
 interface PageProps {
@@ -45,7 +65,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
     : {};
 
   // Fetch blogs in parallel
-  const [postsRaw, totalCount, tagPosts, recentPostsRaw] = await Promise.all([
+  const [postsRaw, totalCount, recentPostsRaw] = await Promise.all([
     db.blogPost.findMany({
       where: {
         published: true,
@@ -72,11 +92,6 @@ export default async function BlogPage({ searchParams }: PageProps) {
     }),
     db.blogPost.findMany({
       where: { published: true },
-      select: { tags: true },
-      take: 100,
-    }),
-    db.blogPost.findMany({
-      where: { published: true },
       orderBy: { date: 'desc' },
       take: 3,
     }),
@@ -86,10 +101,33 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const posts = postsRaw as unknown as BlogPost[];
   const recentPosts = recentPostsRaw as unknown as BlogPost[];
 
-  // Flatten and filter unique tags
-  const tagsList = Array.from(new Set(tagPosts.flatMap((p) => p.tags)));
-
   const totalPages = Math.ceil(totalCount / postsPerPage);
+
+  /**
+   * Structured data for the index. Emitted only on the unfiltered first page:
+   * a search or tag view is a slice of the same collection, and publishing a
+   * Blog schema for each of them describes several blogs that do not exist.
+   */
+  const emitSchema = !q && !tag && currentPage === 1;
+  const blogSchema = emitSchema
+    ? generateBlogJSONLD(
+        'Seyon Blog',
+        'Practical guides for independent sellers in India.',
+        '/blog',
+        postsRaw.map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          excerpt: p.excerpt,
+          date: p.date,
+        }))
+      )
+    : null;
+  const breadcrumbSchema = emitSchema
+    ? generateBreadcrumbJSONLD([
+        { name: 'Home', url: '/' },
+        { name: 'Blog', url: '/blog' },
+      ])
+    : null;
 
   // Isolate featured post for the top banner (Only show on page 1, when no search/tag filter is active)
   const isFiltering = !!(q || tag);
@@ -132,6 +170,19 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
   return (
     <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-350 min-h-screen">
+      {blogSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(blogSchema) }}
+        />
+      )}
+      {breadcrumbSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(breadcrumbSchema) }}
+        />
+      )}
+
       {/* Background Styling: Double grid lines + Radial centered gold glow */}
       <style dangerouslySetInnerHTML={{ __html: `
         .luxury-bg {
@@ -155,7 +206,36 @@ export default async function BlogPage({ searchParams }: PageProps) {
           
           {/* Left Main Article Column (70%) */}
           <div className="flex-grow w-full lg:max-w-[calc(100%-420px)] space-y-12">
-            
+
+            {/* Topic hubs.
+                These are the only links on the site into /blog/topic/*, so
+                they are also the crawl path to every cluster page. Shown on
+                the unfiltered index only: inside a search result they compete
+                with the thing the reader is looking at. */}
+            {!isFiltering && currentPage === 1 && (
+              <nav aria-label="Blog topics" className="space-y-6">
+                <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
+                  Browse by topic
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  {BLOG_TOPICS.map((topic) => (
+                    <Link
+                      key={topic.slug}
+                      href={`/blog/topic/${topic.slug}`}
+                      className="group block rounded-3xl border border-zinc-900 bg-[#0f0f0f] p-6 transition-all duration-300 hover:border-zinc-800 hover:-translate-y-0.5"
+                    >
+                      <h3 className="text-lg font-light text-white font-serif uppercase tracking-tight group-hover:text-[#E4C29D] transition-colors">
+                        {topic.label}
+                      </h3>
+                      <p className="mt-3 text-sm text-[#9D9D9D] font-light leading-relaxed line-clamp-3">
+                        {topic.description}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </nav>
+            )}
+
             {/* Featured Post (Only show on page 1 without search/filter) */}
             {featuredPost && (
               <FeaturedStory post={featuredPost} />
@@ -218,7 +298,6 @@ export default async function BlogPage({ searchParams }: PageProps) {
           {/* Right Sidebar Column (30%) */}
           <Sidebar
             recentPosts={recentPosts}
-            tags={tagsList}
             featuredProduct={sidebarProduct}
           />
         </div>

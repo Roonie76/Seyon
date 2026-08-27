@@ -3,8 +3,14 @@ import { db } from '@/lib/db';
 import { ReadingProgress } from '@/components/blog/ReadingProgress/ReadingProgress';
 import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
 import { RenderBlocks } from '@/components/blog/render-blocks';
-import { parseBlocks } from '@/shared/blog/parse';
-import { Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { parseBlocks, wordCount } from '@/shared/blog/parse';
+import { topicsForPost } from '@/shared/blog/topics';
+import {
+  generateBlogPostingJSONLD,
+  generateBreadcrumbJSONLD,
+  safeJsonLdStringify,
+} from '@/lib/seo';
+import { Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BlogPost } from '@/types/blog';
@@ -51,8 +57,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: post.seoTitle || post.title,
       description: post.seoDescription || post.excerpt,
       type: 'article',
+      url: `/blog/${slug}`,
       publishedTime: post.date.toISOString(),
+      modifiedTime: post.updatedAt.toISOString(),
       authors: [post.author],
+      images: [{ url: post.cover }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.seoTitle || post.title,
+      description: post.seoDescription || post.excerpt,
+      images: [post.cover],
     },
   };
 }
@@ -88,17 +103,71 @@ export default async function BlogArticlePage({ params }: PageProps) {
 
   const post = postRaw as unknown as BlogPost;
 
-  // Fetch two recent other posts for the continue reading section
-  const relatedPostsRaw = await db.blogPost.findMany({
+  /**
+   * "Continue reading" used to be the two most recent other posts, which is
+   * the same two links on every article. For a blog whose job is to bring
+   * people in, the links out of an article are most of the value: they are
+   * what keeps a reader on the site and what tells a crawler which pages
+   * belong together.
+   *
+   * Candidates are drawn from the same topic hubs as this post, then ranked by
+   * how many tags they share with it, falling back to recency for ties and to
+   * fill the slots when a topic is still thin.
+   */
+  const topics = topicsForPost(postRaw.tags);
+  const siblingTags = Array.from(new Set(topics.flatMap((t) => t.tags)));
+
+  const candidatesRaw = await db.blogPost.findMany({
     where: {
       published: true,
       id: { not: post.id },
+      ...(siblingTags.length ? { tags: { hasSome: siblingTags } } : {}),
     },
-    orderBy: { date: 'desc' },
-    take: 2,
+    orderBy: [{ date: 'desc' }, { id: 'desc' }],
+    take: 12,
   });
 
-  const relatedPosts = relatedPostsRaw as unknown as BlogPost[];
+  const ownTags = new Set(postRaw.tags.map((t) => t.toUpperCase()));
+  const ranked = [...candidatesRaw].sort((a, b) => {
+    const score = (tags: string[]) =>
+      tags.filter((t) => ownTags.has(t.toUpperCase())).length;
+    const diff = score(b.tags) - score(a.tags);
+    if (diff !== 0) return diff;
+    const byDate = b.date.getTime() - a.date.getTime();
+    return byDate !== 0 ? byDate : (a.id < b.id ? 1 : -1);
+  });
+
+  let relatedRaw = ranked.slice(0, 3);
+
+  // A post whose tags match no hub yet would otherwise show nothing at all.
+  if (relatedRaw.length === 0) {
+    relatedRaw = await db.blogPost.findMany({
+      where: { published: true, id: { not: post.id } },
+      orderBy: [{ date: 'desc' }, { id: 'desc' }],
+      take: 3,
+    });
+  }
+
+  const relatedPosts = relatedRaw as unknown as BlogPost[];
+
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: 'Blog', url: '/blog' },
+    ...(topics[0] ? [{ name: topics[0].label, url: `/blog/topic/${topics[0].slug}` }] : []),
+    { name: post.title, url: `/blog/${post.slug}` },
+  ];
+
+  const articleSchema = generateBlogPostingJSONLD({
+    slug: postRaw.slug,
+    title: postRaw.title,
+    excerpt: postRaw.excerpt,
+    cover: postRaw.cover,
+    author: postRaw.author,
+    date: postRaw.date,
+    updatedAt: postRaw.updatedAt,
+    keywords: postRaw.seoKeywords.length ? postRaw.seoKeywords : postRaw.tags,
+    wordCount: wordCount(postRaw.content),
+  });
 
   // Content is parsed by the shared blog parser, the same one the admin
   // preview renders, so the editor cannot show one thing and the page another.
@@ -106,6 +175,17 @@ export default async function BlogArticlePage({ params }: PageProps) {
 
   return (
     <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-300 min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLdStringify(generateBreadcrumbJSONLD(breadcrumbItems)),
+        }}
+      />
+
       {/* Scroll Reading Progress Indicator */}
       <ReadingProgress />
 
@@ -128,13 +208,31 @@ export default async function BlogArticlePage({ params }: PageProps) {
       <div className="relative z-10">
         {/* Article Hero Section */}
         <header className="max-w-4xl mx-auto px-6 pt-28 sm:pt-36 pb-12 flex flex-col items-center text-center">
-          <Link
-            href="/blog"
-            className="group inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.3em] text-[#9D9D9D] hover:text-white transition-colors duration-300 mb-8 border border-zinc-900 bg-zinc-950/40 px-5 py-2 rounded-sm"
-          >
-            <ArrowLeft className="h-3 w-3 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            Back to Blog
-          </Link>
+          {/* Visible breadcrumb, mirroring the BreadcrumbList emitted above. */}
+          <nav aria-label="Breadcrumb" className="mb-8">
+            <ol className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#9D9D9D]">
+              <li>
+                <Link href="/" className="hover:text-white transition-colors">Home</Link>
+              </li>
+              <li aria-hidden="true" className="text-zinc-800">/</li>
+              <li>
+                <Link href="/blog" className="hover:text-white transition-colors">Blog</Link>
+              </li>
+              {topics[0] && (
+                <>
+                  <li aria-hidden="true" className="text-zinc-800">/</li>
+                  <li>
+                    <Link
+                      href={`/blog/topic/${topics[0].slug}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      {topics[0].label}
+                    </Link>
+                  </li>
+                </>
+              )}
+            </ol>
+          </nav>
 
           <div className="space-y-4">
             <span className="inline-block bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37] text-[11px] font-black uppercase tracking-[0.25em] px-4 py-1.5 rounded-sm">
@@ -185,6 +283,28 @@ export default async function BlogArticlePage({ params }: PageProps) {
           </div>
         </article>
 
+        {/* Topic hubs this article sits under. These are the links that give a
+            crawler a route from a leaf article back up to a cluster page, and
+            give a reader the obvious next thing to read. */}
+        {topics.length > 0 && (
+          <section className="max-w-3xl mx-auto px-6 pb-16">
+            <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] mb-5">
+              Read more on
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {topics.map((t) => (
+                <Link
+                  key={t.slug}
+                  href={`/blog/topic/${t.slug}`}
+                  className="px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] border border-zinc-900 bg-[#0f0f0f] text-zinc-400 rounded-sm transition-all duration-300 hover:bg-[#D4AF37] hover:text-black hover:border-[#D4AF37]"
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Continue Reading Section */}
         {relatedPosts.length > 0 && (
           <section className="max-w-5xl mx-auto px-6 pb-28 space-y-10">
@@ -197,7 +317,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
               </h3>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {relatedPosts.map((related) => (
                 <BlogCard key={related.id} post={related} />
               ))}
