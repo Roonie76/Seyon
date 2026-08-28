@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+*.tsbuildinfo
 
 next-env.d.ts
 

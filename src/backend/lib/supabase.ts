@@ -96,7 +96,7 @@ export async function uploadFile(
     .from(bucket)
     .upload(filePath, buffer, {
       contentType: file.type,
-      cacheControl: '3600',
+      cacheControl: '31536000',
       upsert: false,
     });
 
