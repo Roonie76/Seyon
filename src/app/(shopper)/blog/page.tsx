@@ -139,6 +139,16 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const posts = postsRaw as unknown as BlogPost[];
   const recentPosts = recentPostsRaw as unknown as BlogPost[];
 
+  /**
+   * The masthead's edition month, in IST because that is where the readers
+   * are. Derived at render time so nobody has to remember to change it, and
+   * this route is `force-dynamic`, so it is recomputed on every request.
+   */
+  const editionMonth = new Date().toLocaleString('en-IN', {
+    month: 'long',
+    timeZone: 'Asia/Kolkata',
+  });
+
   const totalPages = Math.ceil(totalCount / postsPerPage);
 
   /**
@@ -236,7 +246,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
       <div className="luxury-bg absolute inset-0 pointer-events-none z-0" />
 
       {/* Hero Banner Title (Mouse Parallax) */}
-      <HeroBanner />
+      <HeroBanner edition={editionMonth} />
 
       {/* Main Grid Wrapper */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-16 sm:py-24">
@@ -329,8 +339,8 @@ export default async function BlogPage({ searchParams }: PageProps) {
                       No stories published yet.
                     </p>
                     <p className="text-xs text-zinc-600 font-light max-w-sm mx-auto">
-                      The first editorial pieces are being written. Come back shortly, or
-                      browse the marketplace in the meantime.
+                      The first pieces are being written. Come back shortly, or browse
+                      the marketplace in the meantime.
                     </p>
                     <Link
                       href="/marketplace"

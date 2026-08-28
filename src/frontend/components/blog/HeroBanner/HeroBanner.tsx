@@ -3,7 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export function HeroBanner() {
+interface HeroBannerProps {
+  /**
+   * The edition month, e.g. "August". Computed on the server and passed in
+   * rather than read from `new Date()` here: this is a client component, and a
+   * request that straddles midnight on the first of the month would otherwise
+   * render one month on the server and another on the client.
+   */
+  edition: string;
+}
+
+export function HeroBanner({ edition }: HeroBannerProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -44,18 +54,20 @@ export function HeroBanner() {
           transform: `translate3d(${offset.x * 10}px, ${offset.y * 10}px, 0)`,
         }}
       >
-        {/* The h1 is the strongest on-page signal of what a page is about.
-            It read "Luxury Stories" under "Editorial Magazine", which
-            described neither what is published here nor what anyone arriving
-            from a search wants. */}
         <span className="text-[11px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
           The Seyon Blog
         </span>
-        {/* Capped, because the old two-word heading did not need a measure and
-            this one runs to a thousand pixels on a wide screen. */}
+        {/* Capped: the heading is short now, but the measure keeps a longer
+            edition name from running the width of a wide screen. */}
         <h1 className="mx-auto max-w-[16ch] text-balance text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif">
-          Things worth knowing before you buy them
+          Editorial Magazine
         </h1>
+        {/* The month is derived, never typed. A hardcoded "August Edition"
+            reads as abandoned from the first of September, and this page is
+            rendered per request, so there is no cache to go stale. */}
+        <p className="text-sm sm:text-base font-light tracking-[0.2em] uppercase text-[#E4C29D]">
+          {edition} Edition
+        </p>
         <p className="text-xs uppercase tracking-[0.25em] text-[#9D9D9D]">
           <Link href="/" className="hover:text-white transition-colors">HOME</Link>
           <span className="mx-2 text-zinc-700">/</span>
