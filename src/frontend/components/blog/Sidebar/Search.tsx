@@ -18,23 +18,46 @@ export function Search() {
     return () => cancelAnimationFrame(frame);
   }, [searchParams]);
 
+  /**
+   * Push only when the box actually disagrees with the URL.
+   *
+   * This effect used to fire on mount as well as on typing, and it ends with
+   * `params.delete('page')`. So four hundred milliseconds after any load of
+   * /blog?page=3, the search box navigated to /blog and took the page number
+   * with it -- and because `searchParams` is a dependency, the new URL
+   * retriggered it. Pagination was dead: every click went to page two and was
+   * pushed straight back to page one.
+   *
+   * Comparing against the `q` already in the URL is the whole fix. On mount
+   * they match and nothing happens; when someone types they diverge and the
+   * push runs; after the push they match again and it settles.
+   *
+   * Dropping the page number stays correct -- but now it only happens when the
+   * query genuinely changed, which is the case it was written for.
+   */
+  const activeQuery = searchParams.get('q') || '';
+
   useEffect(() => {
+    const next = value.trim();
+    if (next === activeQuery) return;
+
     const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value.trim()) {
-        params.set('q', value.trim());
+      if (next) {
+        params.set('q', next);
       } else {
         params.delete('q');
       }
-      params.delete('page'); // reset page on search
+      params.delete('page'); // a new search starts at the first page
 
+      const qs = params.toString();
       startTransition(() => {
-        router.push(`/blog?${params.toString()}`);
+        router.push(qs ? `/blog?${qs}` : '/blog');
       });
     }, 400); // 400ms debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [value, router, searchParams]);
+  }, [value, activeQuery, router, searchParams]);
 
   return (
     <div className="relative group w-full">

@@ -75,6 +75,23 @@ describe('pagination controls', () => {
   });
 });
 
+describe('sidebar search', () => {
+  const SEARCH = stripComments(
+    readFileSync(join(ROOT, 'src/frontend/components/blog/Sidebar/Search.tsx'), 'utf8')
+  );
+
+  it('compares against the query already in the URL before pushing', () => {
+    // Without this guard the debounce fires on mount, and since it deletes
+    // `page` it silently undoes every pagination click.
+    expect(SEARCH).toMatch(/const activeQuery = searchParams\.get\('q'\)/);
+    expect(SEARCH).toMatch(/if \(next === activeQuery\) return;/);
+  });
+
+  it('still drops the page number when the query actually changes', () => {
+    expect(SEARCH).toContain("params.delete('page')");
+  });
+});
+
 describe('blog index metadata', () => {
   it('does not describe the retired seller guides', () => {
     const forbidden = [

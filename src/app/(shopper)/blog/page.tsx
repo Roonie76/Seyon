@@ -82,7 +82,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const requested = Number(page);
   const currentPage =
     Number.isFinite(requested) && requested >= 1 ? Math.floor(requested) : 1;
-  const postsPerPage = 6;
+  const postsPerPage = 9;
 
   // Build DB queries
   const queryFilter = q
