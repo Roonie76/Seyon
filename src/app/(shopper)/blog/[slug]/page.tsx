@@ -313,7 +313,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
                 Continue Reading
               </span>
               <h3 className="text-2xl sm:text-4xl font-light text-white font-serif uppercase tracking-tight mt-2">
-                More Editorial Stories
+                Keep reading
               </h3>
             </div>
 

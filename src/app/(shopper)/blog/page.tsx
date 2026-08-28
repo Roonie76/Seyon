@@ -24,11 +24,10 @@ export const dynamic = 'force-dynamic';
  * that does not match what the reader wanted costs the click before the page
  * is ever read.
  */
-export const metadata: Metadata = {
-  title: 'Blog — Guides for Independent Sellers in India',
+const BASE_METADATA: Metadata = {
+  title: 'Blog — Indian Craft, Explained for Buyers',
   description:
-    'Practical guides for independent sellers in India: selling on Instagram and WhatsApp, pricing, product photography, shipping, returns, GST and earning buyer trust.',
-  alternates: { canonical: '/blog' },
+    'Guides to buying Indian craft well: what kundan and polki actually mean, how to tell handloom from powerloom, which metal is safe for food, and what handmade is allowed to mean.',
   openGraph: {
     title: 'Seyon Blog — Indian Craft, Explained for Buyers',
     description:
@@ -42,9 +41,47 @@ interface PageProps {
   searchParams: Promise<{ q?: string; tag?: string; page?: string }>;
 }
 
+/**
+ * The canonical has to name the page it is on.
+ *
+ * This was a static export pointing every view at `/blog`, so pages two to
+ * five declared themselves duplicates of page one -- and with the pagination
+ * controls rendering as buttons rather than links, the articles on those pages
+ * had no crawlable route to them either. Between the two, most of the blog was
+ * reachable only from the sitemap.
+ *
+ * Search and tag views still canonicalise to `/blog`: those are filters over
+ * the collection rather than pages of it.
+ */
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const { q, tag, page } = await searchParams;
+  const n = Number(page);
+  const pageNumber = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+  const paged = !q && !tag && pageNumber > 1;
+
+  return {
+    ...BASE_METADATA,
+    ...(paged ? { title: `Blog, page ${pageNumber} — Indian Craft for Buyers` } : {}),
+    alternates: { canonical: paged ? `/blog?page=${pageNumber}` : '/blog' },
+  };
+}
+
 export default async function BlogPage({ searchParams }: PageProps) {
   const { q, tag, page } = await searchParams;
-  const currentPage = Number(page || '1');
+  /**
+   * `?page=` is crawler- and attacker-controlled, and it used to go straight
+   * into Prisma's `skip`:
+   *
+   *   ?page=abc  -> Number('abc') = NaN -> "Argument `skip` is missing"
+   *   ?page=0    -> skip: -6            -> "Value can only be positive"
+   *   ?page=-1   -> skip: -12           -> same
+   *
+   * All three returned a 500 on a public page. Anything that is not a whole
+   * number of at least one is treated as page one rather than propagated.
+   */
+  const requested = Number(page);
+  const currentPage =
+    Number.isFinite(requested) && requested >= 1 ? Math.floor(requested) : 1;
   const postsPerPage = 6;
 
   // Build DB queries
@@ -113,7 +150,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const blogSchema = emitSchema
     ? generateBlogJSONLD(
         'Seyon Blog',
-        'Practical guides for independent sellers in India.',
+        'Guides to buying Indian craft well.',
         '/blog',
         postsRaw.map((p) => ({
           slug: p.slug,
@@ -218,7 +255,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
                   Browse by topic
                 </h2>
-                <div className="grid sm:grid-cols-2 gap-5">
+                {/* Five hubs in two columns leaves the last one orphaned, so
+                    an odd final card spans the row. */}
+                <div className="grid sm:grid-cols-2 gap-5 [&>*:last-child:nth-child(odd)]:sm:col-span-2">
                   {BLOG_TOPICS.map((topic) => (
                     <Link
                       key={topic.slug}
@@ -264,6 +303,24 @@ export default async function BlogPage({ searchParams }: PageProps) {
                       className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline"
                     >
                       Clear Filters
+                    </Link>
+                  </>
+                ) : totalCount > 0 ? (
+                  <>
+                    {/* Past the last page. The blog is not empty, and saying it
+                        is sends a reader who mistyped a page number away to the
+                        marketplace. */}
+                    <p className="text-sm text-zinc-400 font-light">
+                      There is no page {currentPage}.
+                    </p>
+                    <p className="text-xs text-zinc-600 font-light max-w-sm mx-auto">
+                      This blog has {totalPages} {totalPages === 1 ? 'page' : 'pages'} of articles.
+                    </p>
+                    <Link
+                      href="/blog"
+                      className="inline-block text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] hover:underline"
+                    >
+                      Back to the first page
                     </Link>
                   </>
                 ) : (

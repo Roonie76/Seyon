@@ -51,7 +51,9 @@ export function HeroBanner() {
         <span className="text-[11px] font-black uppercase tracking-[0.4em] text-[#D4AF37] block">
           The Seyon Blog
         </span>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif">
+        {/* Capped, because the old two-word heading did not need a measure and
+            this one runs to a thousand pixels on a wide screen. */}
+        <h1 className="mx-auto max-w-[16ch] text-balance text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white font-serif">
           Things worth knowing before you buy them
         </h1>
         <p className="text-xs uppercase tracking-[0.25em] text-[#9D9D9D]">
