@@ -65,7 +65,7 @@ export const BLOG_TOPICS: BlogTopic[] = [
       'Cloth is the easiest thing in India to be sold a story about, because the difference between the real thing and the convincing copy is often invisible in a photograph and obvious in the hand. A block print has a heartbeat — tiny registration shifts where the wooden block landed a hair off. A screen print does not.',
       'These pieces are about learning what to look for: the selvedge, the reverse, the repeat, the weight. None of it requires expertise. All of it is the difference between paying for handwork and paying for the word.',
     ],
-    tags: ['TEXTILES', 'SAREES', 'HANDLOOM', 'BLOCK-PRINT'],
+    tags: ['TEXTILES', 'SAREES', 'HANDLOOM', 'BLOCK-PRINT', 'WARDROBE'],
   },
   {
     slug: 'home',
@@ -92,6 +92,19 @@ export const BLOG_TOPICS: BlogTopic[] = [
       'These pieces are about that difference — what the words on a listing are and are not allowed to claim, what exists out there that you would never think to search for, and how to buy for someone else without guessing.',
     ],
     tags: ['BUYING-GUIDE', 'GIFTING', 'CARE', 'CRAFT'],
+  },
+  {
+    slug: 'buying-for-yourself',
+    label: 'Buying for yourself',
+    heading: 'Buying for yourself, and for the moments that change what you buy',
+    seoTitle: 'Buying for Yourself: Firsts and Fresh Starts',
+    description:
+      'The purchases with no occasion attached and the ones that mark a change — a first salary, a first gold piece, a new flat, starting again from nothing.',
+    intro: [
+      'A gift has a recipient to satisfy and an occasion to suit. A purchase for yourself has neither, which sounds freeing and is the hard part — with no brief, most people default to the safest option or the most impulsive one, and both end up unused.',
+      'These pieces are about that kind of buying, and about the moments that reset it: the first salary, the first flat, the first serious piece of jewellery, the fresh start after something ended. What changes is rarely taste. It is income, storage, permanence, and how much you already know about what you reach for.',
+    ],
+    tags: ['FOR-YOURSELF', 'MILESTONES', 'WARDROBE'],
   },
 ];
 
