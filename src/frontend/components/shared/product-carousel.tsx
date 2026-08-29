@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { scrollBehavior } from '@/frontend/lib/motion';
 
 interface ProductCarouselProps {
   children: React.ReactNode;
@@ -47,7 +48,9 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
 
     el.scrollTo({
       left: targetScroll,
-      behavior: 'smooth',
+      // A media query cannot reach a scroll option. `globals.css` handles the
+      // `scroll-smooth` class on this same element; this handles the argument.
+      behavior: scrollBehavior(),
     });
   };
 

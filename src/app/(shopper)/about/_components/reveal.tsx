@@ -51,7 +51,16 @@ export function Reveal({ children, className = '', delay = 0 }: RevealProps) {
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out will-change-transform ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      /**
+       * `will-change-transform` only while the reveal has not happened yet.
+       *
+       * It was set unconditionally and never released, so /about held 18
+       * permanently promoted compositor layers - one per Reveal - long after
+       * every animation had finished. `will-change` is a hint that something
+       * is *about* to move; leaving it on is how a page quietly costs memory
+       * and texture uploads forever.
+       */
+      className={`transition-all duration-700 ease-out ${shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 will-change-transform'
         } ${className}`}
     >
       {children}

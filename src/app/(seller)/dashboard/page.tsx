@@ -248,7 +248,7 @@ export default async function DashboardPage() {
                 </div>
               )}
             </CardHeader>
-            <CardContent className="p-6 max-h-[350px] overflow-y-auto space-y-4">
+            <CardContent className="p-6 max-h-[350px] overflow-y-auto overscroll-contain space-y-4">
               {shop.reviews.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">No buyer reviews received yet.</p>
               ) : (
@@ -286,7 +286,7 @@ export default async function DashboardPage() {
               <CardTitle className="text-base font-bold text-foreground">Buyer Reports</CardTitle>
               <CardDescription>Official notices filed by users regarding storefront listings.</CardDescription>
             </CardHeader>
-            <CardContent className="p-6 max-h-[250px] overflow-y-auto space-y-3">
+            <CardContent className="p-6 max-h-[250px] overflow-y-auto overscroll-contain space-y-3">
               {shop.reports.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">Your store has a clean record. No reports filed.</p>
               ) : (

@@ -134,7 +134,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
 
               {/* Suggestions Dropdown (Desktop) */}
               {suggestions && (
-                <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[350px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[350px] overflow-y-auto overscroll-contain divide-y divide-zinc-100 p-2 animate-fade-in z-50">
                   {/* Categories */}
                   {suggestions.categories.length > 0 && (
                     <div className="py-2 px-3">
@@ -291,7 +291,7 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
 
             {/* Suggestions Dropdown (Mobile) */}
             {suggestions && (
-              <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[300px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
+              <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[300px] overflow-y-auto overscroll-contain divide-y divide-zinc-100 p-2 animate-fade-in z-50">
                 {/* Categories */}
                 {suggestions.categories.length > 0 && (
                   <div className="py-2 px-2">

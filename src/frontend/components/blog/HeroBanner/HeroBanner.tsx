@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { prefersReducedMotion } from '@/frontend/lib/motion';
 
 interface HeroBannerProps {
   /**
@@ -16,16 +17,46 @@ interface HeroBannerProps {
 export function HeroBanner({ edition }: HeroBannerProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+  /**
+   * Parallax, at the frame rate rather than the pointer rate.
+   *
+   * This called `setOffset` on every `mousemove` — one React render per pixel
+   * of pointer travel, each one re-rendering the hero while the reader is
+   * also scrolling. The handler now only records the position; a single
+   * `requestAnimationFrame` per frame turns it into at most one state update,
+   * which is all the display can show anyway.
+   *
+   * It also does nothing at all when the reader has asked for reduced motion:
+   * a decorative parallax is exactly what that setting is about.
+   */
   useEffect(() => {
+    if (prefersReducedMotion()) return;
+
+    let frame = 0;
+    let pending: { x: number; y: number } | null = null;
+
+    const flush = () => {
+      frame = 0;
+      if (pending) {
+        setOffset(pending);
+        pending = null;
+      }
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
-      // Get offset percentages relative to the screen center (-1 to 1)
-      const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
-      const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
-      setOffset({ x, y });
+      // Offset percentages relative to the screen centre (-1 to 1)
+      pending = {
+        x: (e.clientX - window.innerWidth / 2) / (window.innerWidth / 2),
+        y: (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2),
+      };
+      if (!frame) frame = requestAnimationFrame(flush);
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (

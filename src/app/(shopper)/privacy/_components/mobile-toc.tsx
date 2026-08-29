@@ -85,7 +85,7 @@ export function MobileTOC({ sections }: MobileTOCProps) {
       </button>
 
       {isOpen && (
-        <nav aria-label="Mobile Navigation" className="border-t border-zinc-150 p-2 max-h-60 overflow-y-auto bg-zinc-50/50">
+        <nav aria-label="Mobile Navigation" className="border-t border-zinc-150 p-2 max-h-60 overflow-y-auto overscroll-contain bg-zinc-50/50">
           <ul className="space-y-1">
             {sections.map((sec) => (
               <li key={sec.id}>
