@@ -320,6 +320,10 @@ test('a notice sent by an admin reaches the seller and is marked read', async ()
   const inboxItem = sellerPage.getByTestId('notice-item').filter({ hasText: 'supplier invoices' });
   await expect(inboxItem).toBeVisible({ timeout: 20000 });
   await expect(inboxItem.getByTestId('notice-unread')).toBeVisible();
+  // Notices start collapsed. They used to mount expanded when unread, which
+  // meant merely loading this page marked every one of them read.
+  await expect(inboxItem.getByTestId('notice-body')).toHaveCount(0);
+  await inboxItem.getByTestId('notice-toggle').click();
   await expect(inboxItem.getByTestId('notice-body')).toContainText('Send the invoices');
 
   await inboxItem.getByTestId('notice-response-input').fill('Invoices attached on email, sent this morning from our supplier.');

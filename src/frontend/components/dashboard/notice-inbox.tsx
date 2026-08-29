@@ -52,15 +52,26 @@ export function NoticeInbox({ notices }: { notices: SellerNotice[] }) {
 
 function NoticeCard({ notice }: { notice: SellerNotice }) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(!notice.readAt);
+  /**
+   * Collapsed, always.
+   *
+   * This was `React.useState(!notice.readAt)`, which meant every unread notice
+   * mounted already expanded — so the effect below saw `open === true` on the
+   * very first render and marked it read. Loading /notices marked the whole
+   * inbox read at a glance, fired one server action and one `router.refresh()`
+   * per unread notice, and destroyed the only record of what the seller had
+   * actually looked at. The comment underneath claimed the opposite was
+   * happening. The unread state is evidence in a dispute; it is not the page's
+   * to spend on the seller's behalf.
+   */
+  const [open, setOpen] = React.useState(false);
   const [response, setResponse] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const markedRef = React.useRef(false);
 
-  // Mark read the first time it is expanded, and only once. Doing this in an
-  // effect rather than on the server render means opening the page does not
-  // silently mark everything read at a glance.
+  // Mark read the first time the seller expands it, and only once. `open`
+  // starts false, so this cannot fire on mount.
   React.useEffect(() => {
     if (!open || notice.readAt || markedRef.current) return;
     markedRef.current = true;
