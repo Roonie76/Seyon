@@ -165,16 +165,47 @@ export function CartClient() {
     }
   }, []);
 
-  // Trigger validation when cart groups change (if mounted and not empty)
+  /**
+   * Fires once per distinct cart, keyed on the cart's contents.
+   *
+   * The guard used to be `if (!hasItems || validation || isValidating) return`
+   * with `validation` and `isValidating` in the dependency array. `validation`
+   * is only set when the request succeeds, so on any failure — an offline
+   * phone, a dropped connection, a 500, a rate-limit response — the `finally`
+   * block set `isValidating` back to false, the dependency changed, the effect
+   * re-ran, the guard passed, and it fired again. Measured with the endpoint
+   * failing: 291 POSTs to /api/cart/validate in ten seconds, accelerating, with
+   * nothing to stop it but closing the tab. Rate limiting does not help,
+   * because a rejected request is itself a failure that re-arms the loop.
+   *
+   * A signature ref latches instead: one attempt per cart state, success or
+   * failure. The "Refresh prices" button and the visibility handler remain the
+   * ways to retry deliberately.
+   */
+  const attemptedSignatureRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
     if (!isMounted) return;
-    const hasItems = Object.keys(cartGroups).length > 0;
-    if (!hasItems || validation || isValidating) return;
+    const shopIds = Object.keys(cartGroups).sort();
+    if (shopIds.length === 0) {
+      attemptedSignatureRef.current = null;
+      return;
+    }
+    const signature = JSON.stringify(
+      shopIds.map((shopId) => [
+        shopId,
+        cartGroups[shopId]
+          .map((i) => `${i.productId}|${i.selectionsKey}|${i.quantity}`)
+          .sort(),
+      ])
+    );
+    if (attemptedSignatureRef.current === signature) return;
+    attemptedSignatureRef.current = signature;
     // validateCart sets state as it runs; scheduling it off the synchronous
     // effect body keeps the cascade out of the commit phase.
     const timer = setTimeout(() => validateCart(cartGroups), 0);
     return () => clearTimeout(timer);
-  }, [isMounted, cartGroups, validation, validateCart, isValidating]);
+  }, [isMounted, cartGroups, validateCart]);
 
   // ── 3. Same-tab and Cross-tab events listener ──────────────────────
   React.useEffect(() => {
