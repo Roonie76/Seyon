@@ -20,6 +20,7 @@ import { logger } from '@/backend/lib/logger';
 import { fetchShopperProducts, fetchShopperCategoriesAndCities, type ShopperProduct } from '@/backend/lib/shopper-products';
 import { Button } from '@/components/ui/button';
 import type { Metadata } from 'next';
+import { parsePage } from '@/shared/lib/search-params';
 
 export const metadata: Metadata = {
   // The homepage is the one page that should carry the brand first: it is what
@@ -258,7 +259,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     const sort = params.sort || (query ? 'relevance' : 'newest');
     const selectedCity = params.city || '';
     const inStockOnly = params.inStock === '1';
-    const page = parseInt(params.page || '1', 10);
+    /**
+     * `parseInt(params.page || '1', 10)` returned NaN for `?page=abc` and -5 for
+     * `?page=-5`. The query itself was safe, because the data layer re-parsed the
+     * raw parameter with `parsePage`, but the pagination controls were rendered
+     * from this value: `?page=abc` emitted `href="/?...&page=NaN"` and `?page=-5`
+     * emitted a Previous link to `page=-6`. Parsing once, here, keeps the links
+     * and the query reading the same number.
+     */
+    const page = parsePage(params.page);
     const minPrice = params.minPrice || '';
     const maxPrice = params.maxPrice || '';
     const rating = params.rating || '';
@@ -380,7 +389,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               if (maxPrice) paginationParams.set('maxPrice', maxPrice);
               if (rating) paginationParams.set('rating', rating);
               const baseQs = paginationParams.toString();
-              const buildUrl = (p: number) => `/?${baseQs}${baseQs ? '&' : ''}page=${p}`;
+              /**
+               * Clamped, because Previous on page one built `page=0` and Next
+               * on the last page built `page=${totalPages + 1}`. Both links are
+               * only visually disabled — the href is still in the markup, so a
+               * crawler follows it into a page that does not exist.
+               */
+              const buildUrl = (p: number) =>
+                `/?${baseQs}${baseQs ? '&' : ''}page=${Math.min(Math.max(1, p), Math.max(1, totalPages))}`;
               return (
                 <div className="flex items-center justify-center gap-2 mt-12 border-t border-zinc-200 pt-6">
                   <Link href={buildUrl(page - 1)} className={page === 1 ? 'pointer-events-none opacity-40' : ''}>

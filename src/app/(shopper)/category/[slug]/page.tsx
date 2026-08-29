@@ -20,6 +20,7 @@ import {
   fetchShopperCategoriesAndCities,
   type ShopperProduct,
 } from '@/backend/lib/shopper-products';
+import { parsePage } from '@/shared/lib/search-params';
 
 // Rendered per request: the shopper layout's Navbar calls auth(), which reads
 // cookies and makes every route in this group dynamic regardless. The previous
@@ -123,7 +124,15 @@ export default async function CategoryPage({
   const selectedCity = sp.city || '';
   const sort = sp.sort || (query ? 'relevance' : 'newest');
   const inStockOnly = sp.inStock === '1';
-  const page = parseInt(sp.page || '1', 10);
+  /**
+   * `parseInt(params.page || '1', 10)` returned NaN for `?page=abc` and -5 for
+   * `?page=-5`. The query itself was safe, because the data layer re-parsed the
+   * raw parameter with `parsePage`, but the pagination controls were rendered
+   * from this value: `?page=abc` emitted `href="/?...&page=NaN"` and `?page=-5`
+   * emitted a Previous link to `page=-6`. Parsing once, here, keeps the links
+   * and the query reading the same number.
+   */
+  const page = parsePage(sp.page);
   const minPrice = sp.minPrice || '';
   const maxPrice = sp.maxPrice || '';
   const rating = sp.rating || '';
@@ -199,7 +208,13 @@ export default async function CategoryPage({
     if (maxPrice) paginationParams.set('maxPrice', maxPrice);
     if (rating) paginationParams.set('rating', rating);
     const baseQs = paginationParams.toString();
-    return `/category/${baseSlug}?${baseQs}${baseQs ? '&' : ''}page=${p}`;
+    /**
+     * Clamped: Previous on page one built `page=0` and Next on the last page
+     * built one past the end. Those links are only visually disabled, so the
+     * href still ships and a crawler follows it.
+     */
+    const safe = Math.min(Math.max(1, p), Math.max(1, totalPages));
+    return `/category/${baseSlug}?${baseQs}${baseQs ? '&' : ''}page=${safe}`;
   };
 
   return (

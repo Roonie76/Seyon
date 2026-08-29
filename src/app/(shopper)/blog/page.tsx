@@ -8,6 +8,7 @@ import { Pagination } from '@/components/blog/Pagination/Pagination';
 import { BlogPost } from '@/types/blog';
 import type { Metadata } from 'next';
 import { BLOG_TOPICS } from '@/shared/blog/topics';
+import { parsePage, MAX_PAGE } from '@/shared/lib/search-params';
 import {
   generateBlogJSONLD,
   generateBreadcrumbJSONLD,
@@ -55,8 +56,7 @@ interface PageProps {
  */
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const { q, tag, page } = await searchParams;
-  const n = Number(page);
-  const pageNumber = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+  const pageNumber = parsePage(page);
   const paged = !q && !tag && pageNumber > 1;
 
   return {
@@ -76,12 +76,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
    *   ?page=0    -> skip: -6            -> "Value can only be positive"
    *   ?page=-1   -> skip: -12           -> same
    *
-   * All three returned a 500 on a public page. Anything that is not a whole
-   * number of at least one is treated as page one rather than propagated.
+   *   ?page=1e20 -> skip: 1e20 - 9      -> "Unable to fit value into i64"
+   *
+   * All four returned a 500 on a public page. `parsePage` is the same clamp
+   * the catalogue pages already use: it floors at 1 and ceilings at MAX_PAGE,
+   * so no arithmetic derived from it can leave the range Prisma accepts.
    */
-  const requested = Number(page);
-  const currentPage =
-    Number.isFinite(requested) && requested >= 1 ? Math.floor(requested) : 1;
+  const currentPage = parsePage(page);
   const postsPerPage = 9;
 
   // Build DB queries
@@ -149,7 +150,9 @@ export default async function BlogPage({ searchParams }: PageProps) {
     timeZone: 'Asia/Kolkata',
   });
 
-  const totalPages = Math.ceil(totalCount / postsPerPage);
+  // Capped at the same ceiling `parsePage` enforces, so the controls never
+  // offer a page number the parser would refuse to honour.
+  const totalPages = Math.min(Math.ceil(totalCount / postsPerPage), MAX_PAGE);
 
   /**
    * Structured data for the index. Emitted only on the unfiltered first page:
@@ -216,8 +219,12 @@ export default async function BlogPage({ searchParams }: PageProps) {
     }
   }
 
+  // `overflow-x-clip` on the root, not `overflow-hidden`: the latter computes
+  // `overflow-y` to `auto`, which makes the div a scroll container and silently
+  // disables `position: sticky` on the sidebar inside it. `clip` keeps the
+  // horizontal clipping without creating a scrollport.
   return (
-    <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-350 min-h-screen">
+    <div className="relative w-full overflow-x-clip bg-[#050505] text-zinc-350 min-h-screen">
       {blogSchema && (
         <script
           type="application/ld+json"

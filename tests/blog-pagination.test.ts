@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePage, MAX_PAGE } from '@/shared/lib/search-params';
 
 const ROOT = join(__dirname, '..');
 const INDEX_RAW = readFileSync(join(ROOT, 'src/app/(shopper)/blog/page.tsx'), 'utf8');
@@ -20,11 +21,13 @@ const stripComments = (src: string) =>
   src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const PAGINATION = stripComments(PAGINATION_RAW);
 
-/** The clamp the route applies, restated so the behaviour itself is tested. */
-function clampPage(raw: string | undefined): number {
-  const n = Number(raw);
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
-}
+/**
+ * The route now uses the shared parser rather than its own arithmetic. The
+ * local copy existed because the two had drifted: the route floored at 1 but
+ * had no ceiling, so `?page=99999999999999999999` produced a `skip` Prisma
+ * could not fit into an i64 and the public page returned 500.
+ */
+const clampPage = parsePage;
 
 const INDEX = stripComments(INDEX_RAW);
 
@@ -51,10 +54,37 @@ describe('blog page parameter', () => {
     expect(clampPage('4')).toBe(4);
   });
 
+  it('has an upper bound, so `skip` always fits in an i64', () => {
+    // Reproduced: /blog?page=99999999999999999999 returned 500 while
+    // /blog?page=100000 returned 200. The floor was there; the ceiling wasn't.
+    const perPage = 9;
+    for (const huge of [
+      '1001',
+      '100000',
+      '99999999999999999999',
+      '1e20',
+      String(Number.MAX_SAFE_INTEGER),
+    ]) {
+      const page = clampPage(huge);
+      expect(page, `?page=${huge}`).toBeLessThanOrEqual(MAX_PAGE);
+      const skip = (page - 1) * perPage;
+      expect(Number.isSafeInteger(skip), `?page=${huge}`).toBe(true);
+      expect(skip, `?page=${huge}`).toBeLessThan(2 ** 63 - 1);
+    }
+  });
+
   it('clamps in the route rather than passing the raw number to Prisma', () => {
     // The crash was `Number(page || '1')` going straight into `skip`.
     expect(INDEX).not.toContain("Number(page || '1')");
-    expect(INDEX).toMatch(/Number\.isFinite\(requested\)/);
+    // And the route must use the shared parser, not a hand-rolled clamp that
+    // can drift away from it again.
+    expect(INDEX).not.toMatch(/Number\.isFinite\(requested\)/);
+    expect(INDEX).toMatch(/const currentPage = parsePage\(page\);/);
+    expect(INDEX).toMatch(/const pageNumber = parsePage\(page\);/);
+  });
+
+  it('never offers a page link past the parser ceiling', () => {
+    expect(INDEX).toMatch(/Math\.min\(Math\.ceil\(totalCount \/ postsPerPage\), MAX_PAGE\)/);
   });
 });
 
