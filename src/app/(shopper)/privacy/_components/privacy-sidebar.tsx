@@ -24,15 +24,17 @@ export function PrivacySidebar({ sections }: PrivacySidebarProps) {
   const activeId = scrolledId || hash || (sections.length > 0 ? sections[0].id : '');
 
   React.useEffect(() => {
-    if (!hash) return;
-    const targetElement = document.getElementById(hash);
+    // Only scroll to hash on initial mount if deep-linked
+    const initialHash = window.location.hash.replace('#', '');
+    if (!initialHash) return;
+    const targetElement = document.getElementById(initialHash);
     if (!targetElement) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const timer = setTimeout(() => {
       targetElement.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     }, 100);
     return () => clearTimeout(timer);
-  }, [hash]);
+  }, []);
 
   React.useEffect(() => {
     const observerOptions = {
