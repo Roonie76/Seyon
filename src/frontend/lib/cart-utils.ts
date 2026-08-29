@@ -41,30 +41,47 @@ export function safeParseCart(raw: string): CartItem[] {
 // ── Scan all seyon_cart:* keys ────────────────────────────────────────
 export function getAllCartShopIds(): string[] {
   if (typeof window === 'undefined') return [];
-  const ids: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith('seyon_cart:')) {
-      ids.push(key.replace('seyon_cart:', ''));
+  /**
+   * Wrapped, because reading `localStorage` is not merely empty when a
+   * browser blocks site data - the property access itself throws a
+   * SecurityError. This function is reached from the navbar's cart badge on
+   * every page, and the throw took the whole navbar down: reproduced with
+   * storage denied, the site rendered "Something went wrong" with a
+   * SecurityError in <NavbarClient> and no navigation at all.
+   */
+  try {
+    const ids: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('seyon_cart:')) {
+        ids.push(key.replace('seyon_cart:', ''));
+      }
     }
+    return ids;
+  } catch {
+    return [];
   }
-  return ids;
 }
 
 // ── Get all cart items grouped by shopId ──────────────────────────────
 export function getAllCartItems(): Record<string, CartItem[]> {
   const result: Record<string, CartItem[]> = {};
-  for (const shopId of getAllCartShopIds()) {
-    const raw = localStorage.getItem(`seyon_cart:${shopId}`);
-    if (raw) {
-      const items = safeParseCart(raw);
-      if (items.length > 0) {
-        result[shopId] = items;
-      } else {
-        // Clean up corrupt/empty keys
-        localStorage.removeItem(`seyon_cart:${shopId}`);
+  try {
+    for (const shopId of getAllCartShopIds()) {
+      const raw = localStorage.getItem(`seyon_cart:${shopId}`);
+      if (raw) {
+        const items = safeParseCart(raw);
+        if (items.length > 0) {
+          result[shopId] = items;
+        } else {
+          // Clean up corrupt/empty keys
+          localStorage.removeItem(`seyon_cart:${shopId}`);
+        }
       }
     }
+  } catch {
+    // Blocked site data. An empty cart is wrong but survivable; a thrown
+    // SecurityError during render is not.
   }
   return result;
 }

@@ -66,7 +66,17 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-  const [items, setItems] = React.useState<CartItem[]>(() => getLocalCart(shopId));
+  /**
+   * Empty on the first render, filled on mount.
+   *
+   * `useState(() => getLocalCart(shopId))` read localStorage during render, so
+   * the server rendered an empty cart and the client's first render rendered
+   * the real one - "Hydration failed because the server rendered HTML didn't
+   * match the client", reproduced with any non-empty cart. The effect below
+   * already re-reads the cart on every update event; it now does the first
+   * read too.
+   */
+  const [items, setItems] = React.useState<CartItem[]>([]);
   const [address, setAddress] = React.useState<{
     addressLine1?: string | null;
     addressLine2?: string | null;
@@ -88,6 +98,10 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
     };
 
     window.addEventListener('seyon-cart-updated', handleUpdate);
+    // The first read, now that the initial state is the same empty array the
+    // server rendered.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(getLocalCart(shopId));
 
     // Fetch user address if logged in
     getUserProfile('shopper')
@@ -133,8 +147,17 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
     saveLocalCart(shopId, updated);
   };
 
+  /**
+   * A double-tap used to fire the analytics events twice and open two
+   * WhatsApp tabs, because nothing marked the handler as already running and
+   * it awaits a round of network calls before it opens anything.
+   */
+  const [isCheckingOut, setIsCheckingOut] = React.useState(false);
+
   const handleCheckout = async () => {
-    if (items.length === 0) return;
+    if (items.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
+    try {
 
     // Track analytics click for each product in the cart
     await Promise.all(
@@ -182,7 +205,10 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
     }
 
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+      window.open(whatsappUrl, '_blank');
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   if (totalCount === 0) return null;
@@ -341,7 +367,9 @@ export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartW
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="w-full bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-[20px] py-3.5 px-5 shadow-2xs flex items-center justify-between transition-all duration-300 group/btn cursor-pointer active:scale-[0.98]"
+                disabled={isCheckingOut}
+                aria-busy={isCheckingOut}
+                className="w-full bg-white border border-[#F0ECE3] hover:border-[#A77F3A]/40 rounded-[20px] py-3.5 px-5 shadow-2xs flex items-center justify-between transition-all duration-300 group/btn cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-wait"
               >
                 <div className="flex-1 text-center pl-6 select-none">
                   <span className="font-serif text-sm font-bold text-zinc-950 block leading-tight">Talk to Creator</span>

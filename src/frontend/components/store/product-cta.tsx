@@ -57,7 +57,12 @@ export function ProductCTA({
   useBodyScrollLock(showGuidelines);
   useEscapeKey(showGuidelines, () => setShowGuidelines(false));
   const [showWhyLink, setShowWhyLink] = React.useState(false);
-  const [cartItems, setCartItems] = React.useState<CartItem[]>(() => getLocalCart(shopId));
+  /**
+   * Empty on the first render, filled on mount - see store-cart.tsx. Reading
+   * localStorage during render made the server's "Add to Cart" and the
+   * client's quantity stepper disagree for any returning buyer.
+   */
+  const [cartItems, setCartItems] = React.useState<CartItem[]>([]);
 
   React.useEffect(() => {
     const handleUpdate = (e: Event) => {
@@ -68,6 +73,8 @@ export function ProductCTA({
     };
 
     window.addEventListener('seyon-cart-updated', handleUpdate);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCartItems(getLocalCart(shopId));
     return () => window.removeEventListener('seyon-cart-updated', handleUpdate);
   }, [shopId]);
 
@@ -359,7 +366,7 @@ export function ProductCTA({
               Please review these quick tips before contacting the seller.
             </p>
 
-            <div className="max-h-[320px] overflow-y-auto pr-1">
+            <div className="max-h-[320px] overflow-y-auto overscroll-contain pr-1">
               <ul className="space-y-3.5 text-xs text-zinc-650 leading-relaxed">
                 <li className="flex items-start gap-2.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
