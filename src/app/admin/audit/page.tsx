@@ -69,7 +69,7 @@ export default async function AdminAuditPage({
   const filtered = Boolean(sp.actorId || sp.action || sp.targetType || sp.from || sp.to);
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] bg-white px-4 py-10 sm:px-6">
+    <section className="min-h-screen bg-white px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-5xl">
 
         <div className="mb-5 flex items-start justify-between gap-3">

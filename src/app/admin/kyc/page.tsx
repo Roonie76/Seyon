@@ -25,7 +25,7 @@ export default async function AdminKycPage() {
   const items = 'data' in pending ? pending.data : [];
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] bg-white px-4 py-10 sm:px-6">
+    <section className="min-h-screen bg-white px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>

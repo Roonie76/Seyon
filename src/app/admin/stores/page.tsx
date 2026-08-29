@@ -33,7 +33,7 @@ export default async function AdminStoresPage({
   const status = sp.status ?? 'all';
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] bg-white px-4 py-10 sm:px-6">
+    <section className="min-h-screen bg-white px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>

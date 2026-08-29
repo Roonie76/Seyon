@@ -41,7 +41,7 @@ export default async function AdminAccountPage({
   const u = res.data;
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] bg-white px-4 py-10 sm:px-6">
+    <section className="min-h-screen bg-white px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-4xl space-y-5">
 
         <div className="flex items-start justify-between gap-3">
