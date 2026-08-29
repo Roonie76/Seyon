@@ -120,8 +120,11 @@ export function DialogContent({ className, children }: { className?: string; chi
     return () => {
       // Re-enable body scrolling
       unlockBodyScroll();
-      // Restore focus
-      previousFocusRef.current?.focus?.();
+      // Restore focus without moving the page. Without `preventScroll` the
+      // browser scrolls the trigger back into view, and if the page changed
+      // underneath - a filter applied, a row removed - that is somewhere the
+      // reader was not. Two other components in this codebase already pass it.
+      previousFocusRef.current?.focus?.({ preventScroll: true });
     };
   }, [open]);
 
@@ -142,7 +145,7 @@ export function DialogContent({ className, children }: { className?: string; chi
         aria-modal="true"
         tabIndex={-1}
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200 glass flex flex-col max-h-[90vh] overflow-y-auto",
+          "relative z-50 w-full max-w-lg rounded-lg border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200 glass flex flex-col max-h-[90vh] overflow-y-auto overscroll-contain",
           className
         )}
       >

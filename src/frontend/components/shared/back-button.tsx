@@ -44,15 +44,31 @@ function BackButtonInner({ fallbackHref, label = 'Storefront', className = '' }:
   const resolvedHref = target ? target.path : fallbackHref;
   const resolvedLabel = cleanLabel(target ? target.label : label);
 
+  /**
+   * Records where the shopper is standing on the page they are returning to,
+   * so the listing can put them back rather than at the top.
+   *
+   * Measured before this: 1069px into a listing, open a product, use this
+   * control - land at 0. `history.back()` is not the fix, because the journey
+   * stack records browsing contexts rather than history entries: a shopper who
+   * walked product to product is several history entries away from the listing
+   * this button names, and a back control that goes somewhere other than its
+   * own label is worse than one that loses the scroll position. See
+   * lib/scroll-memory.ts.
+   */
   const handleClick = () => {
-    if (target) {
-      try {
-        sessionStorage.setItem('seyon_is_navigating_back', 'true');
-      } catch (err) {
-        console.error('Failed to set back navigation flag in sessionStorage:', err);
-      }
-      truncateJourneyStack(target.path);
+    if (!target) return;
+    try {
+      // The value is the destination, not a bare 'true'. With a boolean, an
+      // unrelated re-render on the page being left consumed the flag before
+      // the destination ever mounted - so the back-navigation was still
+      // recorded as a forward one, and there was nothing left to tell the
+      // listing to restore its scroll position.
+      sessionStorage.setItem('seyon_is_navigating_back', target.path);
+    } catch (err) {
+      console.error('Failed to set back navigation flag in sessionStorage:', err);
     }
+    truncateJourneyStack(target.path);
   };
 
   if (isFooterPage) {
