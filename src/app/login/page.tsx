@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ShoppingBag, Globe } from 'lucide-react';
 import { isDevLoginEnabled } from '@/backend/lib/dev-login';
 import { isSellerHost as checkIsSellerHost } from '@/lib/is-seller-host';
+import { safeRedirect } from '@/shared/lib/safe-redirect';
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -23,7 +24,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const host = (await headers()).get('host') || '';
   const isSellerHost = checkIsSellerHost(host);
   const defaultCallback = isSellerHost ? '/dashboard' : '/marketplace';
-  const callbackUrl = params.callbackUrl || defaultCallback;
+  /**
+   * Validated, not merely defaulted. This was `params.callbackUrl ||
+   * defaultCallback`, and the value reached three sinks unchecked: the
+   * `redirect()` below and both `signIn({ redirectTo })` calls. Anything
+   * off-site now falls back to this host's own landing page.
+   */
+  const callbackUrl = safeRedirect(params.callbackUrl, defaultCallback);
   const error = params.error;
   const devLogin = isDevLoginEnabled();
 
