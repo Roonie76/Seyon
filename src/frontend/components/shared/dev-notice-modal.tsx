@@ -18,6 +18,7 @@ export function useDevNoticeAcknowledged(): boolean {
   return useStorageValue(() => localStorage.getItem(NOTICE_KEY) === 'true', true);
 }
 import { X } from 'lucide-react';
+import { useBodyScrollLock } from '@/frontend/lib/overlay';
 import { Button } from '@/components/ui/button';
 
 export function DevNoticeModal() {
@@ -26,6 +27,10 @@ export function DevNoticeModal() {
   // without the extra render pass a mount effect would cause.
   const acknowledged = useDevNoticeAcknowledged();
   const isOpen = !acknowledged;
+
+  // A full-screen backdrop that does not stop the page behind it from
+  // scrolling: measured at 390x844, scrollY went 0 -> 900 under the notice.
+  useBodyScrollLock(isOpen);
 
   const handleClose = () => {
     try {

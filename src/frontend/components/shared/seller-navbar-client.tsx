@@ -5,6 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, Search, X, Heart, ChevronRight, User, LogOut, LayoutDashboard, ShoppingBag, ShieldAlert } from 'lucide-react';
+import { useBodyScrollLock, useEscapeKey } from '@/frontend/lib/overlay';
 
 interface SellerNavbarClientProps {
   user?: {
@@ -27,6 +28,8 @@ interface Suggestion {
 export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSignOut }: SellerNavbarClientProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  useBodyScrollLock(isMenuOpen);
+  useEscapeKey(isMenuOpen, () => setIsMenuOpen(false));
   const [searchQuery, setSearchQuery] = React.useState('');
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -364,13 +367,15 @@ export function SellerNavbarClient({ user, wishlistCount, buyerMarketUrl, onSign
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 flex">
           {/* Backdrop */}
+          {/* Decorative. Escape is handled on the document by `useEscapeKey`:
+              this element carried `tabIndex={-1}`, which is focusable by script
+              but never by the keyboard, so its `onKeyDown` never fired and
+              Escape did nothing. The drawer's own close button is the
+              accessible control. */}
           <div
+            aria-hidden="true"
             className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
             onClick={() => setIsMenuOpen(false)}
-            onKeyDown={(e) => { if (e.key === 'Escape') setIsMenuOpen(false); }}
-            role="button"
-            tabIndex={-1}
-            aria-label="Close menu"
           />
 
           {/* Drawer Body */}

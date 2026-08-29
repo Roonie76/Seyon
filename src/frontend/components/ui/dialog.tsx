@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import { lockBodyScroll, unlockBodyScroll } from '@/frontend/lib/overlay';
 
 interface DialogProps {
   open?: boolean;
@@ -103,8 +104,9 @@ export function DialogContent({ className, children }: { className?: string; chi
     // Record the element that had focus before opening the dialog
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     
-    // Disable body scrolling
-    document.body.style.overflow = 'hidden';
+    // Disable body scrolling. Reference-counted, so a dialog opened over a
+    // nav drawer does not unlock the page when it alone closes.
+    lockBodyScroll();
 
     // Focus the first focusable element ONLY on initial open
     if (!hasFocusedRef.current) {
@@ -117,7 +119,7 @@ export function DialogContent({ className, children }: { className?: string; chi
 
     return () => {
       // Re-enable body scrolling
-      document.body.style.overflow = '';
+      unlockBodyScroll();
       // Restore focus
       previousFocusRef.current?.focus?.();
     };

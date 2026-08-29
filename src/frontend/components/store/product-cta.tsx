@@ -7,6 +7,7 @@ import { trackEvent } from '@/actions/analytics';
 import { track } from '@/frontend/lib/events';
 import { parseOptions, buildOrderMessage } from '@/shared/lib/order-message';
 import { getLocalCart, saveLocalCart, getSelectionsKey, StoreCartWidget, CartItem } from './store-cart';
+import { useBodyScrollLock, useEscapeKey } from '@/frontend/lib/overlay';
 
 interface ProductCTAProps {
   shopId: string;
@@ -53,6 +54,8 @@ export function ProductCTA({
   const [added, setAdded] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showGuidelines, setShowGuidelines] = React.useState(false);
+  useBodyScrollLock(showGuidelines);
+  useEscapeKey(showGuidelines, () => setShowGuidelines(false));
   const [showWhyLink, setShowWhyLink] = React.useState(false);
   const [cartItems, setCartItems] = React.useState<CartItem[]>(() => getLocalCart(shopId));
 

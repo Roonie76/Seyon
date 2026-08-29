@@ -5,6 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Mail, Clock, MessageSquare, Check, Headphones, X } from 'lucide-react';
 import { BackButton } from '@/components/shared/back-button';
+import { useBodyScrollLock, useEscapeKey } from '@/frontend/lib/overlay';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -34,6 +35,8 @@ interface ContactClientProps {
 
 export function ContactClient({ isLoggedIn }: ContactClientProps) {
   const [showLoginModal, setShowLoginModal] = React.useState(false);
+  useBodyScrollLock(showLoginModal);
+  useEscapeKey(showLoginModal, () => setShowLoginModal(false));
   // One source, so the address in the legal pages and the address on the
   // contact page cannot drift apart again.
   const supportEmail = LEGAL_CONTACTS.support;

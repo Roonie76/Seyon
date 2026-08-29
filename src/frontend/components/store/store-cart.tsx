@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { ShoppingCart, X, Plus, Minus, Trash2, MapPin, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { getUserProfile } from '@/backend/actions/user-profile';
 import { trackEvent } from '@/actions/analytics';
+import { useBodyScrollLock, useEscapeKey } from '@/frontend/lib/overlay';
 
 export interface CartItem {
   productId: string;
@@ -55,6 +56,10 @@ interface StoreCartWidgetProps {
 
 export function StoreCartWidget({ shopId, shopName, whatsappNumber }: StoreCartWidgetProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  // The panel is a full-screen backdrop; without this the storefront
+  // behind it scrolls while the panel stays put.
+  useBodyScrollLock(isOpen);
+  useEscapeKey(isOpen, () => setIsOpen(false));
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
