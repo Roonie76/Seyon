@@ -49,27 +49,50 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
     return () => clearTimeout(handler);
   }, [query]);
 
-  // Fetch suggestions when debounced query changes
+  /**
+   * Suggestions, aborted when they are superseded and not fetched at all
+   * before anyone has asked for them.
+   *
+   * Two problems. The effect ran on mount for any `?q=` of two characters or
+   * more — arriving from a shared search link fetched a suggestion list for a
+   * dropdown that was closed and would never open. And nothing cancelled an
+   * in-flight request, so with "sil" still loading when "silver" resolved, the
+   * slower earlier response could land last and put stale suggestions under a
+   * query that no longer matched them.
+   *
+   * `AbortController` settles the ordering: at most one request is live, and
+   * the one that a newer keystroke replaced never gets to call `setState`.
+   */
   React.useEffect(() => {
     if (debouncedQuery.trim().length < 2) return;
+    // Nothing to suggest into: the dropdown only opens on focus or typing.
+    if (!showDropdown) return;
+
+    const controller = new AbortController();
 
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
-        const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`);
+        const res = await fetch(
+          `/api/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`,
+          { signal: controller.signal }
+        );
         if (res.ok) {
           const data = await res.json();
           setSuggestions(data);
         }
       } catch (err) {
+        // An abort is the expected outcome for a superseded keystroke.
+        if ((err as Error)?.name === 'AbortError') return;
         console.error('Failed to load search suggestions', err);
       } finally {
-        setLoadingSuggestions(false);
+        if (!controller.signal.aborted) setLoadingSuggestions(false);
       }
     };
 
     fetchSuggestions();
-  }, [debouncedQuery]);
+    return () => controller.abort();
+  }, [debouncedQuery, showDropdown]);
 
   // Handle outside clicks to close autocomplete
   React.useEffect(() => {
@@ -150,7 +173,7 @@ export function MarketplaceSearchInput({ initialQuery, onSearch }: SearchInputPr
 
       {/* Autocomplete Dropdown Card */}
       {showDropdown && (hasSuggestions || loadingSuggestions) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden text-left z-50 animate-fade-in max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-zinc-200 shadow-xl overflow-hidden text-left z-50 animate-fade-in max-h-96 overflow-y-auto overscroll-contain">
           {loadingSuggestions && !hasSuggestions && (
             <div className="flex items-center justify-center p-6 text-sm text-muted-foreground gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-amber-500" />

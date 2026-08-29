@@ -275,7 +275,23 @@ export function CartClient() {
     loadCart();
   };
 
+  /**
+   * "Clear Cart" wiped a whole shop group on a single tap, with no confirm and
+   * no undo, sitting a few pixels from the quantity controls. Every other
+   * destructive action in this codebase - deleting a product, deleting a shop
+   * - asks first. This one now arms on the first tap and acts on the second.
+   */
+  const [clearArmedShopId, setClearArmedShopId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!clearArmedShopId) return;
+    // Disarm on its own, so a stray tap does not leave a loaded gun in the UI.
+    const timer = setTimeout(() => setClearArmedShopId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [clearArmedShopId]);
+
   const clearStore = (shopId: string) => {
+    setClearArmedShopId(null);
     localStorage.removeItem(`seyon_cart:${shopId}`);
     bumpCartVersion();
     window.dispatchEvent(new CustomEvent('seyon-cart-updated', { detail: { shopId } }));
@@ -289,10 +305,23 @@ export function CartClient() {
   };
 
   // ── 5. WhatsApp Checkout Deep Link Handler ─────────────────────────
+  /**
+   * One checkout at a time.
+   *
+   * This awaits an analytics call per item before it opens anything, so a
+   * double-tap on a slow connection fired every WHATSAPP_CLICK event twice and
+   * opened two WhatsApp tabs with the same order in both - which reads to the
+   * seller as two orders.
+   */
+  const [checkingOutShopId, setCheckingOutShopId] = React.useState<string | null>(null);
+
   const initiateCheckout = async (shopId: string) => {
     const shopItems = cartGroups[shopId];
     const shopVal = validation?.shops[shopId];
     if (!shopItems || shopItems.length === 0 || !shopVal) return;
+    if (checkingOutShopId) return;
+    setCheckingOutShopId(shopId);
+    try {
 
     // Track analytics for products
     await Promise.all(
@@ -331,11 +360,14 @@ export function CartClient() {
 
     const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(messageText)}`;
     
-    // Open in new window/tab
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      // Open in new window/tab
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
 
-    // Show verification overlay prompt on return
-    setCheckoutPromptShopId(shopId);
+      // Show verification overlay prompt on return
+      setCheckoutPromptShopId(shopId);
+    } finally {
+      setCheckingOutShopId(null);
+    }
   };
 
   // ── 6. Rendering Logic Helpers ─────────────────────────────────────
@@ -643,14 +675,35 @@ export function CartClient() {
                 </div>
 
                 {/* Store operations button */}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => clearStore(shopId)}
-                  className="h-8 text-xs font-semibold text-rose-600 hover:bg-rose-50/50 self-start sm:self-center"
-                >
-                  <Trash2 size={13} className="mr-1" /> Clear Cart
-                </Button>
+                {clearArmedShopId === shopId ? (
+                  <div className="flex items-center gap-1 self-start sm:self-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => clearStore(shopId)}
+                      className="h-8 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100"
+                    >
+                      <Trash2 size={13} className="mr-1" /> Remove all {items.length}?
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setClearArmedShopId(null)}
+                      className="h-8 text-xs font-semibold text-zinc-600 hover:bg-zinc-100"
+                    >
+                      Keep
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setClearArmedShopId(shopId)}
+                    className="h-8 text-xs font-semibold text-rose-600 hover:bg-rose-50/50 self-start sm:self-center"
+                  >
+                    <Trash2 size={13} className="mr-1" /> Clear Cart
+                  </Button>
+                )}
               </div>
 
               {/* Items in this Shop group */}

@@ -24,6 +24,20 @@ import { useRouter } from 'next/navigation';
 
 const CHANNEL = 'seyon-seller-data';
 
+/**
+ * Identifies this tab so it can ignore its own broadcast.
+ *
+ * `BroadcastChannel` does not deliver a message back to the object that
+ * posted it — but `broadcastDataChanged` opens a fresh channel each time, so
+ * the listener in the same tab is a different object and did receive it. A
+ * seller who changed something therefore got their own refresh on top of the
+ * one the mutation already triggered.
+ */
+const TAB_ID =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`;
+
 type Channel = { postMessage: (msg: unknown) => void; close: () => void } | null;
 
 function openChannel(): Channel {
@@ -43,7 +57,7 @@ export function broadcastDataChanged(): void {
   const ch = openChannel();
   if (!ch) return;
   try {
-    ch.postMessage({ at: Date.now() });
+    ch.postMessage({ at: Date.now(), from: TAB_ID });
   } finally {
     ch.close();
   }
@@ -70,8 +84,22 @@ export function useLiveSync({
   const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
   const [syncing, setSyncing] = React.useState(false);
 
+  /**
+   * Returning to a tab fired three refreshes: `visibilitychange` and `focus`
+   * both arrive, and a mutating tab received its own broadcast on top. Each
+   * one is a full server round trip for the same page. They are coalesced
+   * here rather than at each call site, so any future caller gets the same
+   * protection.
+   */
+  const lastRefreshAtRef = React.useRef(0);
+  const COALESCE_MS = 1000;
+
   const refresh = React.useCallback(
     (immediate = false) => {
+      const now = Date.now();
+      if (now - lastRefreshAtRef.current < COALESCE_MS) return;
+      lastRefreshAtRef.current = now;
+
       if (immediate) setSyncing(true);
       router.refresh();
       setLastUpdated(new Date());
@@ -118,7 +146,11 @@ export function useLiveSync({
     } catch {
       return;
     }
-    ch.onmessage = () => refresh(true);
+    ch.onmessage = (event: MessageEvent) => {
+      // Ignore the echo of our own mutation.
+      if ((event.data as { from?: string } | null)?.from === TAB_ID) return;
+      refresh(true);
+    };
     return () => ch.close();
   }, [refresh]);
 
