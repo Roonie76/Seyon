@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Menu, Search, X, Heart, ChevronRight, User, LogOut, ShoppingCart } from 'lucide-react';
 import { getTotalCartCount } from '@/frontend/lib/cart-utils';
 import { useBodyScrollLock, useEscapeKey } from '@/frontend/lib/overlay';
+import { useBottomBarHeight, NAVBAR_HEIGHT_VAR } from '@/frontend/lib/bottom-bars';
+import { useStorageValue } from '@/frontend/lib/browser-store';
 
 interface NavbarClientProps {
   user?: {
@@ -35,33 +37,30 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
   const [suggestions, setSuggestions] = React.useState<Suggestion | null>(null);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const [cartCount, setCartCount] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      return getTotalCartCount();
-    }
-    return 0;
-  });
-
-  // Sync cart count
-  React.useEffect(() => {
-    const handleCartUpdated = () => {
-      setCartCount(getTotalCartCount());
-    };
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key?.startsWith('seyon_cart:') || e.key === 'seyon_cart_meta') {
-        setCartCount(getTotalCartCount());
-      }
-    };
-
-    window.addEventListener('seyon-cart-updated', handleCartUpdated);
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('seyon-cart-updated', handleCartUpdated);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // Published so anything sticky below the header can offset by the real
+  // height instead of guessing 4rem. See lib/bottom-bars.ts.
+  const headerRef = React.useRef<HTMLElement>(null);
+  useBottomBarHeight(headerRef, NAVBAR_HEIGHT_VAR);
+  /**
+   * Subscribed, not copied in on first render.
+   *
+   * This was `useState(() => typeof window !== 'undefined' ? getTotalCartCount() : 0)`
+   * plus an effect that re-read it on every cart event. Two problems, both
+   * reproduced:
+   *
+   *   - The server rendered 0 and the client's first render rendered the real
+   *     count, so a returning buyer got "Hydration failed because the server
+   *     rendered HTML didn't match the client" and the tree was thrown away
+   *     and rebuilt.
+   *   - The read happened during render, so when a browser blocks site data
+   *     the SecurityError it throws had nowhere to go: the whole page became
+   *     "Something went wrong".
+   *
+   * `useStorageValue` returns the server value on the first client render,
+   * subscribes to the same two events the effect listened for, and swallows a
+   * throwing storage read.
+   */
+  const cartCount = useStorageValue(getTotalCartCount, 0);
 
   // Fetch search suggestions
   React.useEffect(() => {
@@ -105,7 +104,10 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
   return (
     <>
       {/* Header element */}
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white text-zinc-900 shadow-sm transition-colors duration-300">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white text-zinc-900 shadow-sm transition-colors duration-300"
+      >
         <div className="container mx-auto px-4 sm:px-6 py-3 md:py-4">
           
           {/* Main row */}
@@ -163,7 +165,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
 
               {/* Suggestions Dropdown (Desktop) */}
               {suggestions && (
-                <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[350px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[350px] overflow-y-auto overscroll-contain divide-y divide-zinc-100 p-2 animate-fade-in z-50">
                   {/* Categories */}
                   {suggestions.categories.length > 0 && (
                     <div className="py-2 px-3">
@@ -333,7 +335,7 @@ export function NavbarClient({ user, wishlistCount, onSignOut }: NavbarClientPro
 
             {/* Suggestions Dropdown (Mobile) */}
             {suggestions && (
-              <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[300px] overflow-y-auto divide-y divide-zinc-100 p-2 animate-fade-in z-50">
+              <div className="absolute top-full left-0 right-0 mt-2 border border-zinc-200 rounded-xl bg-white shadow-xl max-h-[300px] overflow-y-auto overscroll-contain divide-y divide-zinc-100 p-2 animate-fade-in z-50">
                 {/* Categories */}
                 {suggestions.categories.length > 0 && (
                   <div className="py-2 px-2">

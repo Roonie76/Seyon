@@ -73,6 +73,19 @@
     font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
+
+    /**
+     * Room for whatever is fixed to the bottom of the viewport.
+     *
+     * The consent banner and the product page's sticky buy bar both publish
+     * their measured height here (see frontend/lib/bottom-bars.ts). Before
+     * this, the buy bar sat over the last 64px of every product page and the
+     * banner sat over the footer; measured `body` padding-bottom was 0.
+     *
+     * Both properties are absent when the bar is not on screen, so the
+     * fallbacks make this exactly 0 on every page that has neither.
+     */
+    padding-bottom: calc(var(--consent-bar-h, 0px) + var(--buy-bar-h, 0px));
   }
 
   /**
@@ -259,5 +272,51 @@
   35%,
   100% {
     transform: skewX(-20deg) translateX(150%);
+  }
+}
+
+@layer base {
+  /**
+   * Honour the operating system's "reduce motion" setting.
+   *
+   * Three components set `scroll-behavior: smooth` through the `scroll-smooth`
+   * class and none of them checked. The privacy table of contents guarded its
+   * smooth scroll and the carousel, product gallery and homepage rail did not,
+   * so the same user got a different answer depending on which part of the
+   * site they were on. Doing it once here covers every animation, transition
+   * and scroll on the site rather than the three that were noticed.
+   *
+   * Motion is not removed, it is made instant — `0.01ms` rather than `0` so
+   * that `transitionend` and `animationend` still fire and nothing that waits
+   * on them hangs. The `onTransitionEnd` on the marketplace filter panel is
+   * exactly such a listener.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /**
+   * `no-scrollbar` was applied to four horizontal rails and defined nowhere:
+   * Tailwind v4 ships no such utility, so all four rails showed a scrollbar
+   * the design did not account for. This is the definition they assumed.
+   *
+   * The rails stay scrollable by wheel, trackpad, touch and keyboard; only the
+   * scrollbar's own chrome is hidden, and each one has visible affordances
+   * (snap points and arrow buttons) so the content is not concealed.
+   */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

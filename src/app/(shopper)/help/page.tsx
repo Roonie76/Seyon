@@ -57,8 +57,17 @@ export default function HelpCenterPage() {
         dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(generateFAQJSONLD(faqEntries())) }}
       />
 
-      {/* Editorial Luxury Container */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative">
+      {/*
+        Editorial Luxury Container.
+
+        `overflow-x-clip` because the decorative glow below is a fixed 600px
+        wide and centred, so on a 390px viewport it hangs 105px past each edge.
+        The page did not scroll sideways only because `body` carries a global
+        `overflow-x: hidden` — the overhang was real, just masked. `clip`
+        rather than `hidden` so this does not become a scroll container and
+        break `position: sticky` for anything inside it.
+      */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 md:py-24 relative overflow-x-clip">
         {/* Background glow styling */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(245,211,115,0.06)_0%,transparent_70%)] rounded-full pointer-events-none z-0" />
 

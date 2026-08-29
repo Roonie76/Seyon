@@ -93,7 +93,7 @@ function CustomSelect({ id, label, value, options, onChange, icon, placeholder }
       </button>
 
       {isOpen && (
-        <div className="absolute top-[105%] left-0 mt-1 w-full md:w-60 bg-white rounded-xl border border-zinc-200 shadow-xl py-1 z-50 max-h-64 overflow-y-auto origin-top animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute top-[105%] left-0 mt-1 w-full md:w-60 bg-white rounded-xl border border-zinc-200 shadow-xl py-1 z-50 max-h-64 overflow-y-auto overscroll-contain origin-top animate-in fade-in slide-in-from-top-1 duration-150">
           {options.map((opt) => (
             <button
               key={opt.value}
@@ -138,6 +138,21 @@ export function MarketplaceFilters({
 }: MarketplaceFiltersProps) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [isDesktopOpen, setIsDesktopOpen] = React.useState(true);
+  /**
+   * The collapsible panel animates `grid-template-rows` and needs its inner
+   * wrapper to clip while it does. That clip also cut every dropdown inside
+   * the panel down to nothing: measured on /?q=a, the category menu is 215px
+   * tall and 14px of it was visible, with `elementFromPoint` over the second
+   * option landing on the page behind. The clip is only needed while the panel
+   * is moving, so it is released once the transition has finished.
+   */
+  const [panelSettled, setPanelSettled] = React.useState(true);
+  const togglePanel = () => {
+    // Clip again for the duration of the animation, in both directions; the
+    // grid's own transitionend puts it back when opening finishes.
+    setPanelSettled(false);
+    setIsDesktopOpen((open) => !open);
+  };
   const [isStuck, setIsStuck] = React.useState(false);
   const sentinelRef = React.useRef<HTMLDivElement>(null);
 
@@ -300,7 +315,7 @@ export function MarketplaceFilters({
       <div ref={sentinelRef} className="h-0 w-full" aria-hidden="true" />
 
       <div
-        className={`w-full space-y-3 mb-8 sticky top-16 z-30 transition-all duration-300 ${
+        className={`w-full space-y-3 mb-8 sticky top-[var(--navbar-h,4rem)] z-30 transition-all duration-300 ${
           isStuck
             ? 'py-3 -mx-1 px-1'
             : ''
@@ -319,7 +334,7 @@ export function MarketplaceFilters({
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => setIsDesktopOpen(!isDesktopOpen)}
+              onClick={togglePanel}
               className="flex items-center gap-2 h-10 px-4 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-xs font-semibold text-zinc-800 transition-all cursor-pointer hover:border-zinc-300 shadow-sm active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
             >
               <SlidersHorizontal className={`h-3.5 w-3.5 transition-colors ${isFilterActive ? 'text-amber-500 stroke-[2.5]' : 'text-zinc-500'}`} />
@@ -370,11 +385,16 @@ export function MarketplaceFilters({
 
         {/* Collapsible Panel */}
         <div
+          onTransitionEnd={(e) => {
+            if (e.propertyName === 'grid-template-rows' && isDesktopOpen) {
+              setPanelSettled(true);
+            }
+          }}
           className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
             isDesktopOpen ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
           }`}
         >
-          <div className="overflow-hidden">
+          <div className={isDesktopOpen && panelSettled ? 'overflow-visible' : 'overflow-hidden'}>
             <div className={`p-5 rounded-xl border shadow-sm mt-1 transition-all duration-300 ${
                 isStuck
                   ? 'bg-white/70 backdrop-blur-xl border-white/40 shadow-lg shadow-zinc-200/40'
@@ -398,7 +418,7 @@ export function MarketplaceFilters({
               Filters & Sort {isFilterActive ? `(${activeFilterCount})` : ''}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-xl">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overscroll-contain rounded-t-2xl sm:rounded-xl">
             <DialogHeader>
               <DialogTitle>Filter Listings</DialogTitle>
               <DialogDescription>

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { PackageX, ArrowRight } from 'lucide-react';
 import { trackEvent } from '@/actions/analytics';
 import { buildOrderMessage } from '@/shared/lib/order-message';
+import { useBottomBarHeight, BUY_BAR_HEIGHT_VAR } from '@/frontend/lib/bottom-bars';
 
 interface StickyBuyBarProps {
   shopId: string;
@@ -35,6 +36,11 @@ export function StickyBuyBar({
   inStock,
   shopPaused = false,
 }: StickyBuyBarProps) {
+  // Publishes its height, and sits on top of the consent banner rather than
+  // behind it. See lib/bottom-bars.ts for the measurements.
+  const ref = React.useRef<HTMLDivElement>(null);
+  useBottomBarHeight(ref, BUY_BAR_HEIGHT_VAR);
+
   const handleClick = async () => {
     try {
       await trackEvent(shopId, 'WHATSAPP_CLICK', productId);
@@ -54,7 +60,9 @@ export function StickyBuyBar({
   const onSale = compareAtPrice != null && compareAtPrice > price;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-zinc-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] flex items-center justify-between gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div
+      ref={ref}
+      className="fixed bottom-[var(--consent-bar-h,0px)] inset-x-0 z-40 lg:hidden border-t border-zinc-200 bg-white/95 backdrop-blur-sm px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] flex items-center justify-between gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="min-w-0">
         <p className="text-[11px] uppercase font-bold text-muted-foreground truncate">{productName}</p>
         <p className="text-lg font-black text-foreground leading-tight flex items-baseline gap-1.5">

@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useConsent, setConsent } from '@/frontend/lib/consent';
 import { useDevNoticeAcknowledged } from './dev-notice-modal';
+import { useBottomBarHeight, CONSENT_BAR_HEIGHT_VAR } from '@/frontend/lib/bottom-bars';
 
 /**
  * Notice before tracking, not after.
@@ -16,6 +17,10 @@ import { useDevNoticeAcknowledged } from './dev-notice-modal';
 export function ConsentBanner() {
   const consent = useConsent();
   const devNoticeDismissed = useDevNoticeAcknowledged();
+  // Publishes its height so the buy bar can sit above it and `body` can
+  // reserve room for it. See lib/bottom-bars.ts.
+  const ref = React.useRef<HTMLDivElement>(null);
+  useBottomBarHeight(ref, CONSENT_BAR_HEIGHT_VAR);
 
   if (consent !== 'unset') return null;
   // One interruption at a time. The development notice covers the whole
@@ -24,6 +29,7 @@ export function ConsentBanner() {
 
   return (
     <div
+      ref={ref}
       role="region"
       aria-label="Analytics consent"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur px-4 py-4 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]"
