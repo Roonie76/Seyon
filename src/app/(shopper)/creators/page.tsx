@@ -9,6 +9,9 @@ import { Check } from 'lucide-react';
 import { getCreatorPresentation } from '@/lib/demo';
 import type { Metadata } from 'next';
 
+/** The directory renders every row it loads; this is the ceiling on that. */
+const CREATOR_DIRECTORY_LIMIT = 200;
+
 export const metadata: Metadata = {
   title: 'Meet All Creators',
   description: 'Discover independent designers, artists, and creators from all over India on Seyon.',
@@ -49,7 +52,9 @@ export default async function CreatorsPage({ searchParams }: CreatorsPageProps) 
           select: { products: { where: { status: 'ACTIVE' } } }
         }
       },
-      orderBy: sort === 'newest' ? { createdAt: 'desc' } : { reviewCount: 'desc' }
+      orderBy: sort === 'newest' ? { createdAt: 'desc' } : { reviewCount: 'desc' },
+      // A directory page with no bound: every discoverable shop, forever.
+      take: CREATOR_DIRECTORY_LIMIT,
     });
   } catch (error) {
     console.error('Error loading creators list', error);

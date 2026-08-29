@@ -5,6 +5,9 @@ import { SITE_URL } from '@/lib/site';
 import { logger } from '@/backend/lib/logger';
 import { BLOG_TOPICS } from '@/shared/blog/topics';
 
+/** Well inside the sitemap format's 50,000-URL ceiling. */
+const SITEMAP_POST_LIMIT = 10000;
+
 // Regenerate hourly at runtime. Without this the sitemap is baked once at
 // build time (verified in prod testing: a DB hiccup during build shipped an
 // empty sitemap until the next deploy).
@@ -93,6 +96,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const dbPosts = await db.blogPost.findMany({
       where: { published: true },
       select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      // A sitemap file may hold 50,000 URLs; the other sections use some of
+      // that budget. Newest first, so the cap drops the stalest entries.
+      take: SITEMAP_POST_LIMIT,
     });
     blogPostUrls = dbPosts.map((post) => ({
       url: `${baseUrl}/blog/${post.slug}`,

@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { currentSlugFor } from '@/backend/lib/slug-redirect';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
-import { getShopBySlug } from '@/actions/shops';
+import { getShopBySlug, STOREFRONT_PRODUCT_LIMIT } from '@/backend/lib/storefront';
 import { SellerLegalDetails } from '@/frontend/components/store/seller-legal-details';
 import { trackEventInternal } from '@/backend/lib/analytics';
 import { generateStoreMetadata, generateStoreJSONLD, generateBreadcrumbJSONLD, safeJsonLdStringify } from '@/lib/seo';
@@ -133,7 +133,15 @@ export default async function StorePage({ params }: StorePageProps) {
   const reviewCount = shop.reviewCount;
   const averageRating = shop.averageRating;
 
-  const activeProducts = shop.products;
+  /**
+   * The query asks for one more than it will show, so "there are exactly 200"
+   * and "there are more than 200" are distinguishable without a second count.
+   * Nothing is hidden silently: when there are more, the heading says so.
+   */
+  const hasMoreProducts = shop.products.length > STOREFRONT_PRODUCT_LIMIT;
+  const activeProducts = hasMoreProducts
+    ? shop.products.slice(0, STOREFRONT_PRODUCT_LIMIT)
+    : shop.products;
 
   // Generate Structured Data Schema JSON-LD
   const jsonLd = generateStoreJSONLD(shop, 80, averageRating, reviewCount);
@@ -267,7 +275,11 @@ export default async function StorePage({ params }: StorePageProps) {
           <div className="lg:col-span-2 flex flex-col gap-8">
             <div>
               <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-primary" /> Active Listings ({activeProducts.length})
+                <ShoppingBag className="h-5 w-5 text-primary" /> Active Listings (
+                {hasMoreProducts
+                  ? `showing ${activeProducts.length} of ${shop._count.products}`
+                  : activeProducts.length}
+                )
               </h2>
 
               {activeProducts.length === 0 ? (
@@ -331,7 +343,7 @@ export default async function StorePage({ params }: StorePageProps) {
               {shop.reviews.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">No buyer reviews submitted yet. Purchase and leave feedback!</p>
               ) : (
-                <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                <div className="space-y-4 max-h-[350px] overflow-y-auto overscroll-contain pr-1">
                   {shop.reviews.map((rev) => (
                     <div key={rev.id} className="p-3 bg-zinc-50 rounded-lg border border-zinc-100 text-xs">
                       <div className="flex items-center justify-between mb-1.5">

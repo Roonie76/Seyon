@@ -6,6 +6,9 @@ import { db } from '@/lib/db';
 import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
 import { BlogPost } from '@/types/blog';
 import { BLOG_TOPICS, topicBySlug } from '@/shared/blog/topics';
+
+/** A hub lists cards, not an archive. Well beyond the 30 posts that exist. */
+const TOPIC_HUB_LIMIT = 60;
 import {
   generateBlogJSONLD,
   generateBreadcrumbJSONLD,
@@ -51,14 +54,24 @@ export default async function BlogTopicPage({ params }: PageProps) {
     notFound();
   }
 
+  /**
+   * Bounded, and without the article bodies.
+   *
+   * This selected every column of every matching post, which meant the full
+   * markdown of each article — the hub renders cards and never reads
+   * `content`. With no `take` either, one badly-chosen tag would have loaded
+   * the entire blog into memory to render a grid.
+   */
   const postsRaw = await db.blogPost.findMany({
     where: {
       published: true,
       tags: { hasSome: topic.tags },
     },
+    omit: { content: true },
     // `id` tie-breaks, as on /blog: ordering by date alone is not deterministic
     // when posts share a timestamp.
     orderBy: [{ date: 'desc' }, { id: 'desc' }],
+    take: TOPIC_HUB_LIMIT,
   });
 
   const posts = postsRaw as unknown as BlogPost[];
