@@ -14,6 +14,7 @@ import { Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { BlogPost } from '@/types/blog';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -267,11 +268,14 @@ export default async function BlogArticlePage({ params }: PageProps) {
         {/* Cinematic Cover Image */}
         <section className="max-w-6xl mx-auto px-6 mb-16">
           <div className="aspect-[21/9] w-full rounded-3xl overflow-hidden border border-zinc-900 bg-[#0f0f0f] relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            {/* The LCP element on an article page, so it loads eagerly. */}
+            <Image
               src={post.cover}
               alt=""
-              className="w-full h-full object-cover"
+              fill
+              priority
+              sizes="(min-width: 1152px) 1152px, 100vw"
+              className="object-cover"
             />
           </div>
         </section>

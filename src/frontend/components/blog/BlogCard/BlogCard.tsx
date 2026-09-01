@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 import { BlogPost } from '@/types/blog';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
 
@@ -16,12 +17,24 @@ export function BlogCard({ post }: BlogCardProps) {
           {post.category}
         </span>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/*
+          Served through next/image rather than as a raw <img>.
+
+          The covers are 1000-1200px wide photographs and this card renders at
+          about 380px. A plain <img> ships the full file: measured on the
+          photograph-heavy page of the index, 712KB of images against 176KB for
+          the same page of generated covers, and an LCP of 3.3s against 1.5s.
+          The same source at the card's own width is 34KB.
+
+          `sizes` has to describe the rendered width or the optimiser picks the
+          largest candidate and the saving disappears.
+        */}
+        <Image
           src={post.cover}
           alt={post.title}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          loading="lazy"
+          fill
+          sizes="(min-width: 1024px) 380px, (min-width: 640px) 45vw, 90vw"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
       </div>
 

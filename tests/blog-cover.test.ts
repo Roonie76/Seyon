@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { checkCoverUrl } from '../src/shared/blog/cover';
 
 /**
@@ -71,5 +73,47 @@ describe('local cover paths', () => {
   it('still rejects an empty value', () => {
     expect(checkCoverUrl('').ok).toBe(false);
     expect(checkCoverUrl('   ').ok).toBe(false);
+  });
+});
+
+/**
+ * Covers are photographs now, and photographs are heavy.
+ *
+ * The thirteen editorial covers added in e1b0a4b are 62-102KB against the
+ * 8-29KB of the generated ones they replaced. Rendered through a raw `<img>`
+ * the full file shipped at every size: measured on the photograph-heavy page
+ * of the index, 712KB of images and an LCP of 3.3s, against 176KB and 1.5s for
+ * the same page of generated covers. Through next/image at the size each slot
+ * actually renders: 195KB and 1.0s.
+ */
+describe('blog covers are served at the size they are rendered', () => {
+  const files: Array<[label: string, path: string]> = [
+    ['card', 'src/frontend/components/blog/BlogCard/BlogCard.tsx'],
+    ['featured story', 'src/frontend/components/blog/FeaturedStory/FeaturedStory.tsx'],
+    ['article hero', 'src/app/(shopper)/blog/[slug]/page.tsx'],
+  ];
+
+  it.each(files)('%s renders the cover through next/image', (_label, file) => {
+    const src = readFileSync(join(__dirname, '..', file), 'utf8');
+    expect(src).toContain("from '@/components/shared/safe-image'");
+    // A raw <img> for the cover is the regression: it bypasses the optimiser.
+    expect(src).not.toMatch(/<img\s+[\s\S]{0,120}src=\{post\.cover\}/);
+  });
+
+  it.each(files)('%s tells the optimiser what width it needs', (_label, file) => {
+    // Without `sizes`, next/image assumes 100vw and picks the largest
+    // candidate, which gives back the whole saving.
+    const src = readFileSync(join(__dirname, '..', file), 'utf8');
+    expect(src).toMatch(/sizes="[^"]+"/);
+  });
+
+  it('the two above-the-fold covers are not lazy', () => {
+    for (const file of [
+      'src/frontend/components/blog/FeaturedStory/FeaturedStory.tsx',
+      'src/app/(shopper)/blog/[slug]/page.tsx',
+    ]) {
+      const src = readFileSync(join(__dirname, '..', file), 'utf8');
+      expect(src, file).toMatch(/\bpriority\b/);
+    }
   });
 });
