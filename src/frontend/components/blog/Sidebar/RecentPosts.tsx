@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BlogPost } from '@/types/blog';
 import { Calendar } from 'lucide-react';
+import { SafeImage as Image } from '@/components/shared/safe-image';
 
 interface RecentPostsProps {
   posts: BlogPost[];
@@ -20,12 +21,19 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             className="group flex gap-4 items-center p-2 rounded-sm hover:bg-zinc-950/40 transition-colors duration-300"
           >
             {/* Thumbnail */}
-            <div className="h-16 w-16 shrink-0 rounded-sm overflow-hidden bg-zinc-900 border border-zinc-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="relative h-16 w-16 shrink-0 rounded-sm overflow-hidden bg-zinc-900 border border-zinc-900">
+              {/*
+                These are 64px squares, and they were raw <img> tags pointing
+                at the full cover: measured, a 62px box painting a 1000-1600px
+                photograph, three of them in the sidebar of every single blog
+                page. Roughly a quarter of a megabyte to draw 12,000 pixels.
+              */}
+              <Image
                 src={post.cover}
                 alt=""
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fill
+                sizes="64px"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
             </div>
 

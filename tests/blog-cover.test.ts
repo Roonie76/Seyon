@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkCoverUrl } from '../src/shared/blog/cover';
 
@@ -91,6 +91,7 @@ describe('blog covers are served at the size they are rendered', () => {
     ['card', 'src/frontend/components/blog/BlogCard/BlogCard.tsx'],
     ['featured story', 'src/frontend/components/blog/FeaturedStory/FeaturedStory.tsx'],
     ['article hero', 'src/app/(shopper)/blog/[slug]/page.tsx'],
+    ['sidebar thumbnail', 'src/frontend/components/blog/Sidebar/RecentPosts.tsx'],
   ];
 
   it.each(files)('%s renders the cover through next/image', (_label, file) => {
@@ -115,5 +116,27 @@ describe('blog covers are served at the size they are rendered', () => {
       const src = readFileSync(join(__dirname, '..', file), 'utf8');
       expect(src, file).toMatch(/\bpriority\b/);
     }
+  });
+});
+
+describe('the blog hero backdrop is sized for what it actually shows', () => {
+  it('is not a full-resolution photograph behind a 3px blur', () => {
+    // The backdrop renders at opacity .25, brightness .6, blur(3px). Rendering
+    // the original and a 640px re-encode through that exact filter chain and
+    // differencing them: mean 0.19/255 and a maximum single-pixel difference
+    // of 2/255 at a 2560px viewport. The detail is destroyed before anyone
+    // sees it, so 99KB of it above the fold buys nothing.
+    const bytes = statSync(join(__dirname, '..', 'public/blog/hero.webp')).size;
+    expect(bytes).toBeLessThan(45_000);
+  });
+
+  it('is a CSS background, which is why it cannot go through next/image', () => {
+    // If this ever becomes an <img>, it should be optimised like the rest and
+    // this guard should be replaced rather than the file re-inflated.
+    const HERO = readFileSync(
+      join(__dirname, '..', 'src/frontend/components/blog/HeroBanner/HeroBanner.tsx'),
+      'utf8'
+    );
+    expect(HERO).toContain("backgroundImage: 'url(\"/blog/hero.webp\")'");
   });
 });

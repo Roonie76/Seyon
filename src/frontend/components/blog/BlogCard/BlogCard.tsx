@@ -33,7 +33,21 @@ export function BlogCard({ post }: BlogCardProps) {
           src={post.cover}
           alt={post.title}
           fill
-          sizes="(min-width: 1024px) 380px, (min-width: 640px) 45vw, 90vw"
+          /*
+            Measured, not guessed. The card's real rendered width, sampled
+            across viewports:
+
+              360 -> 310   640 ->  590   1024 -> 256   1280+ -> 384
+              390 -> 340   768 ->  342   1100 -> 294
+
+            The grid goes to two columns at 768, not 640, and the card gets
+            *narrower* at 1024 because that is where the sidebar appears. The
+            first version of this attribute declared `45vw` from 640, which
+            under-declared by half between 640 and 767 - and under-declaring is
+            worse than over-declaring, because the browser then picks a
+            candidate too small and the card renders visibly soft.
+          */
+          sizes="(min-width: 1280px) 384px, (min-width: 1024px) 30vw, (min-width: 768px) 48vw, 95vw"
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
       </div>

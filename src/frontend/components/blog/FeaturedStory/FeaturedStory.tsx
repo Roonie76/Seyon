@@ -21,7 +21,12 @@ export function FeaturedStory({ post }: FeaturedStoryProps) {
           alt={post.title}
           fill
           priority
-          sizes="(min-width: 768px) 900px, 100vw"
+          /*
+            Measured: 310 at 360, 590 at 640, 718 at 768, 546 at 1024 - it
+            narrows there because the sidebar appears - and 802 from 1280 up.
+            A flat 900px asked for nearly twice the pixels needed at 1024.
+          */
+          sizes="(min-width: 1280px) 820px, (min-width: 1024px) 65vw, 95vw"
           className="object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
         />
         {/* Cinematic darken overlay */}
