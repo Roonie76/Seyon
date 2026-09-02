@@ -1,27 +1,29 @@
 /**
- * The seeded articles, checked through the same parser the live page uses.
+ * The article parser, checked against the shapes that have broken it.
  *
- * Content bugs in this project have historically been invisible until
- * production, because the database was empty and nothing rendered. Running the
- * real `parseBlocks` over the real markdown catches a stray `##`, an unclosed
- * `**`, or a link the sanitiser will drop, before it is inserted rather than
- * after somebody reads it.
+ * This file used to read `content/blog/*.md` and run the parser over the
+ * thirty seeded articles. That was the right test while the markdown was the
+ * source of truth. It stopped being the right test the moment editing moved to
+ * the admin screen: the files became a stale second copy, and a corpus test
+ * reading them could report a clean blog while every live article was broken.
+ * When the files were moved to `content/blog/archive/`, this file's own
+ * "guards the guard" assertion caught the vacuity — 0 links found where it
+ * expected more than 10 — which is the only reason the retirement was noticed
+ * rather than silently passing forever.
+ *
+ * What remains here is what belongs in a unit test: the parser's behaviour on
+ * the inputs that have caused trouble, stated as fixtures so they are readable
+ * and so this file cannot go vacuous again.
+ *
+ * The corpus-wide checks — every article long enough, every internal link
+ * resolving, every cover accepted, headings in order — are now
+ * `npm run blog:doctor`, which reads a real database and can therefore see an
+ * article somebody published five minutes ago.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { parseBlocks, wordCount } from '../src/shared/blog/parse';
+import { parseBlocks, wordCount, productSlugsIn } from '../src/shared/blog/parse';
 import { inlineToPlainText } from '../src/shared/blog/inline';
-import { checkCoverUrl } from '../src/shared/blog/cover';
 import type { InlineNode } from '../src/shared/blog/inline';
-
-const MD_DIR = join(__dirname, '..', 'content', 'blog');
-const files = existsSync(MD_DIR)
-  ? readdirSync(MD_DIR)
-      .filter((f) => f.endsWith('.md'))
-      // README.md documents the directory; it is not an article.
-      .filter((f) => f !== 'README.md')
-  : [];
 
 function flatten(nodes: InlineNode[]): InlineNode[] {
   return nodes.flatMap((n) =>
@@ -31,102 +33,104 @@ function flatten(nodes: InlineNode[]): InlineNode[] {
   );
 }
 
-describe('seeded article markdown', () => {
-  it('finds the article sources it is meant to check', () => {
-    // Without this, every assertion below would pass vacuously if the content
-    // directory were moved or emptied.
-    expect(files.length).toBeGreaterThanOrEqual(10);
+const ARTICLE = [
+  'An opening paragraph, because starting on a heading duplicates the h1.',
+  '## A section',
+  'Body text with **strong** and *emphasis* and a [link](/blog/other-post).',
+  '### A subsection',
+  '- first item',
+  '- second item',
+  '> A pulled quote.',
+  '[shop-the-story:a-product-slug]',
+  'A closing paragraph.',
+].join('\n\n');
+
+describe('parsing an article', () => {
+  const blocks = parseBlocks(ARTICLE);
+
+  it('produces one block per separated chunk', () => {
+    expect(blocks.length).toBe(9);
   });
 
-  const posts = files.map((f) => ({ file: f, body: readFileSync(join(MD_DIR, f), 'utf8').trim() }));
+  it('recognises each kind of block', () => {
+    expect(blocks.map((b) => b.kind)).toEqual([
+      'paragraph',
+      'h2',
+      'paragraph',
+      'h3',
+      'list',
+      'list',
+      'quote',
+      'product',
+      'paragraph',
+    ]);
+  });
 
-  it('parses every file into blocks', () => {
-    for (const { file, body } of posts) {
-      expect(parseBlocks(body).length, file).toBeGreaterThan(5);
+  it('strips the marker rather than leaving it in the text', () => {
+    // A `##` or `>` surviving into paragraph text is rendered to the reader
+    // verbatim, which is how a heading ends up looking like body copy.
+    for (const block of blocks) {
+      if (block.kind !== 'paragraph') continue;
+      expect(block.text).not.toMatch(/^#{1,6}\s/);
+      expect(block.text).not.toMatch(/^>\s/);
+    }
+    const h2 = blocks.find((b) => b.kind === 'h2');
+    expect(h2 && 'text' in h2 && h2.text).toBe('A section');
+  });
+
+  it('leaves no emphasis markers in the rendered text', () => {
+    for (const block of blocks) {
+      if (!('inline' in block)) continue;
+      const text = inlineToPlainText(block.inline);
+      expect(text).not.toContain('**');
+      // A single asterisk surviving means an unclosed marker.
+      expect(text).not.toMatch(/(^|\s)\*(\S)/);
     }
   });
 
-  it('leaves no unconsumed block markers in paragraph text', () => {
-    for (const { file, body } of posts) {
-      for (const block of parseBlocks(body)) {
-        if (block.kind !== 'paragraph') continue;
-        expect(block.text, `${file}: "${block.text.slice(0, 60)}"`).not.toMatch(/^#{1,6}\s/);
-        expect(block.text, file).not.toMatch(/^>\s/);
-      }
-    }
+  it('keeps links as links, with their href intact', () => {
+    const links = blocks
+      .filter((b) => 'inline' in b)
+      .flatMap((b) => flatten((b as { inline: InlineNode[] }).inline))
+      .filter((n) => n.kind === 'link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({ kind: 'link', href: '/blog/other-post' });
   });
 
-  it('leaves no unbalanced emphasis markers in rendered text', () => {
-    for (const { file, body } of posts) {
-      for (const block of parseBlocks(body)) {
-        if (!('inline' in block)) continue;
-        const text = inlineToPlainText(block.inline);
-        expect(text, `${file}: "${text.slice(0, 60)}"`).not.toContain('**');
-      }
-    }
+  it('extracts the product slugs a post embeds', () => {
+    expect(productSlugsIn(ARTICLE)).toEqual(['a-product-slug']);
+  });
+});
+
+describe('parsing what an editor might actually paste', () => {
+  it('survives an empty body without throwing', () => {
+    expect(parseBlocks('')).toEqual([]);
   });
 
-  it('drops no links to the href sanitiser', () => {
-    for (const { file, body } of posts) {
-      const raw = (body.match(/\[[^\]]+\]\([^)]+\)/g) || []).length;
-      let kept = 0;
-      for (const block of parseBlocks(body)) {
-        if (!('inline' in block)) continue;
-        kept += flatten(block.inline).filter((n) => n.kind === 'link').length;
-      }
-      // Ordered/unordered list items carry their own inline arrays.
-      for (const block of parseBlocks(body)) {
-        if (block.kind !== 'list') continue;
-        for (const item of block.items) kept += flatten(item).filter((n) => n.kind === 'link').length;
-      }
-      expect(kept, `${file}: ${raw} markdown links, ${kept} survived`).toBe(raw);
-    }
+  it('treats a run of blank lines as one separator', () => {
+    expect(parseBlocks('One.\n\n\n\n\nTwo.').length).toBe(2);
   });
 
-  it('opens with a paragraph rather than a heading', () => {
-    for (const { file, body } of posts) {
-      expect(parseBlocks(body)[0].kind, file).toBe('paragraph');
-    }
+  it('does not turn a mid-sentence hash into a heading', () => {
+    const [block] = parseBlocks('A price of #1 in the range.');
+    expect(block.kind).toBe('paragraph');
   });
 
-  it('uses h2 before any h3', () => {
-    for (const { file, body } of posts) {
-      const headings = parseBlocks(body).filter((b) => b.kind === 'h2' || b.kind === 'h3');
-      if (headings.length === 0) continue;
-      expect(headings[0].kind, `${file} starts its outline at h3`).toBe('h2');
-    }
+  it('counts words without counting markup', () => {
+    // Used to decide whether an article is long enough to rank; counting the
+    // syntax would inflate every number by a few percent.
+    expect(wordCount('## Heading\n\nTwo words.')).toBeLessThan(
+      wordCount('## Heading\n\nTwo words. And three more.')
+    );
+    expect(wordCount('')).toBe(0);
   });
 
-  it('is long enough to be worth ranking', () => {
-    for (const { file, body } of posts) {
-      expect(wordCount(body), file).toBeGreaterThan(600);
-    }
-  });
-
-  it('links only to articles that exist', () => {
-    // Only the live set counts. A link to a retired post is a link to a 404,
-    // because an unpublished post is notFound() rather than merely unlisted --
-    // which is the whole reason `retired/` is a subdirectory this glob skips.
-    const slugs = new Set(files.map((f) => f.replace(/\.md$/, '')));
-    let total = 0;
-    for (const { file, body } of posts) {
-      for (const [, href] of body.matchAll(/\]\((\/blog\/[^)#?]+)\)/g)) {
-        total += 1;
-        const target = href.split('/').pop()!;
-        expect(slugs.has(target), `${file} links to /blog/${target}, which does not exist`).toBe(true);
-      }
-    }
-    // Guards the guard: if the links are ever stripped, this test would pass
-    // vacuously and stop protecting anything.
-    expect(total, 'no internal links found to check').toBeGreaterThan(10);
-  });
-
-  it('accepts every seeded cover path', () => {
-    const manifestPath = join(__dirname, '..', 'content', 'blog', 'manifest.json');
-    if (!existsSync(manifestPath)) return;
-    const manifest: { cover: string; slug: string }[] = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    for (const post of manifest) {
-      expect(checkCoverUrl(post.cover), post.slug).toEqual({ ok: true });
-    }
+  it('leaves an unresolved marker visible rather than swallowing it', () => {
+    // The doctor script fails on this, so it must be detectable: a marker the
+    // parser does not recognise has to stay in the text where a check can see
+    // it, not disappear into nothing.
+    const [block] = parseBlocks('[unknown-marker:something] in a sentence.');
+    expect(block.kind).toBe('paragraph');
+    expect('text' in block && block.text).toContain('[unknown-marker:something]');
   });
 });

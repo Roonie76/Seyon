@@ -14,16 +14,23 @@ import { parseBlocks } from '@/shared/blog/parse';
 import { checkCoverUrl } from '@/shared/blog/cover';
 import { PreviewBlocks } from '@/components/blog/preview-blocks';
 import { SyntaxGuide } from './syntax-guide';
-import { BLOG_TOPICS, topicsForPost } from '@/shared/blog/topics';
-
-/** Every tag that places a post under a hub, de-duplicated, in hub order. */
-const HUB_TAGS = Array.from(new Set(BLOG_TOPICS.flatMap((t) => t.tags)));
+import { topicsForTags, hubTags } from '@/shared/blog/topic-match';
+import type { BlogTopic } from '@/types/blog-topic';
 
 interface BlogFormProps {
   initialPost?: BlogPost;
+  /**
+   * The hubs, loaded by the page. The tag suggestions and the "this post will
+   * appear under" preview both come from these, so adding a hub in the topics
+   * screen immediately changes what this editor offers - no deploy, and no
+   * second list to keep in step.
+   */
+  topics: BlogTopic[];
+  /** Categories published posts already use, so the list cannot fragment. */
+  categories: { category: string; count: number }[];
 }
 
-export function BlogForm({ initialPost }: BlogFormProps) {
+export function BlogForm({ initialPost, topics, categories }: BlogFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<'write' | 'preview'>('write');
@@ -40,7 +47,16 @@ export function BlogForm({ initialPost }: BlogFormProps) {
   const [excerpt, setExcerpt] = useState(initialPost?.excerpt || '');
   const [cover, setCover] = useState(initialPost?.cover || '');
   const [author, setAuthor] = useState(initialPost?.author || 'Seyon Team');
-  const [category, setCategory] = useState(initialPost?.category || 'Strategy');
+  /**
+   * No default that no post uses.
+   *
+   * This was `|| 'Strategy'`, left over from the seller-facing blog: not one
+   * of the thirty published posts carries it, so every new article started
+   * pre-filled with a category that would have created a one-post orphan the
+   * moment somebody saved without looking. Empty, with the categories in use
+   * offered underneath, is the honest starting point.
+   */
+  const [category, setCategory] = useState(initialPost?.category || '');
   const [tags, setTags] = useState(initialPost?.tags.join(', ') || '');
   const [content, setContent] = useState(initialPost?.content || '');
   const [featured, setFeatured] = useState(initialPost?.featured ?? false);
@@ -182,8 +198,8 @@ export function BlogForm({ initialPost }: BlogFormProps) {
 
   const coverCheck = cover.trim() ? checkCoverUrl(cover) : { ok: true as const };
 
-  const matchedTopics = topicsForPost(
-
+  const matchedTopics = topicsForTags(
+    topics,
     tags.split(',').map((t) => t.trim()).filter(Boolean)
 
   );
@@ -267,18 +283,44 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase text-foreground">Category</label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  <label className="text-xs font-bold uppercase text-foreground" htmlFor="blog-category">
+                    Category
+                  </label>
+                  {/*
+                    A list of what is in use, not a fixed set.
+
+                    This was a <select> of five options - Strategy, Guide,
+                    Trust, Craftsmanship, Aesthetics - and not one of the
+                    thirty published posts uses any of them. Opening an
+                    existing article showed a dropdown with nothing selected,
+                    and one touch of it silently rewrote the category to
+                    "Strategy". An input backed by a datalist offers the
+                    categories that exist and still lets an editor name a new
+                    one, which a fixed <select> never could.
+                  */}
+                  <Input
+                    id="blog-category"
+                    required
+                    list="blog-categories"
+                    placeholder="Jewellery"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="Strategy">Strategy</option>
-                    <option value="Guide">Guide</option>
-                    <option value="Trust">Trust</option>
-                    <option value="Craftsmanship">Craftsmanship</option>
-                    <option value="Aesthetics">Aesthetics</option>
-                  </select>
+                  />
+                  <datalist id="blog-categories">
+                    {categories.map((c) => (
+                      <option key={c.category} value={c.category}>
+                        {c.count} post{c.count === 1 ? '' : 's'}
+                      </option>
+                    ))}
+                  </datalist>
+                  {category.trim() &&
+                    !categories.some(
+                      (c) => c.category.toLowerCase() === category.trim().toLowerCase()
+                    ) && (
+                      <p className="text-[11px] font-semibold text-amber-700">
+                        New category — nothing else uses it yet.
+                      </p>
+                    )}
                 </div>
               </div>
 
@@ -495,7 +537,7 @@ export function BlogForm({ initialPost }: BlogFormProps) {
                     that nothing links to their article. */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex flex-wrap gap-1">
-                    {HUB_TAGS.map((tag) => (
+                    {hubTags(topics).map((tag) => (
                       <button
                         key={tag}
                         type="button"

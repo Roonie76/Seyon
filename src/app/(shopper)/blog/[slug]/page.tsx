@@ -4,7 +4,7 @@ import { ReadingProgress } from '@/components/blog/ReadingProgress/ReadingProgre
 import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
 import { RenderBlocks } from '@/components/blog/render-blocks';
 import { parseBlocks, wordCount } from '@/shared/blog/parse';
-import { topicsForPost } from '@/shared/blog/topics';
+import { getBlogTopics, topicsForTags } from '@/backend/lib/blog-topics';
 import {
   generateBlogPostingJSONLD,
   generateBreadcrumbJSONLD,
@@ -115,7 +115,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
    * how many tags they share with it, falling back to recency for ties and to
    * fill the slots when a topic is still thin.
    */
-  const topics = topicsForPost(postRaw.tags);
+  const topics = topicsForTags(await getBlogTopics(), postRaw.tags);
   const siblingTags = Array.from(new Set(topics.flatMap((t) => t.tags)));
 
   const candidatesRaw = await db.blogPost.findMany({

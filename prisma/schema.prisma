@@ -427,6 +427,36 @@ model Wishlist {
   @@unique([userId, productId])
 }
 
+/**
+ * A blog hub: /blog/topic/<slug>.
+ * This was a TypeScript file with five objects in it, which meant renaming a
+ * hub, rewording its intro, or adding one for a new tag was a code change and
+ * a deploy. A post published from the admin screen with a tag no hub listed
+ * simply belonged nowhere, silently.
+ * `tags` is what places a post under the hub, compared case-insensitively
+ * against BlogPost.tags. A hub with no tags matches nothing, which is a
+ * legitimate state for one being drafted.
+ */
+model BlogTopic {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  label       String
+  heading     String
+  /// <title> for the hub. The layout appends " | Seyon".
+  seoTitle    String
+  description String
+  /// Paragraphs rendered above the article list, in order.
+  intro       String[]
+  /// BlogPost.tags values that belong to this hub.
+  tags        String[]
+  sortOrder   Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
 model BlogPost {
   id              String   @id @default(cuid())
   slug            String   @unique

@@ -4,6 +4,7 @@ import { FeaturedProduct } from './FeaturedProduct';
 import { Tags } from './Tags';
 import { Instagram } from './Instagram';
 import { BlogPost } from '@/types/blog';
+import type { BlogTopic } from '@/types/blog-topic';
 
 interface ProductData {
   title: string;
@@ -17,11 +18,13 @@ interface ProductData {
 interface SidebarProps {
   recentPosts: BlogPost[];
   featuredProduct?: ProductData | null;
+  topics: BlogTopic[];
 }
 
 export function Sidebar({
   recentPosts,
   featuredProduct,
+  topics,
 }: SidebarProps) {
   return (
     <aside className="w-full lg:w-[380px] space-y-12 shrink-0 lg:sticky lg:top-[100px] pb-12">
@@ -35,7 +38,7 @@ export function Sidebar({
       <FeaturedProduct product={featuredProduct} />
 
       {/* Topic hubs -- real links to real pages, not a query-param filter */}
-      <Tags />
+      <Tags topics={topics} />
 
       {/* Instagram Grid & Moodboard Collage */}
       <Instagram />

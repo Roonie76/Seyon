@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BLOG_TOPICS } from '@/shared/blog/topics';
+import type { BlogTopic } from '@/types/blog-topic';
 
 /**
  * Topic links, not a tag filter.
@@ -11,19 +11,21 @@ import { BLOG_TOPICS } from '@/shared/blog/topics';
  * the same page rather than a page of its own, so those filtered views were
  * rarely indexed and never ranked.
  *
- * They are ordinary anchors to real hub URLs now. The hub list is fixed in
- * `shared/blog/topics`; the `tags` the page passes in are no longer used to
- * build the cloud, because an open-ended cloud built from whatever tags exist
- * in the database mints a new indexable URL for every typo an author makes.
+ * They are ordinary anchors to real hub URLs now. The hubs come from the
+ * `BlogTopic` table, passed down rather than queried here so the page that
+ * already loaded them does not pay for a second read. The list is still
+ * closed - an editor decides what a hub is - because a cloud built from
+ * whatever tags happen to exist mints a new indexable URL for every typo an
+ * author makes.
  */
-export function Tags() {
+export function Tags({ topics }: { topics: BlogTopic[] }) {
   return (
     <div className="space-y-6">
       <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D4AF37] border-b border-zinc-900 pb-3">
         Topics
       </h4>
       <div className="flex flex-wrap gap-2">
-        {BLOG_TOPICS.map((topic) => (
+        {topics.map((topic) => (
           <Link
             key={topic.slug}
             href={`/blog/topic/${topic.slug}`}

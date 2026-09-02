@@ -3,7 +3,7 @@ import { DISCOVERABLE_SHOP } from '@/backend/lib/shop-visibility';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/site';
 import { logger } from '@/backend/lib/logger';
-import { BLOG_TOPICS } from '@/shared/blog/topics';
+import { getBlogTopics } from '@/backend/lib/blog-topics';
 
 /** Well inside the sitemap format's 50,000-URL ceiling. */
 const SITEMAP_POST_LIMIT = 10000;
@@ -84,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Topic hubs are a fixed list in code, so they need no database round trip
   // and cannot be missing from the sitemap because of a query failure.
-  const blogTopicUrls: MetadataRoute.Sitemap = BLOG_TOPICS.map((topic) => ({
+  const blogTopicUrls: MetadataRoute.Sitemap = (await getBlogTopics()).map((topic) => ({
     url: `${baseUrl}/blog/topic/${topic.slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,

@@ -16,7 +16,19 @@ const BlogPostInputSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must only contain lowercase alphanumeric characters and hyphens'),
   excerpt: z.string().min(1, 'Excerpt is required'),
-  cover: z.string().url('Cover image must be a valid URL'),
+  /**
+   * Presence only. The rule for what a cover may actually be lives in
+   * `checkCoverUrl`, which `checkReferences` below applies to every write.
+   *
+   * This used to be `z.string().url()`, and that ran first - so it rejected
+   * the root-relative `/blog/<slug>.webp` that every one of the 43 rows uses,
+   * and no post could be saved from the admin screen at all. The form's own
+   * client-side check accepts those paths, so the field looked valid right up
+   * until the server refused it, on a field the editor had not touched.
+   *
+   * Two validators that disagree is the bug. There is one now.
+   */
+  cover: z.string().min(1, 'A cover image is required'),
   author: z.string().optional(),
   category: z.string().min(1, 'Category is required'),
   tags: z.array(z.string()),

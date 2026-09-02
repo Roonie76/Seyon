@@ -16,7 +16,8 @@
     "security-scan": "npx tsx scripts/owasp-scan.ts",
     "test:regression": "vitest run --config vitest.regression.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "db:e2e-fixtures": "tsx scripts/e2e-fixtures.ts"
+    "db:e2e-fixtures": "tsx scripts/e2e-fixtures.ts",
+    "blog:doctor": "tsx scripts/blog-doctor.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

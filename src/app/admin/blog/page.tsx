@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, FileText } from 'lucide-react';
+import { Plus, Edit, FileText, LayoutGrid } from 'lucide-react';
 import { DeletePostButton } from '@/components/admin/delete-post-button';
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
@@ -51,11 +51,21 @@ export default async function AdminBlogPage() {
           </p>
         </div>
 
-        <Link href="/admin/blog/new">
-          <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus size={16} /> Write Article
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {/* The hubs decide which posts are reachable from anywhere but the
+              index, so the screen that manages them belongs next to the posts
+              rather than somewhere an editor has to be told about. */}
+          <Link href="/admin/blog/topics">
+            <Button variant="outline" className="gap-2">
+              <LayoutGrid size={16} /> Topic hubs
+            </Button>
+          </Link>
+          <Link href="/admin/blog/new">
+            <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus size={16} /> Write Article
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Main Table Card */}

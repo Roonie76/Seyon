@@ -1,23 +1,28 @@
-# Blog article sources
+# Blog content
 
-The markdown here is the source of truth for the seeded articles. It lives in
-the repository rather than in a scratch directory for one reason: the tests in
-`tests/blog-content.test.ts` run the real parser over these files, and a test
-that silently skips because its fixtures are somewhere else protects nothing.
+**The database is the source of truth.** Posts and topic hubs are created and
+edited at `/admin/blog` and `/admin/blog/topics`; nothing in this directory is
+read at build time or at runtime.
 
-- `*.md` — one article body per published post, named by slug.
-- `manifest.json` — per-post metadata (title, tags, cover, reading time, SEO
-  fields) as generated alongside the seed SQL.
+## `archive/`
 
-Editing a file here does **not** change the live post. The database is the
-runtime source; these files are what the seed was built from and what the tests
-check. A post edited through `/admin/blog` diverges from its file, which is
-expected — the admin editor is for corrections, this directory is for the
-articles the site launched with.
+The thirty markdown files that seeded the blog in August 2026, plus the
+`manifest.json` that described them and the ten retired seller-facing posts.
+They are kept because they are the original drafts and because they record what
+was published before anyone edited it — not because anything reads them.
 
-## The retired seller batch
+They were *also* a second copy of every post, which is why they are no longer
+where the loader would look for them: the moment an editor changed a headline
+in the admin screen, the file said one thing and the site said another, with
+nothing to reconcile them and no error to notice.
 
-An earlier batch of thirteen guides aimed at sellers (selling on Instagram,
-pricing, shipping, GST) is `published = false` in the database rather than
-deleted, and its markdown is not kept here. Republishing any of them is one
-boolean; the sources live in the history of this directory.
+Do not restore them to `content/blog/` and do not add new ones. To change what
+is published, use the admin screens.
+
+## Checking the live blog
+
+`npm run blog:doctor` reads whatever `DATABASE_URL` points at and reports
+articles that are too short, links to posts that do not exist, covers the
+policy rejects, hubs matching no post, headings out of order, and any block
+marker the parser left in the text. It is read-only, so it can be pointed at
+production.

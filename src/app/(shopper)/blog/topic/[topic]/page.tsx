@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { BlogCard } from '@/components/blog/BlogCard/BlogCard';
 import { BlogPost } from '@/types/blog';
-import { BLOG_TOPICS, topicBySlug } from '@/shared/blog/topics';
+import { getBlogTopics, getBlogTopicBySlug } from '@/backend/lib/blog-topics';
 
 /** A hub lists cards, not an archive. Well beyond the 30 posts that exist. */
 const TOPIC_HUB_LIMIT = 60;
@@ -27,7 +27,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { topic: slug } = await params;
-  const topic = topicBySlug(slug);
+  const topic = await getBlogTopicBySlug(slug);
   if (!topic) return { title: 'Topic Not Found' };
 
   return {
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogTopicPage({ params }: PageProps) {
   const { topic: slug } = await params;
-  const topic = topicBySlug(slug);
+  const topic = await getBlogTopicBySlug(slug);
 
   // An unknown segment is a 404, not an empty hub. Serving a page for every
   // string anyone types would put an unbounded number of near-identical URLs
@@ -94,7 +94,7 @@ export default async function BlogTopicPage({ params }: PageProps) {
     }))
   );
 
-  const siblings = BLOG_TOPICS.filter((t) => t.slug !== topic.slug);
+  const siblings = (await getBlogTopics()).filter((t) => t.slug !== topic.slug);
 
   return (
     <div className="relative w-full overflow-hidden bg-[#050505] text-zinc-300 min-h-screen">

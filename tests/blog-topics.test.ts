@@ -1,127 +1,168 @@
+/**
+ * Blog hubs, now that an editor creates them.
+ *
+ * This file used to assert things about five objects in
+ * `src/shared/blog/topics.ts` — unique slugs, upper-case tags, titles inside
+ * the length a search result shows. Those were fine as tests while only a
+ * developer could change the file. They are useless as tests now that hubs are
+ * rows an editor writes at three in the morning: a test cannot stop a save.
+ *
+ * So the rules moved into `BlogTopicInputSchema`, which every write goes
+ * through, and what is tested here is the schema itself and the two pure
+ * functions the pages use to match posts to hubs. Nothing here reads a file or
+ * needs a database.
+ *
+ * The corpus-wide checks that used to live alongside these — every post in a
+ * hub, no empty hub, exactly one featured post — are now `npm run blog:doctor`,
+ * which runs against a real database and can therefore see a post somebody
+ * published five minutes ago.
+ */
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
-  BLOG_TOPICS,
-  topicBySlug,
-  topicsForPost,
-} from '../src/shared/blog/topics';
+  BlogTopicInputSchema,
+  MAX_TOPIC_SEO_TITLE,
+  MAX_TOPIC_DESCRIPTION,
+} from '../src/shared/blog/topic-schema';
+import { topicsForTags, hubTags } from '../src/shared/blog/topic-match';
+import type { BlogTopic } from '../src/types/blog-topic';
 
-const ROOT = join(__dirname, '..');
+/** A hub row, with only the fields the pure functions read filled in. */
+function topic(over: Partial<BlogTopic> = {}): BlogTopic {
+  return {
+    id: over.slug ?? 'id',
+    slug: 'jewellery',
+    label: 'Jewellery',
+    heading: 'Jewellery worth understanding',
+    seoTitle: 'Indian Jewellery: A Buyer’s Guide',
+    description: 'What the words mean.',
+    intro: ['One.', 'Two.'],
+    tags: ['JEWELLERY', 'GOLD'],
+    sortOrder: 0,
+    published: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...over,
+  } as BlogTopic;
+}
 
-describe('blog topic hubs', () => {
-  it('has unique slugs', () => {
-    const slugs = BLOG_TOPICS.map((t) => t.slug);
-    expect(new Set(slugs).size).toBe(slugs.length);
+const valid = {
+  slug: 'buying-well',
+  label: 'Buying well',
+  heading: 'How to buy something you will keep',
+  seoTitle: 'How to Buy Well',
+  description: 'The checks worth doing with the thing in your hand.',
+  intro: ['A paragraph.', 'Another.'],
+  tags: ['BUYING-GUIDE', 'CARE'],
+  sortOrder: 3,
+  published: true,
+};
+
+describe('what a hub is allowed to be', () => {
+  it('accepts a well-formed hub', () => {
+    expect(BlogTopicInputSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('uses url-safe slugs', () => {
-    for (const t of BLOG_TOPICS) {
-      expect(t.slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  it('rejects a slug that would not make a clean URL', () => {
+    // The slug becomes /blog/topic/<slug>; anything else 404s or, worse,
+    // resolves to a second address for the same page.
+    for (const slug of ['Jewellery', 'buying well', 'buying--well', '-lead', 'trail-', 'ünicode', '']) {
+      const res = BlogTopicInputSchema.safeParse({ ...valid, slug });
+      expect(res.success, `slug=${JSON.stringify(slug)}`).toBe(false);
     }
   });
 
-  it('declares tags in upper case, matching how posts store them', () => {
-    for (const t of BLOG_TOPICS) {
-      expect(t.tags.length).toBeGreaterThan(0);
-      for (const tag of t.tags) expect(tag).toBe(tag.toUpperCase());
+  it('accepts the slug shapes the five original hubs used', () => {
+    for (const slug of ['jewellery', 'textiles', 'home', 'buying-well', 'buying-for-yourself']) {
+      expect(BlogTopicInputSchema.safeParse({ ...valid, slug }).success, slug).toBe(true);
     }
   });
 
-  it('gives every hub enough unique copy to not be a thin page', () => {
-    for (const t of BLOG_TOPICS) {
-      const words = t.intro.join(' ').split(/\s+/).filter(Boolean).length;
-      expect(words, `${t.slug} intro`).toBeGreaterThan(50);
-      expect(t.description.length, `${t.slug} description`).toBeGreaterThan(80);
+  it('keeps the SEO title inside what a search result displays', () => {
+    // The layout appends " | Seyon". Over the limit the brand is what gets cut.
+    const ok = 'x'.repeat(MAX_TOPIC_SEO_TITLE);
+    const over = 'x'.repeat(MAX_TOPIC_SEO_TITLE + 1);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, seoTitle: ok }).success).toBe(true);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, seoTitle: over }).success).toBe(false);
+  });
+
+  it('keeps the description inside what a search result displays', () => {
+    const over = 'x'.repeat(MAX_TOPIC_DESCRIPTION + 1);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, description: over }).success).toBe(false);
+  });
+
+  it('refuses a hub with no copy of its own', () => {
+    // A page of nothing but links is thin content, and thin hub pages are the
+    // first thing a search engine drops.
+    expect(BlogTopicInputSchema.safeParse({ ...valid, intro: [] }).success).toBe(false);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, intro: ['   '] }).success).toBe(false);
+  });
+
+  it('normalises tags to upper case and de-duplicates them', () => {
+    const res = BlogTopicInputSchema.safeParse({
+      ...valid,
+      tags: ['jewellery', 'JEWELLERY', ' gold ', 'Gold'],
+    });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.tags).toEqual(['JEWELLERY', 'GOLD']);
+  });
+
+  it('allows a hub with no tags, which is a hub being drafted', () => {
+    // It matches nothing, which the admin list flags as empty rather than
+    // refusing outright — an editor building one out over a few minutes should
+    // not be blocked by the order they fill the form in.
+    expect(BlogTopicInputSchema.safeParse({ ...valid, tags: [] }).success).toBe(true);
+  });
+
+  it('rejects a sort order outside the range the column holds', () => {
+    expect(BlogTopicInputSchema.safeParse({ ...valid, sortOrder: -1 }).success).toBe(false);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, sortOrder: 1.5 }).success).toBe(false);
+    expect(BlogTopicInputSchema.safeParse({ ...valid, sortOrder: 1000 }).success).toBe(false);
+  });
+
+  it('trims, so a stray space cannot pass as content', () => {
+    for (const field of ['label', 'heading', 'seoTitle', 'description'] as const) {
+      expect(
+        BlogTopicInputSchema.safeParse({ ...valid, [field]: '   ' }).success,
+        field
+      ).toBe(false);
     }
   });
+});
 
-  it('keeps hub titles inside the length search engines display', () => {
-    // The root layout template appends " | Seyon" (8 characters), and search
-    // results truncate around 60.
-    for (const t of BLOG_TOPICS) {
-      expect(t.seoTitle.length, `${t.slug} seoTitle`).toBeLessThanOrEqual(52);
-      expect(t.description.length, `${t.slug} description`).toBeLessThanOrEqual(300);
-    }
+describe('matching posts to hubs', () => {
+  const topics = [
+    topic({ slug: 'jewellery', label: 'Jewellery', tags: ['JEWELLERY', 'GOLD'] }),
+    topic({ slug: 'textiles', label: 'Textiles', tags: ['TEXTILES', 'SAREES'] }),
+    topic({ slug: 'empty', label: 'Empty', tags: [] }),
+  ];
+
+  it('matches case-insensitively', () => {
+    // Tags are whatever an editor typed into the post form; a hub should not
+    // stop matching because someone wrote "Jewellery" where it says "JEWELLERY".
+    expect(topicsForTags(topics, ['jewellery']).map((t) => t.slug)).toEqual(['jewellery']);
+    expect(topicsForTags(topics, ['  Gold  ']).map((t) => t.slug)).toEqual(['jewellery']);
   });
 
-  it('resolves by slug and rejects anything else', () => {
-    const first = BLOG_TOPICS[0];
-    expect(topicBySlug(first.slug)?.slug).toBe(first.slug);
-    // Matching is case-insensitive, so a link typed in caps still resolves.
-    expect(topicBySlug(first.slug.toUpperCase())?.slug).toBe(first.slug);
-    expect(topicBySlug('not-a-topic')).toBeUndefined();
-    expect(topicBySlug('')).toBeUndefined();
-  });
-
-  it('matches a post to hubs case-insensitively and in declaration order', () => {
-    // Take one tag from the last hub and one from the first; the result must
-    // come back in declaration order, not in the order the tags were given.
-    const firstTag = BLOG_TOPICS[0].tags[0];
-    const lastTag = BLOG_TOPICS[BLOG_TOPICS.length - 1].tags[0];
-    const found = topicsForPost([lastTag.toLowerCase(), firstTag]);
-    expect(found.map((t) => t.slug)).toEqual([
-      BLOG_TOPICS[0].slug,
-      BLOG_TOPICS[BLOG_TOPICS.length - 1].slug,
+  it('returns every hub a post belongs to, in the order given', () => {
+    expect(topicsForTags(topics, ['SAREES', 'GOLD']).map((t) => t.slug)).toEqual([
+      'jewellery',
+      'textiles',
     ]);
   });
 
-  it('returns no hubs for a post with no matching tags', () => {
-    expect(topicsForPost(['SOMETHING-ELSE'])).toEqual([]);
-    expect(topicsForPost([])).toEqual([]);
-  });
-});
-
-describe('seeded posts', () => {
-  it('reads the manifest it checks against', () => {
-    expect(existsSync(join(ROOT, 'content', 'blog', 'manifest.json'))).toBe(true);
+  it('returns nothing for a post whose tags match no hub', () => {
+    expect(topicsForTags(topics, ['NOSUCHTAG'])).toEqual([]);
+    expect(topicsForTags(topics, [])).toEqual([]);
+    expect(topicsForTags(topics, ['', '  '])).toEqual([]);
   });
 
-  const manifestPath = join(ROOT, 'content', 'blog', 'manifest.json');
-  const manifest: {
-    slug: string;
-    tags: string[];
-    cover: string;
-    featured: boolean;
-    seoTitle: string;
-    seoDescription: string;
-  }[] = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : [];
-
-  it('places every seeded post under at least one hub', () => {
-    for (const post of manifest) {
-      expect(topicsForPost(post.tags).length, post.slug).toBeGreaterThan(0);
+  it('never matches a hub that lists no tags', () => {
+    for (const tags of [['JEWELLERY'], ['TEXTILES'], ['ANYTHING']]) {
+      expect(topicsForTags(topics, tags).some((t) => t.slug === 'empty')).toBe(false);
     }
   });
 
-  it('ships a cover file for every seeded post', () => {
-    for (const post of manifest) {
-      expect(post.cover).toMatch(/^\/blog\/[a-z0-9-]+\.webp$/);
-      expect(existsSync(join(ROOT, 'public', post.cover)), post.cover).toBe(true);
-    }
-  });
-
-  it('features exactly one post', () => {
-    expect(manifest.filter((p) => p.featured).length).toBe(1);
-  });
-
-  it('leaves no hub empty', () => {
-    for (const topic of BLOG_TOPICS) {
-      const n = manifest.filter((p) => topicsForPost(p.tags).some((t) => t.slug === topic.slug));
-      expect(n.length, `${topic.slug} has no posts`).toBeGreaterThan(0);
-    }
-  });
-});
-
-describe('shipped cover images', () => {
-  const dir = join(ROOT, 'public', 'blog');
-
-  it('are webp and small enough not to hurt the LCP they sit in', () => {
-    const files = existsSync(dir) ? readdirSync(dir) : [];
-    expect(files.length).toBeGreaterThan(0);
-    for (const f of files) {
-      expect(f, 'only webp covers are shipped').toMatch(/\.webp$/);
-      const bytes = readFileSync(join(dir, f)).length;
-      expect(bytes, `${f} is ${Math.round(bytes / 1024)}KB`).toBeLessThan(150 * 1024);
-    }
+  it('collects the tag suggestions the post editor offers', () => {
+    expect(hubTags(topics)).toEqual(['GOLD', 'JEWELLERY', 'SAREES', 'TEXTILES']);
   });
 });

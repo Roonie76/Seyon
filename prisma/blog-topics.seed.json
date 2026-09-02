@@ -1,0 +1,92 @@
+[
+  {
+    "slug": "jewellery",
+    "label": "Jewellery",
+    "heading": "Jewellery worth understanding before you buy it",
+    "seoTitle": "Indian Jewellery: A Buyer’s Guide",
+    "description": "What kundan, polki, jadau and meenakari actually mean, how to read a hallmark, and how to tell craft from finish when you are holding the piece.",
+    "intro": [
+      "Almost every word used to sell Indian jewellery describes a technique, and almost none of them are explained at the counter. Kundan and polki are not the same thing. Jadau is a method, not a stone. Meenakari is on the back of the piece, which is where a good one hides its best work.",
+      "These are guides to the vocabulary and to the checks worth doing with the piece in your hand — what the hallmark is legally required to tell you, what it is not, and which differences change the price by a factor of ten."
+    ],
+    "tags": [
+      "JEWELLERY",
+      "SILVER",
+      "GOLD",
+      "GEMSTONES"
+    ],
+    "published": true
+  },
+  {
+    "slug": "textiles",
+    "label": "Textiles",
+    "heading": "Textiles, and how to read one before you own it",
+    "seoTitle": "Indian Textiles: How to Read Cloth Before Buying",
+    "description": "Handloom against powerloom, block print against screen print, and the weaves worth knowing by name — each with the checks you can do standing in a shop.",
+    "intro": [
+      "Cloth is the easiest thing in India to be sold a story about, because the difference between the real thing and the convincing copy is often invisible in a photograph and obvious in the hand. A block print has a heartbeat — tiny registration shifts where the wooden block landed a hair off. A screen print does not.",
+      "These pieces are about learning what to look for: the selvedge, the reverse, the repeat, the weight. None of it requires expertise. All of it is the difference between paying for handwork and paying for the word."
+    ],
+    "tags": [
+      "TEXTILES",
+      "SAREES",
+      "HANDLOOM",
+      "BLOCK-PRINT",
+      "WARDROBE"
+    ],
+    "published": true
+  },
+  {
+    "slug": "home",
+    "label": "For the home",
+    "heading": "Objects for the home that are built to be used",
+    "seoTitle": "Handmade Homeware: Metal, Clay and Wood",
+    "description": "Brass against bronze against copper, terracotta against stoneware against porcelain, and lacquered wood — what each is actually good for, and how to keep it.",
+    "intro": [
+      "The pleasure of a handmade object at home is that it is meant to be used, and the anxiety is that you will ruin it. Most of that anxiety comes from not knowing what the material can take: which metal minds the lemon, which clay minds the flame, which finish minds the dishwasher.",
+      "These guides cover what each material is for, what will happen to it over years, and the care that is genuinely necessary as opposed to the care everyone repeats."
+    ],
+    "tags": [
+      "HOME",
+      "CERAMICS",
+      "METALWARE",
+      "DECOR"
+    ],
+    "published": true
+  },
+  {
+    "slug": "buying-well",
+    "label": "Buying well",
+    "heading": "Buying well from people who make things",
+    "seoTitle": "Buying Handmade: What to Know First",
+    "description": "What “handmade” is allowed to mean, things independent Indian makers sell that most people never discover, and how to give a gift that lands.",
+    "intro": [
+      "Buying from someone who made the thing is a different transaction from buying from a shelf. The variation is the point rather than the defect, the person answering you is the person who made it, and the questions worth asking are not the ones you would ask a shop.",
+      "These pieces are about that difference — what the words on a listing are and are not allowed to claim, what exists out there that you would never think to search for, and how to buy for someone else without guessing."
+    ],
+    "tags": [
+      "BUYING-GUIDE",
+      "GIFTING",
+      "CARE",
+      "CRAFT"
+    ],
+    "published": true
+  },
+  {
+    "slug": "buying-for-yourself",
+    "label": "Buying for yourself",
+    "heading": "Buying for yourself, and for the moments that change what you buy",
+    "seoTitle": "Buying for Yourself: Firsts and Fresh Starts",
+    "description": "The purchases with no occasion attached and the ones that mark a change — a first salary, a first gold piece, a new flat, starting again from nothing.",
+    "intro": [
+      "A gift has a recipient to satisfy and an occasion to suit. A purchase for yourself has neither, which sounds freeing and is the hard part — with no brief, most people default to the safest option or the most impulsive one, and both end up unused.",
+      "These pieces are about that kind of buying, and about the moments that reset it: the first salary, the first flat, the first serious piece of jewellery, the fresh start after something ended. What changes is rarely taste. It is income, storage, permanence, and how much you already know about what you reach for."
+    ],
+    "tags": [
+      "FOR-YOURSELF",
+      "MILESTONES",
+      "WARDROBE"
+    ],
+    "published": true
+  }
+]

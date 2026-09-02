@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/blog/Sidebar/Sidebar';
 import { Pagination } from '@/components/blog/Pagination/Pagination';
 import { BlogPost } from '@/types/blog';
 import type { Metadata } from 'next';
-import { BLOG_TOPICS } from '@/shared/blog/topics';
+import { getBlogTopics } from '@/backend/lib/blog-topics';
 import { parsePage, MAX_PAGE } from '@/shared/lib/search-params';
 import {
   generateBlogJSONLD,
@@ -154,6 +154,10 @@ export default async function BlogPage({ searchParams }: PageProps) {
   // offer a page number the parser would refuse to honour.
   const totalPages = Math.min(Math.ceil(totalCount / postsPerPage), MAX_PAGE);
 
+  // The hub grid. Read from the database so a hub added, renamed or taken
+  // down in the admin screen shows up here without a deploy.
+  const topics = await getBlogTopics();
+
   /**
    * Structured data for the index. Emitted only on the unfiltered first page:
    * a search or tag view is a slice of the same collection, and publishing a
@@ -275,7 +279,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 {/* Five hubs in two columns leaves the last one orphaned, so
                     an odd final card spans the row. */}
                 <div className="grid sm:grid-cols-2 gap-5 [&>*:last-child:nth-child(odd)]:sm:col-span-2">
-                  {BLOG_TOPICS.map((topic) => (
+                  {topics.map((topic) => (
                     <Link
                       key={topic.slug}
                       href={`/blog/topic/${topic.slug}`}
@@ -374,6 +378,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
           <Sidebar
             recentPosts={recentPosts}
             featuredProduct={sidebarProduct}
+            topics={topics}
           />
         </div>
       </div>

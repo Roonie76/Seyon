@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { Role } from '@prisma/client';
 import { db } from '@/lib/db';
 import { BlogForm } from '@/components/admin/blog-form';
+import { getAllBlogTopics } from '@/backend/lib/blog-topics';
+import { publishedPostCategories } from '@/backend/lib/blog-tags';
 
 interface EditBlogPostPageProps {
   params: Promise<{ id: string }>;
@@ -26,7 +28,11 @@ export default async function EditBlogPostPage({ params }: EditBlogPostPageProps
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12">
-      <BlogForm initialPost={post} />
+      <BlogForm
+        initialPost={post}
+        topics={await getAllBlogTopics()}
+        categories={await publishedPostCategories()}
+      />
     </div>
   );
 }
