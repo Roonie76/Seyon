@@ -63,7 +63,14 @@ export const BlogTopicInputSchema = z.object({
   tags: z
     .array(z.string().trim().min(1))
     .transform((tags) => Array.from(new Set(tags.map((t) => t.toUpperCase())))),
-  sortOrder: z.number().int().min(0).max(999),
+  // Messages written out, because this one reaches an editor. Left to Zod's
+  // defaults it surfaced as "Too big: expected number to be <=999", which is
+  // the only message in this form that reads like a stack trace.
+  sortOrder: z
+    .number()
+    .int('Sort order must be a whole number')
+    .min(0, 'Sort order cannot be negative')
+    .max(999, 'Sort order must be 999 or less'),
   published: z.boolean(),
 });
 

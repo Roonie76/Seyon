@@ -53,8 +53,9 @@ export function DeleteTopicButton({
         <p className="text-sm font-semibold text-rose-900">Delete this hub</p>
         <p className="mt-1 text-xs text-rose-800">
           /blog/topic/{slug} becomes a 404 for anyone who has linked to it or found it in
-          search. Unpublishing hides it from the site and the sitemap while keeping the
-          address alive — prefer that unless the hub was a mistake.
+          search, and the wording, tags and order are gone with it. Unpublishing also 404s
+          the address, but keeps everything, so the hub can come back with one click —
+          prefer that unless the hub was a mistake.
         </p>
         <Button
           type="button"

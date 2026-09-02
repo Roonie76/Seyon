@@ -308,8 +308,10 @@ export function BlogTopicForm({ initialTopic, availableTags, matchedCount }: Blo
               <span className="text-sm">
                 Published
                 <span className="block text-[11px] text-muted-foreground">
-                  Unpublishing hides the hub and drops it from the sitemap, but keeps the URL
-                  working for anyone who has it. Prefer it to deleting.
+                  Unpublishing takes the hub off the site and out of the sitemap, and its
+                  address returns a 404 until you publish it again. Nothing is lost — the
+                  wording, tags and order are all still here — which is why it is the safer
+                  choice when a hub is only being paused.
                 </span>
               </span>
             </label>

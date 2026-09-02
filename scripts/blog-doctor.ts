@@ -14,6 +14,11 @@
  *
  * Exits non-zero when something is wrong, so CI can gate a deploy on it.
  */
+// `npm run blog:doctor` is the documented way to run this, and npm does not
+// load `.env` for you — without this the script died on P1010 "User was denied
+// access", which reads like a credentials problem rather than an unset
+// variable. Every other script in the repo loads it the same way.
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
