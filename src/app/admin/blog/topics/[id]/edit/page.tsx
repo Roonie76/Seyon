@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
+import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import { auth } from '@/lib/auth';
-import { Role } from '@prisma/client';
 import { BlogTopicForm } from '@/components/admin/blog-topic-form';
 import { getBlogTopicById } from '@/backend/lib/blog-topics';
 import { blogTopicPostCounts } from '@/backend/actions/blog-topics';
@@ -15,7 +15,10 @@ interface EditTopicPageProps {
 
 export default async function EditBlogTopicPage({ params }: EditTopicPageProps) {
   const session = await auth();
-  if (!session || !session.user || session.user.role !== Role.ADMIN) {
+  // The role is re-read from the database. The JWT claim it used to test was
+  // writable by the client through the session-update endpoint, and is stale for
+  // a revoked admin regardless.
+  if (!session?.user || !(await isCurrentUserAdmin())) {
     redirect('/');
   }
 

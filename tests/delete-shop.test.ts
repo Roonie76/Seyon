@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Role } from '@prisma/client';
 import { deleteShop } from '../src/backend/actions/shops';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
@@ -10,6 +11,9 @@ vi.mock('@/lib/db', () => {
       delete: vi.fn(),
     },
     user: {
+      // The role is read before it is written, so an admin who owns a
+      // storefront is not demoted by deleting it.
+      findUnique: vi.fn(),
       update: vi.fn(),
     },
     $transaction: vi.fn(async (cb: (tx: unknown) => unknown) => cb(mockDb)),
@@ -31,6 +35,7 @@ vi.mock('@/lib/supabase', () => ({
 describe('deleteShop', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(db.user.findUnique).mockResolvedValue({ role: Role.SELLER } as never);
   });
 
   it('rejects unauthenticated users', async () => {
@@ -88,5 +93,26 @@ describe('deleteShop', () => {
 
     const res = await deleteShop();
     expect(res.success).toBe(true);
+  });
+
+  it('does not demote an admin who deletes their storefront', async () => {
+    // `roleAfterShopRemoval` exists for exactly this and has unit tests of its
+    // own, but the seller self-delete path never imported it — so an admin who
+    // owned a test store lost /admin permanently by removing it.
+    vi.mocked(auth as any).mockResolvedValue({ user: { id: 'admin_1' } } as any);
+    vi.mocked(db.shop.findUnique).mockResolvedValue({
+      id: 'shop_1',
+      slug: 'a-store',
+      logo: null,
+      banner: null,
+      products: [],
+    } as never);
+    vi.mocked(db.user.findUnique).mockResolvedValue({ role: Role.ADMIN } as never);
+
+    const res = await deleteShop();
+
+    expect(res.success).toBe(true);
+    expect(db.shop.delete).toHaveBeenCalled();
+    expect(db.user.update).not.toHaveBeenCalled();
   });
 });

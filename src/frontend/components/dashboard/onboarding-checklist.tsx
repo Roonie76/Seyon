@@ -7,6 +7,15 @@ export interface ChecklistInput {
   whatsappVerified: boolean;
   productCount: number;
   hasLocation: boolean;
+  /**
+   * Whether the store is actually discoverable.
+   *
+   * This list used to end at four items and then congratulate a seller who was
+   * still invisible to the marketplace, because `isListed` is gated on identity
+   * verification and nothing here mentioned it. Beside this card, the share
+   * panel was telling them to post their link "to start receiving orders".
+   */
+  isListed: boolean;
 }
 
 interface ChecklistItem {
@@ -16,8 +25,22 @@ interface ChecklistItem {
   href: string;
 }
 
-export function OnboardingChecklist({ hasLogo, whatsappVerified, productCount, hasLocation }: ChecklistInput) {
+export function OnboardingChecklist({
+  hasLogo,
+  whatsappVerified,
+  productCount,
+  hasLocation,
+  isListed,
+}: ChecklistInput) {
   const items: ChecklistItem[] = [
+    {
+      // First, because it is the only item that decides whether anyone can find
+      // the store at all. The other four make a found store better.
+      label: 'Verify your identity to get listed',
+      done: isListed,
+      hint: 'Until this is done your store is missing from the marketplace, search and categories.',
+      href: '/verification',
+    },
     {
       label: 'Add your shop logo',
       done: hasLogo,

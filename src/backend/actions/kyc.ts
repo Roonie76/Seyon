@@ -1,6 +1,8 @@
 'use server';
 
 import { createHash } from 'node:crypto';
+import { WhatsappVerifiedVia } from '@prisma/client';
+import { appSecret } from '../lib/app-secret';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -64,7 +66,7 @@ const TIER1 = z.object({
  * let anyone recover which PANs are on file.
  */
 function hashIdentifier(value: string): string {
-  const salt = process.env.AUTH_SECRET ?? '';
+  const salt = appSecret();
   return createHash('sha256').update(`${salt}:${value.toUpperCase()}`).digest('hex');
 }
 
@@ -84,6 +86,16 @@ export interface KycView {
   whatsappVerified: boolean;
   isListed: boolean;
   hasShop: boolean;
+  /**
+   * Whether an ID document is attached to the case.
+   *
+   * The panel needs this to stop a seller submitting before uploading, and to
+   * keep the upload control reachable while a case is pending. The path itself
+   * is deliberately not exposed — it is a private storage key.
+   */
+  hasDocument: boolean;
+  /** Whether the number was proved over WhatsApp specifically, which is what discovery requires. */
+  whatsappVerifiedOnWhatsapp: boolean;
 }
 
 /** Current identity state for the signed-in seller. */
@@ -94,7 +106,10 @@ export async function getMyKyc(): Promise<{ data: KycView } | { error: string }>
 
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { sellerKyc: true, shop: { select: { isListed: true, whatsappVerifiedAt: true } } },
+      include: {
+        sellerKyc: true,
+        shop: { select: { isListed: true, whatsappVerifiedAt: true, whatsappVerifiedVia: true } },
+      },
     });
     if (!user) return { error: 'Account not found.' };
 
@@ -122,6 +137,9 @@ export async function getMyKyc(): Promise<{ data: KycView } | { error: string }>
         whatsappVerified,
         isListed: user.shop?.isListed ?? false,
         hasShop: Boolean(user.shop),
+        hasDocument: Boolean(kyc?.documentPath),
+        whatsappVerifiedOnWhatsapp:
+          user.shop?.whatsappVerifiedVia === WhatsappVerifiedVia.WHATSAPP,
       },
     };
   } catch (error) {
@@ -151,7 +169,7 @@ export async function submitTier0(
 
     const shop = await db.shop.findUnique({
       where: { ownerId: userId },
-      select: { id: true, slug: true, whatsappVerifiedAt: true },
+      select: { id: true, slug: true, whatsappVerifiedAt: true, whatsappVerifiedVia: true },
     });
     if (!shop) {
       return { error: 'Create your store first, then complete verification.' };
@@ -160,9 +178,17 @@ export async function submitTier0(
     // The WhatsApp number is the only contact a buyer gets. Listing a store
     // whose number was never confirmed puts an unreachable seller into
     // discovery, which is worse for the buyer than the store not being there.
-    if (!shop.whatsappVerifiedAt) {
+    //
+    // "Confirmed" means confirmed on WhatsApp. A code read out of the seller's
+    // own inbox proves they can read their inbox, not that they hold the number
+    // they typed — so the email fallback is explicitly not enough here.
+    if (!shop.whatsappVerifiedAt || shop.whatsappVerifiedVia !== WhatsappVerifiedVia.WHATSAPP) {
       return {
-        error: 'Verify your WhatsApp number first — buyers reach you there, so it has to work.',
+        error:
+          shop.whatsappVerifiedAt
+            ? 'Your number was confirmed by email, which does not prove the WhatsApp number works. ' +
+              'Send yourself a code on WhatsApp to finish listing.'
+            : 'Verify your WhatsApp number first — buyers reach you there, so it has to work.',
       };
     }
 
@@ -231,7 +257,10 @@ export async function submitTier1(
     const rl = await rateLimit(
       `kyc-submit:${userId}`,
       RATE_LIMITS.KYC_SUBMIT.limit,
-      RATE_LIMITS.KYC_SUBMIT.windowMs
+      RATE_LIMITS.KYC_SUBMIT.windowMs,
+      Date.now(),
+      // Guards a secret, so a broken limiter must deny rather than uncap.
+      { failClosed: true }
     );
     if (!rl.success) {
       return { error: 'You have submitted this several times already. Please wait before trying again.' };
@@ -252,6 +281,24 @@ export async function submitTier1(
     }
     if (existing.status === KycStatus.APPROVED) {
       return { error: 'Your identity is already verified.' };
+    }
+
+    /**
+     * A submission needs the document it is a submission of.
+     *
+     * Nothing here referenced `documentPath`, so a seller who filled the form
+     * and pressed Submit before touching the file picker landed in
+     * PENDING_REVIEW with no document — and the panel then replaced the whole
+     * form, file input included, with "your documents are with our team". There
+     * was no control anywhere in the product that could attach one afterwards.
+     * The reviewer could only reject, which wipes the path and sends the seller
+     * round the same loop.
+     */
+    if (!existing.documentPath) {
+      return {
+        error:
+          'Upload a photo of your ID before submitting — a reviewer cannot verify a case without one.',
+      };
     }
 
     // Aadhaar is accepted only in masked form. Storing a full Aadhaar number is
@@ -349,7 +396,10 @@ export async function uploadIdentityDocument(
     const rl = await rateLimit(
       `kyc-doc:${userId}`,
       RATE_LIMITS.KYC_SUBMIT.limit,
-      RATE_LIMITS.KYC_SUBMIT.windowMs
+      RATE_LIMITS.KYC_SUBMIT.windowMs,
+      Date.now(),
+      // Guards a secret, so a broken limiter must deny rather than uncap.
+      { failClosed: true }
     );
     if (!rl.success) return { error: 'Too many uploads. Please wait a little before trying again.' };
 

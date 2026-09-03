@@ -87,6 +87,9 @@ describe('checkEnvironment: grievance officer', () => {
       DATABASE_URL: 'postgresql://localhost/seyon',
       SUPABASE_URL: 'https://real.supabase.co',
       SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+      WHATSAPP_CLOUD_TOKEN: 'cloud-token',
+      WHATSAPP_PHONE_NUMBER_ID: '109876543210987',
+      WHATSAPP_VERIFY_TEMPLATE_NAME: 'seyon_verification_code',
     } as NodeJS.ProcessEnv);
     expect(fatal).toEqual([]);
   });

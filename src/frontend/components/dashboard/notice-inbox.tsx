@@ -16,12 +16,27 @@ import { runAction } from '@/frontend/lib/run-action';
  * compliance conversation into somebody's personal inbox where it is lost.
  */
 
+/**
+ * A date the server and the browser agree on.
+ *
+ * `toLocaleDateString('en-IN')` with no timezone uses whatever zone the code is
+ * running in. Client components are rendered on the server too, so a notice
+ * sent at 20:00 UTC formatted as one day in the SSR pass and the next after
+ * hydration in IST — a React hydration mismatch, and a wrong date in the first
+ * paint. Pinning the zone makes both passes produce the same string, and IST is
+ * the right zone for this audience anyway.
+ */
+function istDate(value: Date): string {
+  return value.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+}
+
 const KIND_STYLES: Record<NoticeKind, string> = {
   WARNING: 'bg-amber-100 text-amber-900',
   POLICY_VIOLATION: 'bg-red-100 text-red-800',
   INFORMATION_REQUEST: 'bg-blue-100 text-blue-800',
   SUSPENSION: 'bg-red-100 text-red-800',
   REINSTATEMENT: 'bg-emerald-100 text-emerald-800',
+  IDENTITY_DECISION: 'bg-indigo-100 text-indigo-800',
 };
 
 const KIND_LABELS: Record<NoticeKind, string> = {
@@ -30,6 +45,7 @@ const KIND_LABELS: Record<NoticeKind, string> = {
   INFORMATION_REQUEST: 'Information requested',
   SUSPENSION: 'Suspension',
   REINSTATEMENT: 'Reinstated',
+  IDENTITY_DECISION: 'Identity review',
 };
 
 export function NoticeInbox({ notices }: { notices: SellerNotice[] }) {
@@ -85,8 +101,28 @@ function NoticeCard({ notice }: { notice: SellerNotice }) {
     setResponse(''); setBusy(false); router.refresh();
   }
 
+  /**
+   * Only judged once the browser is doing the rendering.
+   *
+   * `new Date()` differs between the server pass and the client pass, so a
+   * notice sitting on its deadline rendered one way and hydrated the other.
+   * `useSyncExternalStore` with a `false` server snapshot is the hydration-safe
+   * way to say "this is a client-only fact": the first paint always matches
+   * what the server sent, and the badge appears on the next commit.
+   */
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   const overdue =
-    notice.requiresResponse && !notice.respondedAt && notice.respondBy && notice.respondBy < new Date();
+    mounted &&
+    Boolean(
+      notice.requiresResponse &&
+        !notice.respondedAt &&
+        notice.respondBy &&
+        notice.respondBy < new Date()
+    );
 
   return (
     <li
@@ -115,7 +151,7 @@ function NoticeCard({ notice }: { notice: SellerNotice }) {
           </div>
           <h3 className="mt-1 text-sm font-bold text-zinc-950" data-testid="notice-subject">{notice.subject}</h3>
         </div>
-        <span className="shrink-0 text-[11px] text-zinc-500">{notice.sentAt.toLocaleDateString('en-IN')}</span>
+        <span className="shrink-0 text-[11px] text-zinc-500">{istDate(notice.sentAt)}</span>
       </button>
 
       {open ? (
@@ -126,14 +162,14 @@ function NoticeCard({ notice }: { notice: SellerNotice }) {
 
           {notice.requiresResponse && notice.respondBy ? (
             <p className="text-[11px] font-semibold text-zinc-600">
-              A response is asked for by {notice.respondBy.toLocaleDateString('en-IN')}.
+              A response is asked for by {istDate(notice.respondBy)}.
             </p>
           ) : null}
 
           {notice.respondedAt ? (
             <div className="rounded-lg bg-zinc-100 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
-                Your response · {notice.respondedAt.toLocaleDateString('en-IN')}
+                Your response · {istDate(notice.respondedAt)}
               </p>
               <p className="mt-1 whitespace-pre-wrap text-xs text-zinc-800" data-testid="notice-response">{notice.response}</p>
             </div>

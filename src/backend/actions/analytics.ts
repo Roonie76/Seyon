@@ -2,12 +2,20 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isCurrentUserAdmin } from '../lib/is-admin';
 import { Role, AnalyticsEventType } from '@prisma/client';
 import { z } from 'zod';
 import { trackEventInternal, isTrackingAllowed, type TrackResult } from '../lib/analytics';
 import { logger } from '../lib/logger';
+import { toUserMessage } from '../lib/action-errors';
+import { istDayStart, istDayKey, istDayLabel, lastIstDays } from '@/shared/lib/ist';
 
 const IdParamSchema = z.string().cuid('Invalid identifier format');
+
+/** The window the headline metric cards cover, and compare against. */
+const METRIC_WINDOW_DAYS = 30;
+/** How many days the chart shows. */
+const CHART_DAYS = 7;
 
 export async function trackEvent(
   shopId: string,
@@ -58,83 +66,107 @@ export async function getShopAnalytics(shopId: string) {
       return { error: 'Shop not found' };
     }
 
-    if (shop.ownerId !== session.user.id && session.user.role !== Role.ADMIN) {
+    // The role is re-read from the database, never taken from the JWT claim.
+    // `session.user.role` is baked in at sign-in and was, until recently,
+    // writable by the client through the session-update endpoint.
+    if (shop.ownerId !== session.user.id && !(await isCurrentUserAdmin())) {
       return { error: 'Access denied' };
     }
 
-    // Aggregate key counts
-    const counts = await db.analytics.groupBy({
-      by: ['eventType'],
-      where: { shopId },
-      _count: {
-        id: true,
-      },
-    });
+    /**
+     * Two windows, said out loud.
+     *
+     * These counts had no date filter, so "Store Views" and "Clicks" were
+     * lifetime totals sitting directly above a seven-day chart, with no label
+     * on either. A seller reading 4,200 views reasonably took it as recent
+     * performance; it might have been two years old, and there was no way on
+     * the page to tell whether traffic was rising or falling.
+     */
+    const now = new Date();
+    const windowStart = new Date(istDayStart(now).getTime() - (METRIC_WINDOW_DAYS - 1) * 86_400_000);
+    const previousStart = new Date(windowStart.getTime() - METRIC_WINDOW_DAYS * 86_400_000);
 
-    const metrics = {
-      views: 0,
-      productViews: 0,
-      whatsappClicks: 0,
+    const [currentCounts, previousCounts] = await Promise.all([
+      db.analytics.groupBy({
+        by: ['eventType'],
+        where: { shopId, createdAt: { gte: windowStart } },
+        _count: { id: true },
+      }),
+      db.analytics.groupBy({
+        by: ['eventType'],
+        where: { shopId, createdAt: { gte: previousStart, lt: windowStart } },
+        _count: { id: true },
+      }),
+    ]);
+
+    const tally = (rows: { eventType: AnalyticsEventType; _count: { id: number } }[]) => {
+      const out = { views: 0, productViews: 0, whatsappClicks: 0 };
+      for (const row of rows) {
+        if (row.eventType === AnalyticsEventType.SHOP_VIEW) out.views = row._count.id;
+        else if (row.eventType === AnalyticsEventType.PRODUCT_VIEW) out.productViews = row._count.id;
+        else if (row.eventType === AnalyticsEventType.WHATSAPP_CLICK) out.whatsappClicks = row._count.id;
+      }
+      return out;
     };
 
-    counts.forEach((item) => {
-      if (item.eventType === AnalyticsEventType.SHOP_VIEW) {
-        metrics.views = item._count.id;
-      } else if (item.eventType === AnalyticsEventType.PRODUCT_VIEW) {
-        metrics.productViews = item._count.id;
-      } else if (item.eventType === AnalyticsEventType.WHATSAPP_CLICK) {
-        metrics.whatsappClicks = item._count.id;
-      }
-    });
+    const metrics = tally(currentCounts);
+    const previous = tally(previousCounts);
 
-    // Get time-series views for the past 7 days
-    const past7DaysData = [];
-    for (let i = 6; i >= 0; i--) {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      start.setDate(start.getDate() - i);
+    /**
+     * The seven-day chart, in one query rather than fourteen.
+     *
+     * This was a loop issuing two `count()` calls per day, awaited serially —
+     * fourteen round trips, re-run every sixty seconds by `LiveRefresh` for
+     * every open tab. The index on (shopId, eventType, createdAt) supported
+     * each one individually, so the cost was pure latency.
+     *
+     * Grouping in the database also puts the day boundary where the seller
+     * lives: `date_trunc` at Asia/Kolkata rather than at whatever timezone the
+     * Node process happens to run in.
+     */
+    const days = lastIstDays(CHART_DAYS, now);
+    const chartStart = days[0];
 
-      const end = new Date();
-      end.setHours(23, 59, 59, 999);
-      end.setDate(end.getDate() - i);
+    const rows = await db.$queryRaw<{ day: Date; event_type: string; n: bigint }[]>`
+      SELECT date_trunc('day', "createdAt" AT TIME ZONE 'Asia/Kolkata') AS day,
+             "eventType"::text AS event_type,
+             COUNT(*) AS n
+      FROM "Analytics"
+      WHERE "shopId" = ${shopId}
+        AND "createdAt" >= ${chartStart}
+        AND "eventType" IN ('SHOP_VIEW', 'WHATSAPP_CLICK')
+      GROUP BY 1, 2
+    `;
 
-      const dayViews = await db.analytics.count({
-        where: {
-          shopId,
-          eventType: AnalyticsEventType.SHOP_VIEW,
-          createdAt: {
-            gte: start,
-            lte: end,
-          },
-        },
-      });
-
-      const dayClicks = await db.analytics.count({
-        where: {
-          shopId,
-          eventType: AnalyticsEventType.WHATSAPP_CLICK,
-          createdAt: {
-            gte: start,
-            lte: end,
-          },
-        },
-      });
-
-      const dateString = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-      past7DaysData.push({
-        date: dateString,
-        views: dayViews,
-        clicks: dayClicks,
-      });
+    const byDay = new Map<string, { views: number; clicks: number }>();
+    for (const row of rows) {
+      // `date_trunc(... AT TIME ZONE ...)` returns a naive local timestamp,
+      // which the driver hands back as a Date at UTC — so its ISO date is
+      // already the IST calendar day. That is the key we want.
+      const key = row.day.toISOString().slice(0, 10);
+      const bucket = byDay.get(key) ?? { views: 0, clicks: 0 };
+      if (row.event_type === 'SHOP_VIEW') bucket.views = Number(row.n);
+      else bucket.clicks = Number(row.n);
+      byDay.set(key, bucket);
     }
+
+    // Zero-filled, so a quiet day is a visible gap rather than a missing bar.
+    const past7DaysData = days.map((day) => {
+      const bucket = byDay.get(istDayKey(day)) ?? { views: 0, clicks: 0 };
+      return { date: istDayLabel(day), views: bucket.views, clicks: bucket.clicks };
+    });
 
     return {
       success: true,
       metrics,
+      previous,
+      windowDays: METRIC_WINDOW_DAYS,
       chartData: past7DaysData,
     };
   } catch (error) {
     logger.error('Error fetching shop analytics', error);
-    return { error: error instanceof Error ? error.message : 'An unexpected error occurred' };
+    // Through `toUserMessage` like every other action: returning `error.message`
+    // raw is how a database error string reaches a seller's screen.
+    return { error: toUserMessage(error, { action: 'getShopAnalytics', shopId }) };
   }
 }

@@ -24,6 +24,8 @@ const FILTERS = [
   { key: 'unread', label: 'Unread' },
   { key: 'awaiting', label: 'Awaiting a response' },
   { key: 'overdue', label: 'Overdue' },
+  // The queue with a person waiting on the other end of it.
+  { key: 'replied', label: 'Replied — not reviewed' },
 ] as const;
 
 export default async function AdminNoticesPage({
@@ -62,6 +64,12 @@ export default async function AdminNoticesPage({
         </div>
 
         <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Stat
+            label="Replied, not reviewed"
+            value={counts.replied}
+            testId="notice-count-replied"
+            alarming={counts.replied > 0}
+          />
           <Stat label="Unread" value={counts.unread} testId="notice-count-unread" />
           <Stat label="Awaiting a response" value={counts.awaiting} testId="notice-count-awaiting" />
           <Stat

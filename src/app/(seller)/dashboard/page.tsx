@@ -13,14 +13,27 @@ import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist
 import { LiveRefresh } from '@/components/dashboard/live-refresh';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
 import { ShoppingBag, Eye, MessageCircle, AlertCircle, ExternalLink, ShieldCheck, ShoppingCart, Bell } from 'lucide-react';
-import { Shop, Review, Report } from '@prisma/client';
+import { Review, Report } from '@prisma/client';
+import {
+  SELLER_SHOP_SELECT,
+  DASHBOARD_FEED_LIMIT,
+  type SellerShopView,
+} from '@/backend/lib/seller-shop-view';
 import { unreadNoticeCount } from '@/backend/lib/notices';
 import { logger } from '@/backend/lib/logger';
 
-type DashboardShop = Shop & {
+/**
+ * Note this is built from `SellerShopView`, not from `Shop`.
+ *
+ * The bare model carries the moderation columns, and this object is handed to
+ * `StoreSettingsForm` — a client component — so `Shop` here put
+ * `underReviewReason` into the page's serialized payload. The allowlist is the
+ * fix; the narrowed type is what stops it coming back.
+ */
+type DashboardShop = SellerShopView & {
   reviews: (Review & { user: { name: string | null; email: string | null } })[];
   reports: Report[];
-  _count: { products: number };
+  _count: { products: number; reports: number };
 };
 
 interface AnalyticsChartItem {
@@ -43,16 +56,26 @@ export default async function DashboardPage() {
   try {
     shop = await db.shop.findUnique({
       where: { ownerId: user.id },
-      include: {
+      select: {
+        ...SELLER_SHOP_SELECT,
+        // Both feeds were unbounded. The header counts come from the
+        // denormalised columns, so the panels only need a page of recent rows.
         reviews: {
           orderBy: { createdAt: 'desc' },
+          take: DASHBOARD_FEED_LIMIT,
           include: { user: { select: { name: true, email: true } } },
         },
         reports: {
           orderBy: { createdAt: 'desc' },
+          take: DASHBOARD_FEED_LIMIT,
         },
         _count: {
-          select: { products: true },
+          select: {
+            products: true,
+            // Counted in the database rather than by loading every report and
+            // filtering in JS, which is what the open-report tile used to do.
+            reports: { where: { status: 'OPEN' } },
+          },
         },
       },
     });
@@ -81,11 +104,15 @@ export default async function DashboardPage() {
 
   // 2. Fetch traffic metrics
   let metrics = { views: 0, productViews: 0, whatsappClicks: 0 };
+  let previous = { views: 0, productViews: 0, whatsappClicks: 0 };
+  let windowDays = 30;
   let chartData: AnalyticsChartItem[] = [];
   try {
     const analyticsRes = await getShopAnalytics(shop.id);
     if (analyticsRes.success && analyticsRes.metrics) {
       metrics = analyticsRes.metrics as { views: number; productViews: number; whatsappClicks: number };
+      previous = analyticsRes.previous as { views: number; productViews: number; whatsappClicks: number };
+      windowDays = analyticsRes.windowDays ?? 30;
       chartData = analyticsRes.chartData as AnalyticsChartItem[];
     }
   } catch (error) {
@@ -99,6 +126,64 @@ export default async function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 flex flex-col gap-8 bg-background text-foreground animate-fade-in">
+      {/*
+        Suspension, said out loud.
+
+        The dashboard branched on `isPaused` and nothing else, so a suspended
+        seller opened a normal-looking dashboard — working metrics, a live
+        "Visit Storefront" button, an editable settings form — while every
+        buyer saw a suspension page. They were never told, and the only route
+        to an appeal is the notice this links to.
+      */}
+      {shop.isSuspended && (
+        <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-4 flex items-start gap-3 shadow-xs">
+          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-red-900">Your store is suspended</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Buyers see a suspension notice instead of your storefront, and your store cannot be
+              edited while this lasts. The reason, and the box to reply in, are in your notices —
+              a reply is how an appeal reaches us.
+            </p>
+            <Link
+              href="/notices"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-red-800 underline underline-offset-2"
+            >
+              <Bell className="h-3.5 w-3.5" /> Read the notice and reply
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/*
+        Listed is not the same as onboarded.
+
+        `isListed` is false until identity verification completes, and it is a
+        hard filter on the marketplace, search, categories and the sitemap. The
+        onboarding checklist asked for a logo, a number, three products and a
+        city, then congratulated a seller who was still invisible — while the
+        share card told them to post their link to start receiving orders.
+      */}
+      {!shop.isSuspended && !shop.isListed && (
+        <div className="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 flex items-start gap-3 shadow-xs">
+          <ShieldCheck className="h-5 w-5 text-sky-700 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-bold text-sky-900">Your store is not in the marketplace yet</h3>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Your direct link works and you can share it today — but until you verify your
+              identity, your store will not appear in the marketplace, in search, or in category
+              pages, so nobody will find it on their own.
+            </p>
+            <Link
+              href="/verification"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-sky-800 underline underline-offset-2"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" /> Finish verification
+            </Link>
+          </div>
+        </div>
+      )}
+
       {shop.isPaused && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3 shadow-xs">
           <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
@@ -156,6 +241,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/*
+        Every metric now says what window it covers.
+
+        These cards were lifetime totals with no label, sitting directly above
+        a seven-day chart. A seller reading 4,200 views took it as recent
+        performance; it might have been two years old, and nothing on the page
+        said whether traffic was rising or falling.
+      */}
       {/* Metrics Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         <Card className="glass">
@@ -163,6 +256,7 @@ export default async function DashboardPage() {
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase">Store Views</span>
               <span className="text-3xl font-black text-foreground block mt-1">{metrics.views}</span>
+              <MetricWindow current={metrics.views} previous={previous.views} days={windowDays} />
             </div>
             <div className="h-10 w-10 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-center text-amber-600">
               <Eye size={20} />
@@ -175,6 +269,7 @@ export default async function DashboardPage() {
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase">Clicks</span>
               <span className="text-3xl font-black text-foreground block mt-1">{metrics.whatsappClicks}</span>
+              <MetricWindow current={metrics.whatsappClicks} previous={previous.whatsappClicks} days={windowDays} />
             </div>
             <div className="h-10 w-10 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-600">
               <MessageCircle size={20} />
@@ -199,7 +294,7 @@ export default async function DashboardPage() {
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase">Open Reports</span>
               <span className="text-3xl font-black text-foreground block mt-1">
-                {shop.reports.filter((r) => r.status === 'OPEN').length}
+                {shop._count.reports}
               </span>
             </div>
             <div className="h-10 w-10 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center justify-center text-yellow-650">
@@ -232,7 +327,12 @@ export default async function DashboardPage() {
             hasLogo={Boolean(shop.logo)}
             whatsappVerified={Boolean(shop.whatsappVerifiedAt)}
             productCount={shop._count.products}
-            hasLocation={Boolean(shop.city || shop.deliveryNote)}
+            // `city || deliveryNote` ticked off a step labelled "city & delivery
+            // info" when only the note was filled — and `city` is what feeds the
+            // buyer-facing "ships from" line, so the checklist was marking done a
+            // field that was still empty.
+            hasLocation={Boolean(shop.city)}
+            isListed={shop.isListed}
           />
           <ShareStoreCard shopSlug={shop.slug} buyerMarketUrl={buyerMarketUrl} />
           {/* Reviews Widget */}
@@ -312,3 +412,36 @@ export default async function DashboardPage() {
   );
 }
 export const dynamic = 'force-dynamic';
+
+/**
+ * The window a number covers, and how it compares with the one before it.
+ *
+ * A bare count answers "how many" and leaves "is this good?" unanswerable,
+ * which is the question a seller actually has. Rendered small and underneath,
+ * because the count is still the headline.
+ */
+function MetricWindow({
+  current,
+  previous,
+  days,
+}: {
+  current: number;
+  previous: number;
+  days: number;
+}) {
+  // No prior period to compare against — say nothing rather than "+100%".
+  const delta = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+  const tone = delta === null ? '' : delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-red-600' : '';
+
+  return (
+    <span className="mt-1 block text-[11px] text-muted-foreground">
+      last {days} days
+      {delta !== null ? (
+        <span className={`ml-1.5 font-semibold ${tone}`}>
+          {delta > 0 ? '+' : ''}
+          {delta}%
+        </span>
+      ) : null}
+    </span>
+  );
+}

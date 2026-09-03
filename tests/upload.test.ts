@@ -3,10 +3,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { POST } from '../src/app/api/upload/route';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 
 // Mock NextAuth
 vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
+}));
+
+// Product, logo and banner uploads now resolve the caller's shop so the file
+// lands in that shop's storage namespace. Without a shop there is nothing to
+// attribute the file to, and the route refuses.
+vi.mock('@/lib/db', () => ({
+  db: { shop: { findUnique: vi.fn().mockResolvedValue({ id: 'shop_1' }) } },
 }));
 
 // Mock rateLimit to always succeed during upload tests
@@ -140,5 +148,28 @@ describe('/api/upload API route', () => {
     }
     expect(res.status).toBe(200);
     expect(body.url).toContain('https://images.unsplash.com/');
+  });
+
+  it('refuses a store upload from an account with no store', async () => {
+    // The route used to accept any signed-in user, so a buyer account could
+    // fill the products bucket 20 times an hour with files nothing referenced
+    // and nothing could attribute.
+    vi.mocked(auth as any).mockResolvedValue({ user: { id: 'user_2' } } as any);
+    vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null as never);
+
+    const pngBytes = new Uint8Array(262);
+    pngBytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const formData = new FormData();
+    formData.append('file', new File([pngBytes], 'x.png', { type: 'image/png' }));
+    formData.append('bucket', 'products');
+
+    const req = new NextRequest('http://localhost:3000/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toMatch(/create your store/i);
   });
 });

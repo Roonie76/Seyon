@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { uploadFile } from '@/lib/supabase';
+import { uploadFile, storagePrefixForShop, storagePrefixForUser } from '@/lib/supabase';
+import { db } from '@/lib/db';
 import { rateLimit, RATE_LIMITS } from '@/backend/lib/rate-limit';
 import { logger } from '@/backend/lib/logger';
 
@@ -56,7 +57,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File content does not match allowed image formats' }, { status: 400 });
     }
 
-    const publicUrl = await uploadFile(file, bucket);
+    /**
+     * Files go into their owner's namespace.
+     *
+     * `uploadFile` has always accepted a prefix and this — its only call site —
+     * never passed one, so every object the platform has ever accepted sits
+     * flat at the bucket root with no slash in its path. That made the deletion
+     * guard in `deleteFile` a no-op: its escape hatch for legacy files is
+     * "no slash in the path", which matched everything. The prefix scheme was
+     * documented, tested for in `deleteShop`, and never once in effect.
+     *
+     * Shop-scoped for the buckets a shop owns; user-scoped for avatars, which
+     * belong to a person who may have no shop.
+     */
+    let prefix: string | undefined;
+    if (bucket === 'avatars') {
+      prefix = storagePrefixForUser(session.user.id as string);
+    } else {
+      const shop = await db.shop.findUnique({
+        where: { ownerId: session.user.id as string },
+        select: { id: true },
+      });
+      if (!shop) {
+        // Product, logo and banner uploads belong to a storefront. Accepting
+        // them from an account without one left files nobody could attribute,
+        // and let any signed-in buyer fill the bucket 20 times an hour.
+        return NextResponse.json(
+          { error: 'Create your store before uploading store images.' },
+          { status: 403 }
+        );
+      }
+      prefix = storagePrefixForShop(shop.id);
+    }
+
+    const publicUrl = await uploadFile(file, bucket, prefix);
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
     // The real error is logged, never returned. Echoing error.message handed

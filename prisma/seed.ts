@@ -150,6 +150,11 @@ async function main() {
       deliveryNote: 'Free shipping; Premium packaging; Ships in 48h',
       isVerified: true,
       isListed: true,
+      // Discovery requires a verified number *and* the channel it was verified
+      // on — a seeded shop that skips this is listed and invisible, which is
+      // confusing to debug and hides the very rule the seed should exercise.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.9,
       reviewCount: 48,
     },
@@ -171,6 +176,11 @@ async function main() {
       deliveryNote: 'Free shipping on orders above ₹999; Handcrafted with love',
       isVerified: true,
       isListed: true,
+      // Discovery requires a verified number *and* the channel it was verified
+      // on — a seeded shop that skips this is listed and invisible, which is
+      // confusing to debug and hides the very rule the seed should exercise.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.8,
       reviewCount: 32,
     },
@@ -192,6 +202,11 @@ async function main() {
       deliveryNote: 'Certified 925 Silver; Premium velvet pouch included',
       isVerified: true,
       isListed: true,
+      // Discovery requires a verified number *and* the channel it was verified
+      // on — a seeded shop that skips this is listed and invisible, which is
+      // confusing to debug and hides the very rule the seed should exercise.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.7,
       reviewCount: 29,
     },
@@ -213,6 +228,11 @@ async function main() {
       deliveryNote: 'Safe double-box packaging; Eco-friendly clay materials',
       isVerified: true,
       isListed: true,
+      // Discovery requires a verified number *and* the channel it was verified
+      // on — a seeded shop that skips this is listed and invisible, which is
+      // confusing to debug and hides the very rule the seed should exercise.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.9,
       reviewCount: 41,
     },
@@ -234,6 +254,11 @@ async function main() {
       deliveryNote: 'Rigid tube packing for prints; Gift wrapping available',
       isVerified: true,
       isListed: true,
+      // Discovery requires a verified number *and* the channel it was verified
+      // on — a seeded shop that skips this is listed and invisible, which is
+      // confusing to debug and hides the very rule the seed should exercise.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.6,
       reviewCount: 18,
     },
@@ -255,6 +280,11 @@ async function main() {
       deliveryNote: '100% biodegradable materials; Hand-knit on order',
       isVerified: false,
       isListed: true,
+      // Number confirmed (so the store is discoverable) but no identity review
+      // yet (so no verified badge). That is a real and common seller state, and
+      // worth having in the fixtures.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.5,
       reviewCount: 14,
     },
@@ -276,6 +306,11 @@ async function main() {
       deliveryNote: 'Ships in sturdy cardboard envelope; Custom commissions open',
       isVerified: false,
       isListed: true,
+      // Number confirmed (so the store is discoverable) but no identity review
+      // yet (so no verified badge). That is a real and common seller state, and
+      // worth having in the fixtures.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.8,
       reviewCount: 12,
     },
@@ -297,6 +332,11 @@ async function main() {
       deliveryNote: 'Made with organic soy wax and coffee extracts',
       isVerified: false,
       isListed: true,
+      // Number confirmed (so the store is discoverable) but no identity review
+      // yet (so no verified badge). That is a real and common seller state, and
+      // worth having in the fixtures.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.6,
       reviewCount: 8,
     },
@@ -318,6 +358,11 @@ async function main() {
       deliveryNote: '100% natural, polished with pure coconut oil',
       isVerified: false,
       isListed: true,
+      // Number confirmed (so the store is discoverable) but no identity review
+      // yet (so no verified badge). That is a real and common seller state, and
+      // worth having in the fixtures.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.7,
       reviewCount: 15,
     },
@@ -339,6 +384,11 @@ async function main() {
       deliveryNote: 'Authentic Dabu block prints; Hand-wash recommended',
       isVerified: false,
       isListed: true,
+      // Number confirmed (so the store is discoverable) but no identity review
+      // yet (so no verified badge). That is a real and common seller state, and
+      // worth having in the fixtures.
+      whatsappVerifiedAt: new Date(),
+      whatsappVerifiedVia: 'WHATSAPP',
       averageRating: 4.4,
       reviewCount: 9,
     },

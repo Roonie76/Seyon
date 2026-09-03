@@ -15,7 +15,16 @@ vi.mock('@/lib/db', () => {
       update: vi.fn(),
     },
     user: {
+      // `createShop` and `deleteShop` now read the current role before writing
+      // it, so an admin who owns a storefront is not demoted by using one.
+      findUnique: vi.fn(),
       update: vi.fn(),
+    },
+    // The seller rename retires its old address here, the same way the admin
+    // repair path always has.
+    shopSlugHistory: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
     },
     $transaction: vi.fn((cb) => cb(mockDb)),
   };
@@ -37,6 +46,10 @@ describe('Shops Server Actions - Onboarding and Management', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     _clearRateLimitStore();
+    // Default: no retired address claims the slug being taken. Individual
+    // tests override this to exercise the history clash.
+    vi.mocked(db.shopSlugHistory.findUnique).mockResolvedValue(null as never);
+    vi.mocked(db.user.findUnique).mockResolvedValue({ role: Role.USER } as never);
   });
 
   describe('createShop', () => {
@@ -117,7 +130,55 @@ describe('Shops Server Actions - Onboarding and Management', () => {
       expect(res.error).toBe('This storefront URL handle is already taken');
       expect(db.shop.findUnique).toHaveBeenNthCalledWith(2, {
         where: { slug: 'my-store' },
+        select: { id: true },
       });
+    });
+
+    it('refuses a slug another store used to own', async () => {
+      // The schema says history slugs are unique "so a freed slug cannot be
+      // given to another store and silently redirect its traffic somewhere
+      // else". createShop checked only live shops, so a new store could take a
+      // retired address and inherit its links on day one.
+      vi.mocked(auth as any).mockResolvedValue({
+        user: { id: 'user_1', role: 'USER' },
+        expires: '',
+      });
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null); // no shop yet
+      vi.mocked(db.shop.findUnique).mockResolvedValueOnce(null); // slug is free
+      vi.mocked(db.shopSlugHistory.findUnique).mockResolvedValueOnce({
+        shopId: 'shop_other',
+      } as never);
+
+      const res = await createShop({
+        name: 'My Store',
+        slug: 'chennai-silks',
+        whatsapp: '+12345678900',
+      });
+
+      expect(res.error).toMatch(/used to belong to a different store/i);
+      expect(db.shop.create).not.toHaveBeenCalled();
+    });
+
+    it('leaves an admin role alone when they open a store', async () => {
+      // Unconditional promotion demoted an admin to SELLER, and requireAdmin()
+      // reads the role from the database — so they lost /admin immediately and
+      // could not restore it, because restoring roles requires being an admin.
+      vi.mocked(auth as any).mockResolvedValue({
+        user: { id: 'admin_1', role: Role.ADMIN },
+        expires: '',
+      });
+      vi.mocked(db.shop.findUnique).mockResolvedValue(null as never);
+      vi.mocked(db.user.findUnique).mockResolvedValue({ role: Role.ADMIN } as never);
+      vi.mocked(db.shop.create).mockResolvedValueOnce({ id: 'shop_1', slug: 'admin-store' } as never);
+
+      const res = await createShop({
+        name: 'Admin Store',
+        slug: 'admin-store',
+        whatsapp: '+12345678900',
+      });
+
+      expect(res.success).toBe(true);
+      expect(db.user.update).not.toHaveBeenCalled();
     });
 
     it('creates shop successfully and upgrades user role to SELLER', async () => {
@@ -390,12 +451,25 @@ describe('Shops Server Actions - Onboarding and Management', () => {
       expect(revalidatePath).toHaveBeenCalledWith('/dashboard');
     });
 
-    it('updates shop successfully when requested by admin', async () => {
+    /**
+     * This test used to assert the opposite, and the assertion was the bug.
+     *
+     * `updateShop` had an "owner or admin" branch that read `session.user.role`
+     * — a JWT claim the client could write through the session-update endpoint
+     * — and the action takes a shopId from the caller. So the admin path here
+     * was a takeover of any storefront: rename it, and replace its WhatsApp
+     * number with your own.
+     *
+     * Removing the claim closed that. Removing the branch closes the rest:
+     * admins already have `repairStoreAction`, which demands a written reason,
+     * writes slug history and records an audit row. This path demanded none of
+     * those, so a legitimate admin edit left no trace either.
+     */
+    it('refuses an admin editing a store they do not own', async () => {
       vi.mocked(auth as any).mockResolvedValue({
         user: { id: 'admin_1', role: Role.ADMIN },
         expires: '',
       });
-      // 1. check shop exists => returns original shop owned by user_1
       vi.mocked(db.shop.findUnique).mockResolvedValueOnce({
         id: validShopId,
         ownerId: 'user_1',
@@ -403,23 +477,14 @@ describe('Shops Server Actions - Onboarding and Management', () => {
         slug: 'original-slug',
       } as any);
 
-      const mockUpdatedShop = {
-        id: validShopId,
-        ownerId: 'user_1',
-        name: 'Updated by Admin',
-        slug: 'original-slug', // Same slug, so slug uniqueness check is skipped
-        whatsapp: '+19876543210',
-      };
-      vi.mocked(db.shop.update).mockResolvedValueOnce(mockUpdatedShop as any);
-
       const res = await updateShop(validShopId, {
         name: 'Updated by Admin',
         slug: 'original-slug',
         whatsapp: '+19876543210',
       });
 
-      expect(res.success).toBe(true);
-      expect(res.shop).toEqual(mockUpdatedShop);
+      expect(res.error).toMatch(/permission/i);
+      expect(db.shop.update).not.toHaveBeenCalled();
     });
   });
 });

@@ -18,6 +18,10 @@ if (isDevLoginEnabled()) {
 // internally for some operations, so AUTH_SECRET and NEXTAUTH_SECRET MUST hold the
 // SAME value in every environment. A mismatch causes `error=Configuration` after a
 // successful Google consent (state/JWT signed with one secret, verified with another).
+//
+// Resolved through `appSecret()` so this file, the PAN salt and the verification
+// code HMAC cannot disagree about which variable holds it. Read lazily: a module
+// -level call would throw at import time and take the build down with it.
 const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -81,14 +85,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: Role }).role ?? Role.USER;
       }
-      if (trigger === 'update' && session?.role) {
-        token.role = session.role;
-      }
+      /**
+       * There is deliberately no `trigger === 'update'` branch here.
+       *
+       * This callback used to carry `if (trigger === 'update' && session?.role)
+       * token.role = session.role`. In Auth.js v5 that `session` argument is the
+       * raw body posted to /api/auth/session — unvalidated client input — so any
+       * signed-in buyer could POST {"role":"ADMIN"} and have the claim written
+       * onto their own token. Four server actions gated on that claim, one of
+       * which takes a shopId from the client, so it was a full takeover of any
+       * storefront: rename it, and replace its WhatsApp number.
+       *
+       * Nothing in this codebase ever calls `useSession().update()`, so the
+       * branch protected no feature. If a session refresh is ever needed, it
+       * must re-read the role from the database — `isCurrentUserAdmin()` is the
+       * pattern — and never take it from the caller.
+       */
       return token;
     },
     async session({ session, token }) {

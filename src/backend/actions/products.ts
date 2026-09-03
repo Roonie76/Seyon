@@ -1,10 +1,13 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { normaliseProductImages } from '@/shared/lib/product-images';
+import { SUSPENDED_MESSAGE } from '@/shared/lib/suspension';
+import { isOwnedStorageUrl } from '@/lib/supabase';
 import { db } from '@/lib/db';
+import { isCurrentUserAdmin } from '../lib/is-admin';
 import { ProductSchema, ReorderImagesSchema } from '@/lib/zod-schemas';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
-import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { z } from 'zod';
@@ -158,11 +161,54 @@ async function verifyShopOwnership(shopId: string) {
     throw new Error('Shop not found');
   }
 
-  if (shop.ownerId !== session.user.id && session.user.role !== Role.ADMIN) {
+  // Role from the database, not from the token. The JWT claim was client
+  // -writable through the session-update endpoint until that branch was removed,
+  // and a stale claim outlives a revoked admin either way.
+  if (shop.ownerId !== session.user.id && !(await isCurrentUserAdmin())) {
     throw new Error('Unauthorized store management');
   }
 
   return { session, shop };
+}
+
+/**
+ * Ownership, plus the store actually being allowed to trade.
+ *
+ * `verifyShopOwnership` checks who you are and stops there, which is right for
+ * a delete — a suspended seller taking down their own listing is a good
+ * outcome — and wrong for anything that adds or publishes. Suspension used to
+ * be enforced only when a buyer read the page, so a seller banned for selling
+ * counterfeits kept uploading all day and everything went live at once when the
+ * ban lifted.
+ *
+ * Not extended to `isUnderReview` on purpose: that state has to stay invisible
+ * to the seller, and refusing their writes would tell them about it.
+ */
+async function verifyShopWritable(shopId: string) {
+  const result = await verifyShopOwnership(shopId);
+  if (result.shop.isSuspended) {
+    throw new Error(SUSPENDED_MESSAGE);
+  }
+  return result;
+}
+
+/**
+ * Refuse images that live in another shop's storage namespace.
+ *
+ * `ProductImageSchema` checks the URL's host against an allowlist, which lets a
+ * competitor's `*.supabase.co` product photo through. Attaching one displayed
+ * it as your own, and — because `deleteOwnedFiles` will not delete a file
+ * another shop references — left the original owner unable to remove it.
+ *
+ * External hosts (Unsplash and friends) are not our storage and are not our
+ * business here; this only checks objects in our own buckets.
+ */
+function foreignImageError(images: { url: string }[], shopId: string): string | null {
+  const prefix = storagePrefixForShop(shopId);
+  const foreign = images.find((img) => !isOwnedStorageUrl(img.url, 'products', prefix));
+  return foreign
+    ? 'One of those images belongs to another store. Upload your own copy instead.'
+    : null;
 }
 
 export async function createProduct(shopId: string, rawData: unknown) {
@@ -172,7 +218,7 @@ export async function createProduct(shopId: string, rawData: unknown) {
       return { error: 'Invalid shop ID format' };
     }
 
-    const { shop } = await verifyShopOwnership(parsedShopId.data);
+    const { shop } = await verifyShopWritable(parsedShopId.data);
 
     const rl = await rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
     if (!rl.success) {
@@ -186,7 +232,13 @@ export async function createProduct(shopId: string, rawData: unknown) {
 
     const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
 
-    const theme = images && images.length > 0 ? await extractTheme(images[0].url) : null;
+    const foreign = foreignImageError(images ?? [], parsedShopId.data);
+    if (foreign) return { error: foreign };
+
+    const normalisedImages = normaliseProductImages(images ?? []);
+    // The theme is sampled from the cover, so a seller who picks a different
+    // primary gets colours drawn from the photo buyers actually see.
+    const theme = normalisedImages.length > 0 ? await extractTheme(normalisedImages[0].url) : null;
 
     const discountPercent =
       compareAtPrice && compareAtPrice > price
@@ -207,12 +259,13 @@ export async function createProduct(shopId: string, rawData: unknown) {
         options: options || null,
         inStock,
         status,
+        // Records the moment the listing first became public, which is when the
+        // slug freezes. Null for a draft, which is still free to be renamed.
+        firstActivatedAt: status === 'ACTIVE' ? new Date() : null,
         images: {
-          create: images.map((img, idx) => ({
-            url: img.url,
-            displayOrder: img.displayOrder ?? idx,
-            isPrimary: img.isPrimary ?? (idx === 0),
-          })),
+          // Normalised rather than taken as given: the chosen cover moves to
+          // displayOrder 0, which is what every public card query reads.
+          create: normalisedImages,
         },
         themeBg: theme?.bg || null,
         themeSurface: theme?.surface || null,
@@ -253,7 +306,7 @@ export async function updateProduct(productId: string, rawData: unknown) {
     }
 
     // Authenticate and verify owner permission for the shop that owns the product
-    const { shop } = await verifyShopOwnership(product.shopId);
+    const { shop } = await verifyShopWritable(product.shopId);
 
     const validated = ProductSchema.safeParse(rawData);
     if (!validated.success) {
@@ -272,6 +325,9 @@ export async function updateProduct(productId: string, rawData: unknown) {
         return { error: CONFLICT_ERROR, conflict: true as const };
       }
     }
+
+    const foreign = foreignImageError(images ?? [], product.shopId);
+    if (foreign) return { error: foreign };
 
     // Determine if we need to re-extract theme
     let themeUpdate: {
@@ -306,22 +362,49 @@ export async function updateProduct(productId: string, rawData: unknown) {
         ? (compareAtPrice - price) / compareAtPrice
         : null;
 
-    // The slug is fixed at creation and never changes on rename. Renaming used
-    // to rewrite it, which silently broke every link the seller had already
-    // shared — WhatsApp messages, QR codes, Instagram bios, search results —
-    // with no redirect behind them. A stale-but-working URL beats a pretty
-    // dead one, and sellers edit titles far more often than they would want
-    // their address to move.
+    /**
+     * The slug is frozen — from first publication, not from creation.
+     *
+     * Renaming used to rewrite it, which silently broke every link the seller
+     * had already shared: WhatsApp messages, QR codes, Instagram bios, search
+     * results, with no redirect behind them. Freezing fixed that and introduced
+     * a smaller one: Quick Add creates drafts called "Untitled product", so a
+     * seller who named and published one was left with
+     * /store/<shop>/untitled-product-5 as its address forever.
+     *
+     * A draft has never been public and has no links to protect. So the freeze
+     * starts at the moment the listing first goes ACTIVE, which is the rule it
+     * was always reaching for.
+     */
+    /**
+     * `status !== 'ACTIVE'` is part of the test on purpose.
+     *
+     * `firstActivatedAt` is a new column, so every product that existed before
+     * it was added has null in it. Reading null alone as "never published"
+     * would regenerate the slug of every live listing on its next edit — the
+     * exact link breakage the freeze exists to prevent. A currently-ACTIVE
+     * product is published whatever the column says.
+     */
+    const neverPublished = product.firstActivatedAt === null && product.status !== 'ACTIVE';
+    const slug = neverPublished
+      ? await allocateSlug(product.shopId, title, product.id)
+      : product.slug;
+    const firstActivatedAt =
+      product.firstActivatedAt ?? (status === 'ACTIVE' ? new Date() : null);
 
     // Update product inside a database transaction. Storage cleanup happens
     // only AFTER this commits — deleting files first meant a rolled-back
     // transaction left rows pointing at images that no longer existed.
-    const updatedProduct = await withSlugRetry(
-      () =>
+    //
+    // `withSlugRetry` is deliberately not wrapped around this: it allocates a
+    // slug on every call and threw the result away here, costing a 51-candidate
+    // query on every single product edit.
+    const updatedProduct = await (async () =>
         db.$transaction(async (tx) => {
           const scalars = {
             title,
-            slug: product.slug,
+            slug,
+            firstActivatedAt,
             description,
             price,
             compareAtPrice: compareAtPrice ?? null,
@@ -377,9 +460,8 @@ export async function updateProduct(productId: string, rawData: unknown) {
             await tx.productImage.deleteMany({ where: { id: { in: removedIds } } });
           }
 
-          for (const [idx, img] of images.entries()) {
-            const displayOrder = img.displayOrder ?? idx;
-            const isPrimary = img.isPrimary ?? idx === 0;
+          for (const img of normaliseProductImages(images)) {
+            const { displayOrder, isPrimary } = img;
             const keptId = existingByUrl.get(img.url);
             if (keptId) {
               await tx.productImage.update({
@@ -402,11 +484,7 @@ export async function updateProduct(productId: string, rawData: unknown) {
           });
           if (!fresh) throw new Error('Product not found');
           return fresh;
-        }),
-      product.shopId,
-      title,
-      parsedProductId.data
-    );
+        }))();
 
     // Storage cleanup, post-commit and scoped to files this shop owns.
     const keptUrls = new Set(images.map((img) => img.url));
@@ -442,22 +520,52 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
       return { error: 'Invalid shop ID format' };
     }
 
-    const { shop } = await verifyShopOwnership(parsedShopId.data);
+    const { shop } = await verifyShopWritable(parsedShopId.data);
 
     const validated = QuickAddSchema.safeParse(rawImageUrls);
     if (!validated.success) {
       return { error: validated.error.issues[0].message };
     }
 
-    const rl = await rateLimit(`product-create:${shop.ownerId}`, RATE_LIMITS.PRODUCT_CREATE.limit, RATE_LIMITS.PRODUCT_CREATE.windowMs);
+    /**
+     * One token per product, not one per call.
+     *
+     * This charged a single token for a batch of up to twelve, turning the
+     * intended 60-products-per-day cap into 720.
+     */
+    const rl = await rateLimit(
+      `product-create:${shop.ownerId}`,
+      RATE_LIMITS.PRODUCT_CREATE.limit,
+      RATE_LIMITS.PRODUCT_CREATE.windowMs,
+      Date.now(),
+      { cost: validated.data.length }
+    );
     if (!rl.success) {
       return { error: 'Too many products created today. Please try again later.' };
     }
 
-    const created = [];
-    for (const url of validated.data) {
-      const theme = await extractTheme(url);
+    /**
+     * Colour extraction runs concurrently; the inserts stay sequential.
+     *
+     * Each iteration used to do a remote image fetch with a five-second
+     * deadline, then colour extraction, then a slug allocation, then an insert
+     * — all serial, so twelve images was a plausible sixty-second server
+     * action. The fetches are the slow part and they are independent of each
+     * other, so they go together. A fetch that fails yields no theme rather
+     * than taking the batch down: the product is still worth creating.
+     */
+    const themes = await Promise.all(
+      validated.data.map((url) =>
+        extractTheme(url).catch(() => null)
+      )
+    );
 
+    const created: string[] = [];
+    const failed: string[] = [];
+    for (const [i, url] of validated.data.entries()) {
+      const theme = themes[i];
+
+      try {
       const product = await withSlugRetry((slug) =>
         db.product.create({
         data: {
@@ -487,10 +595,26 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
         'Untitled product'
       );
       created.push(product.id);
+      } catch (err) {
+        /**
+         * A failure partway through used to look like total failure.
+         *
+         * The catch returned `{ error }`, the client alerted and did not
+         * reload, so the seller believed nothing had happened while six
+         * untitled drafts sat in their catalogue. Reporting what did land lets
+         * the UI say "9 of 12 added" and refresh.
+         */
+        failed.push(url);
+        logger.error('Quick-add failed for one image', err, { shopId: parsedShopId.data, url });
+      }
+    }
+
+    if (created.length === 0) {
+      return { error: 'None of those images could be added. Please try again.' };
     }
 
     revalidatePath('/dashboard/products');
-    return { success: true, count: created.length };
+    return { success: true, count: created.length, failed: failed.length };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'quickAddProducts', shopId }) };
   }
@@ -512,7 +636,7 @@ export async function toggleProductStock(productId: string, inStock: boolean) {
       return { error: 'Product not found' };
     }
 
-    const { shop } = await verifyShopOwnership(product.shopId);
+    const { shop } = await verifyShopWritable(product.shopId);
 
     const updated = await db.product.update({
       where: { id: parsedProductId.data },
@@ -561,54 +685,18 @@ export async function deleteProduct(productId: string) {
   }
 }
 
-export async function reorderProductImages(productId: string, reorderedImages: unknown) {
-  try {
-    const parsedProductId = IdParamSchema.safeParse(productId);
-    if (!parsedProductId.success) {
-      return { error: 'Invalid product ID format' };
-    }
-
-    const product = await db.product.findUnique({
-      where: { id: parsedProductId.data },
-    });
-
-    if (!product) {
-      return { error: 'Product not found' };
-    }
-
-    await verifyShopOwnership(product.shopId);
-
-    const validatedImages = ReorderImagesSchema.safeParse(reorderedImages);
-    if (!validatedImages.success) {
-      return { error: 'Invalid images data format' };
-    }
-
-    // Validate that the images being reordered actually belong to the current product to prevent ID manipulation
-    const dbImages = await db.productImage.findMany({
-      where: { productId: parsedProductId.data },
-      select: { id: true },
-    });
-    const dbImageIds = new Set(dbImages.map((img) => img.id));
-    for (const img of validatedImages.data) {
-      if (!dbImageIds.has(img.id)) {
-        return { error: 'Unauthorized image update: Image does not belong to this product' };
-      }
-    }
-
-    await db.$transaction(
-      validatedImages.data.map((img) =>
-        db.productImage.update({
-          where: { id: img.id },
-          data: {
-            displayOrder: img.displayOrder,
-            isPrimary: img.isPrimary,
-          },
-        })
-      )
-    );
-
-    return { success: true };
-  } catch (error) {
-    return { error: toUserMessage(error, { action: 'reorderProductImages', productId }) };
-  }
-}
+/*
+ * `reorderProductImages` was removed here.
+ *
+ * It had no callers anywhere in `src/` or `tests/` — there is no drag-to-
+ * reorder UI, which is what left the cover button unable to change anything a
+ * buyer sees. But it was still an exported server action, so it was callable,
+ * and it validated only that each image id belonged to the product: it did not
+ * require the payload to cover the product's whole image set, so one request
+ * could leave a product with zero primaries or with several. It also returned
+ * success without revalidating anything, so even wired up the storefront would
+ * have kept serving the old order.
+ *
+ * Ordering is now normalised on write in `normaliseProductImages`. If reorder
+ * comes back as a feature, it should go through that function too.
+ */

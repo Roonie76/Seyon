@@ -12,6 +12,12 @@ enum Role {
   ADMIN
 }
 
+/// How a shop's WhatsApp number came to be trusted. See Shop.whatsappVerifiedVia.
+enum WhatsappVerifiedVia {
+  WHATSAPP
+  EMAIL
+}
+
 enum ProductStatus {
   ACTIVE
   DRAFT
@@ -60,6 +66,14 @@ enum NoticeKind {
   INFORMATION_REQUEST
   SUSPENSION
   REINSTATEMENT
+  /// The outcome of an identity review. Produced only by approveKyc/rejectKyc.
+  ///
+  /// A decision used to reach the seller only if they thought to revisit the
+  /// verification page: neither review action sent an email, created a notice,
+  /// or even revalidated /verification. The admin queue flags cases older than
+  /// 48 hours in red, so the review loop is meant to be responsive — the
+  /// seller's half of it was silent.
+  IDENTITY_DECISION
 }
 
 enum AnalyticsEventType {
@@ -145,26 +159,26 @@ model VerificationToken {
 }
 
 model Shop {
-  id                 String    @id @default(cuid())
-  ownerId            String    @unique
-  name               String
-  slug               String    @unique
-  description        String?
-  logo               String?
-  banner             String?
-  whatsapp           String
-  instagram          String?
-  telegram           String?
-  city               String?
-  region             String?
-  deliveryNote       String?
-  isVerified         Boolean   @default(false)
-  isSuspended        Boolean   @default(false)
-  isPaused           Boolean   @default(false)
+  id                  String               @id @default(cuid())
+  ownerId             String               @unique
+  name                String
+  slug                String               @unique
+  description         String?
+  logo                String?
+  banner              String?
+  whatsapp            String
+  instagram           String?
+  telegram            String?
+  city                String?
+  region              String?
+  deliveryNote        String?
+  isVerified          Boolean              @default(false)
+  isSuspended         Boolean              @default(false)
+  isPaused            Boolean              @default(false)
   /// Discoverable in marketplace, search and sitemap. False until the
   /// owner completes Tier 0 identity. A store is always reachable by
   /// direct link so a seller can see their own work before verifying.
-  isListed           Boolean   @default(false)
+  isListed            Boolean              @default(false)
   /// Under investigation, silently.
   ///
   /// A store here drops out of discovery — marketplace, search, categories,
@@ -175,16 +189,28 @@ model Shop {
   /// told; "under review" is a question, and a public "this store is under
   /// review" would convict a seller on the strength of an accusation that may
   /// well be false — while also warning a genuine fraudster to move on.
-  isUnderReview      Boolean   @default(false)
-  underReviewReason  String?
-  underReviewSince   DateTime?
-  underReviewById    String?
-  whatsappVerifiedAt DateTime?
-  averageRating      Float     @default(0.0)
-  reviewCount        Int       @default(0)
-  isBeta             Boolean   @default(false)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  isUnderReview       Boolean              @default(false)
+  underReviewReason   String?
+  underReviewSince    DateTime?
+  underReviewById     String?
+  whatsappVerifiedAt  DateTime?
+  /// Which channel actually proved the number.
+  ///
+  /// The verification code falls back to the owner's email when WhatsApp
+  /// delivery is unconfigured, and confirming that email used to set
+  /// `whatsappVerifiedAt` exactly as a real WhatsApp confirmation would. That
+  /// proves the seller can read their own inbox, not that they hold the number
+  /// they typed — so a seller could enter anyone's number and be "verified".
+  ///
+  /// On a marketplace whose only contact channel is WhatsApp, that is the
+  /// load-bearing check. Discovery is gated on WHATSAPP specifically; EMAIL is
+  /// a real but lesser state, and the seller is told which one they are in.
+  whatsappVerifiedVia WhatsappVerifiedVia?
+  averageRating       Float                @default(0.0)
+  reviewCount         Int                  @default(0)
+  isBeta              Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   underReviewBy         User?                  @relation("ShopUnderReviewBy", fields: [underReviewById], references: [id], onDelete: SetNull)
@@ -202,13 +228,20 @@ model Shop {
 }
 
 model WhatsappVerification {
-  id         String    @id @default(cuid())
-  shopId     String
-  codeHash   String
-  expiresAt  DateTime
-  consumedAt DateTime?
-  attempts   Int       @default(0)
-  createdAt  DateTime  @default(now())
+  id           String               @id @default(cuid())
+  shopId       String
+  codeHash     String
+  /// Which channel this specific code was actually delivered on.
+  ///
+  /// Recorded at send time and read back at confirm time, so the shop's
+  /// `whatsappVerifiedVia` reflects what really happened rather than what the
+  /// code path hoped for. Null means the send outcome was never recorded, and
+  /// confirm treats that as the weaker (EMAIL) state — the safe default.
+  deliveredVia WhatsappVerifiedVia?
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attempts     Int                  @default(0)
+  createdAt    DateTime             @default(now())
 
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
@@ -258,6 +291,15 @@ model Product {
   themeMuted        String?
   themeExtractedAt  DateTime?
   discountPercent   Float?
+  /// When this listing first became ACTIVE, or null if it never has.
+  ///
+  /// The slug is frozen after creation so a shared link never dies. But a
+  /// draft has never been public and has no links to protect, and Quick Add
+  /// creates drafts titled "Untitled product" — so a seller who named and
+  /// published one was left with /store/<shop>/untitled-product-5 forever.
+  /// Freezing from first publication rather than from creation is the rule the
+  /// freeze was actually reaching for.
+  firstActivatedAt  DateTime?
 
   shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images       ProductImage[]
@@ -389,6 +431,13 @@ model Notice {
   readAt      DateTime?
   respondedAt DateTime?
   response    String?
+  /// When a human read the seller's response and decided what to do about it.
+  ///
+  /// Without this a reply drops out of every actionable queue the moment it is
+  /// written: `awaiting` filters on `respondedAt: null`, so answering removes
+  /// it, and nothing else tracks it. A suspended seller's appeal landed in an
+  /// undifferentiated list, newest first, and nobody was told it had arrived.
+  reviewedAt  DateTime?
 
   shop  Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
   actor User @relation("NoticeAuthor", fields: [actorId], references: [id], onDelete: Restrict)

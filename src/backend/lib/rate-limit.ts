@@ -129,11 +129,36 @@ function shouldUseMemoryFallback(): boolean {
   return process.env.NODE_ENV !== 'production';
 }
 
+export interface RateLimitOptions {
+  /**
+   * Refuse the call when the limiter itself is broken, instead of degrading to
+   * per-instance memory.
+   *
+   * The default is to fail open, and for view tracking or search suggestions
+   * that is the right trade: a limiter outage should not take down the feature
+   * it protects. It is the wrong trade for anything guarding a secret. The
+   * in-memory fallback counts per warm instance and resets on cold start, and
+   * the per-row attempt counter on a verification code resets whenever a new
+   * code is requested — so under a database incident, fail-open means code
+   * guessing is effectively uncapped. Denying the attempt is the lesser harm
+   * there: the seller retries in a minute, and nobody brute-forces anything.
+   */
+  failClosed?: boolean;
+  /**
+   * How many tokens this one call consumes. Defaults to 1.
+   *
+   * Quick Add creates up to twelve products in a single call and charged one
+   * token for the batch, turning a 60-per-day cap into 720.
+   */
+  cost?: number;
+}
+
 async function fallbackRateLimit(
   key: string,
   limit: number,
   windowMs: number,
-  now: number
+  now: number,
+  failClosed: boolean
 ): Promise<RateLimitResult> {
   if (shouldUseMemoryFallback()) {
     return localRateLimit(key, limit, windowMs, now);
@@ -149,7 +174,11 @@ async function fallbackRateLimit(
       key,
       limit,
       windowMs,
+      failClosed,
     });
+    if (failClosed) {
+      return { success: false, remaining: 0, retryAfterSeconds: 60 };
+    }
     return localRateLimit(key, limit, windowMs, now);
   }
 }
@@ -158,23 +187,31 @@ export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number,
-  now: number = Date.now()
+  now: number = Date.now(),
+  options: RateLimitOptions = {}
 ): Promise<RateLimitResult> {
+  const failClosed = options.failClosed ?? false;
+  const cost = Math.max(1, Math.floor(options.cost ?? 1));
   const prefix = key.split(':')[0] || 'default';
   const limiter = getRateLimiter(prefix, limit, windowMs);
 
   if (!limiter) {
-    return fallbackRateLimit(key, limit, windowMs, now);
+    return chargeFallback(key, limit, windowMs, now, failClosed, cost);
   }
 
   try {
-    const result = await limiter.limit(key);
+    // `limit()` spends one token, so a batch spends one per item. Stop at the
+    // first refusal and report it, rather than charging the rest anyway.
+    let last = await limiter.limit(key);
+    for (let i = 1; i < cost && last.success; i += 1) {
+      last = await limiter.limit(key);
+    }
     return {
-      success: result.success,
-      remaining: result.remaining,
-      retryAfterSeconds: result.success
+      success: last.success,
+      remaining: last.remaining,
+      retryAfterSeconds: last.success
         ? 0
-        : Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
+        : Math.max(1, Math.ceil((last.reset - Date.now()) / 1000)),
     };
   } catch (err) {
     logger.error(
@@ -182,8 +219,24 @@ export async function rateLimit(
       err,
       { key, prefix, limit, windowMs }
     );
-    return fallbackRateLimit(key, limit, windowMs, now);
+    return chargeFallback(key, limit, windowMs, now, failClosed, cost);
   }
+}
+
+/** Spend `cost` tokens against the fallback limiter, stopping at the first refusal. */
+async function chargeFallback(
+  key: string,
+  limit: number,
+  windowMs: number,
+  now: number,
+  failClosed: boolean,
+  cost: number
+): Promise<RateLimitResult> {
+  let result = await fallbackRateLimit(key, limit, windowMs, now, failClosed);
+  for (let i = 1; i < cost && result.success; i += 1) {
+    result = await fallbackRateLimit(key, limit, windowMs, now, failClosed);
+  }
+  return result;
 }
 
 /** Central registry of limits so policies live in one place. */
@@ -222,6 +275,19 @@ export const RATE_LIMITS = {
    * confused or probing.
    */
   KYC_SUBMIT: { limit: 5, windowMs: 3_600_000 },
+  /**
+   * Store profile saves, keyed by user id. The rename endpoint sat next to a
+   * 3-per-day create limit with no limit of its own, which is what made
+   * walking a wordlist of desirable handles cheap — and each save purges
+   * twelve cache tags.
+   */
+  SHOP_UPDATE: { limit: 30, windowMs: 3_600_000 },
+  /**
+   * Changes to the storefront address specifically. A legitimate seller does
+   * this once, maybe twice, ever; anyone doing it repeatedly is hunting for
+   * handles, and every change strands the links they last shared.
+   */
+  SHOP_SLUG_CHANGE: { limit: 3, windowMs: 30 * 86_400_000 },
   /** Any privileged admin action, keyed by admin id. A stolen session should not be able to suspend the whole marketplace. */
   ADMIN_ACTION: { limit: 120, windowMs: 60_000 },
 } as const;

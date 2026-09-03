@@ -42,6 +42,35 @@ export function checkEnvironment(env: NodeJS.ProcessEnv = process.env): {
         'No auth secret is set. Sessions cannot be signed. Set AUTH_SECRET (and keep NEXTAUTH_SECRET identical if both are present).',
     },
     {
+      /**
+       * Verification delivery is the gate on discovery, so an unconfigured
+       * channel is as fatal as unconfigured storage — which is already fatal
+       * two entries down.
+       *
+       * With none of these set, `sendWhatsappTemplate` returns false without
+       * calling anything, the seller cannot verify, `submitTier0` refuses, and
+       * `isListed` never becomes true. Every seller onboarded is permanently
+       * invisible. Before this check that failure was silent at boot and
+       * reported to the seller as success.
+       */
+      name: 'WHATSAPP_CLOUD_TOKEN',
+      level: 'fatal',
+      failing: () =>
+        isProduction &&
+        (isPlaceholder(env.WHATSAPP_CLOUD_TOKEN) ||
+          isPlaceholder(env.WHATSAPP_PHONE_NUMBER_ID) ||
+          isPlaceholder(env.WHATSAPP_VERIFY_TEMPLATE_NAME)),
+      message:
+        'WhatsApp Cloud API is not configured (needs WHATSAPP_CLOUD_TOKEN, WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_VERIFY_TEMPLATE_NAME). No seller can verify their number, so no store can ever be listed in the marketplace.',
+    },
+    {
+      name: 'RESEND_API_KEY',
+      level: 'warn',
+      failing: () => isPlaceholder(env.RESEND_API_KEY) || isPlaceholder(env.NOTIFY_FROM_EMAIL),
+      message:
+        'Email is not configured (needs RESEND_API_KEY and NOTIFY_FROM_EMAIL). Sellers are never emailed about suspensions, identity decisions or notices — they only find out by opening the dashboard.',
+    },
+    {
       name: 'DATABASE_URL',
       level: 'fatal',
       failing: () => isPlaceholder(env.DATABASE_URL),

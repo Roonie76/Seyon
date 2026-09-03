@@ -6,7 +6,7 @@ import { NoticeKind } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { requireAdmin } from '../lib/require-admin';
-import { recordAdminAction, ADMIN_ACTIONS } from '../lib/admin-audit';
+import { recordAdminAction, recordAdminActionSafe, ADMIN_ACTIONS } from '../lib/admin-audit';
 import { issueNotice, emailNotice } from '../lib/notices';
 import { toUserMessage } from '../lib/action-errors';
 
@@ -23,7 +23,16 @@ const IdSchema = z.string().cuid('Invalid identifier');
 
 const ComposeSchema = z.object({
   shopId: IdSchema,
-  kind: z.nativeEnum(NoticeKind),
+  /**
+   * Only the kinds that are genuinely a message.
+   *
+   * SUSPENSION, REINSTATEMENT and IDENTITY_DECISION are receipts for a state
+   * change and are issued by the action that makes the change. Accepting them
+   * here let an admin tell a seller their store was suspended without
+   * suspending it — this action writes a notice and never touches the shop.
+   * The dropdown is narrowed too; this is the half that cannot be bypassed.
+   */
+  kind: z.enum(['WARNING', 'POLICY_VIOLATION', 'INFORMATION_REQUEST']),
   subject: z.string().trim().min(5, 'Give the notice a subject.').max(160, 'Keep the subject under 160 characters.'),
   body: z
     .string()
@@ -170,14 +179,38 @@ export async function respondToNoticeAction(noticeId: string, response: string):
 
     const notice = await db.notice.findFirst({
       where: { id: id.data, shopId: shop.id },
-      select: { id: true, respondedAt: true },
+      select: { id: true, respondedAt: true, readAt: true, requiresResponse: true },
     });
     if (!notice) return { error: 'Notice not found.' };
     if (notice.respondedAt) return { error: 'You have already responded to this notice.' };
 
+    /**
+     * A response belongs on a notice that asked for one.
+     *
+     * The inbox only renders the box when `requiresResponse` is set, but this
+     * is a directly callable server action — so text could be attached to a
+     * REINSTATEMENT, where no queue would ever surface it.
+     */
+    if (!notice.requiresResponse) {
+      return { error: 'This notice does not ask for a response.' };
+    }
+
     await db.notice.update({
       where: { id: notice.id },
-      data: { respondedAt: new Date(), response: parsed.data, readAt: new Date() },
+      data: {
+        respondedAt: new Date(),
+        response: parsed.data,
+        /**
+         * Establish a read, never move one.
+         *
+         * This was an unconditional `new Date()`. A notice read on the 1st and
+         * answered on the 10th had its `readAt` rewritten to the 10th, and the
+         * admin queue then showed "Read 10/9" — erasing nine days of "they knew
+         * and did nothing". The inbox goes to lengths to protect this field
+         * precisely because it is evidence in a dispute.
+         */
+        readAt: notice.readAt ?? new Date(),
+      },
     });
 
     revalidatePath('/notices');
@@ -216,7 +249,7 @@ export async function getShopNotices(
 const NOTICE_PAGE_SIZE = 25;
 
 const NoticeQueueSchema = z.object({
-  filter: z.enum(['all', 'unread', 'awaiting', 'overdue']).optional(),
+  filter: z.enum(['all', 'unread', 'awaiting', 'overdue', 'replied']).optional(),
   page: z.string().optional(),
 });
 
@@ -234,6 +267,8 @@ export interface AdminNoticeRow {
   respondBy: Date | null;
   /** Asked for a response, past the date, still nothing back. */
   overdue: boolean;
+  /** The seller replied and no one has closed the loop yet. */
+  awaitingReview: boolean;
   shopName: string;
   shopSlug: string;
   actorName: string | null;
@@ -244,7 +279,7 @@ export interface AdminNoticeQueue {
   total: number;
   page: number;
   pageCount: number;
-  counts: { unread: number; awaiting: number; overdue: number };
+  counts: { unread: number; awaiting: number; overdue: number; replied: number };
 }
 
 /**
@@ -272,6 +307,17 @@ export async function getNoticeQueue(
       respondBy: { lt: now },
     } as const;
 
+    /**
+     * A reply that nobody has acted on.
+     *
+     * Answering removed a notice from `awaiting` and from `overdue`, and there
+     * was no third state — so a suspended seller's appeal landed in the
+     * undifferentiated `all` list, newest first, twenty-five to a page, with
+     * nobody told it had arrived. This is the queue that matters most: someone
+     * whose store is offline is waiting on it.
+     */
+    const repliedWhere = { respondedAt: { not: null }, reviewedAt: null } as const;
+
     const where =
       filter === 'unread'
         ? { readAt: null }
@@ -279,9 +325,11 @@ export async function getNoticeQueue(
           ? { requiresResponse: true, respondedAt: null }
           : filter === 'overdue'
             ? overdueWhere
-            : {};
+            : filter === 'replied'
+              ? repliedWhere
+              : {};
 
-    const [total, rows, unread, awaiting, overdue] = await Promise.all([
+    const [total, rows, unread, awaiting, overdue, replied] = await Promise.all([
       db.notice.count({ where }),
       db.notice.findMany({
         where,
@@ -298,6 +346,7 @@ export async function getNoticeQueue(
       db.notice.count({ where: { readAt: null } }),
       db.notice.count({ where: { requiresResponse: true, respondedAt: null } }),
       db.notice.count({ where: overdueWhere }),
+      db.notice.count({ where: repliedWhere }),
     ]);
 
     return {
@@ -317,6 +366,7 @@ export async function getNoticeQueue(
           overdue: Boolean(
             n.requiresResponse && !n.respondedAt && n.respondBy && n.respondBy < now
           ),
+          awaitingReview: Boolean(n.respondedAt && !n.reviewedAt),
           shopName: n.shop.name,
           shopSlug: n.shop.slug,
           actorName: n.actor.name,
@@ -324,7 +374,7 @@ export async function getNoticeQueue(
         total,
         page,
         pageCount: Math.max(1, Math.ceil(total / NOTICE_PAGE_SIZE)),
-        counts: { unread, awaiting, overdue },
+        counts: { unread, awaiting, overdue, replied },
       },
     };
   } catch (error) {
@@ -370,5 +420,47 @@ export async function resendNoticeEmailAction(noticeId: string): Promise<Result>
     return { success: true };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'resendNoticeEmail' }) };
+  }
+}
+
+/**
+ * Mark a seller's reply as dealt with.
+ *
+ * Without this there was no way to distinguish "they replied and we are on it"
+ * from "they replied three weeks ago and nobody looked", because answering
+ * removed the notice from every actionable queue. Resolving is a deliberate
+ * act by a named person, recorded like the other admin decisions.
+ */
+export async function markNoticeReviewedAction(raw: unknown): Promise<Result> {
+  try {
+    const id = IdSchema.safeParse(raw);
+    if (!id.success) return { error: 'Invalid notice.' };
+
+    const { actorId } = await requireAdmin();
+
+    const notice = await db.notice.findUnique({
+      where: { id: id.data },
+      select: { id: true, respondedAt: true, reviewedAt: true },
+    });
+    if (!notice) return { error: 'Notice not found.' };
+    if (!notice.respondedAt) return { error: 'There is no response to review yet.' };
+    if (notice.reviewedAt) return { error: 'This response has already been reviewed.' };
+
+    await db.notice.update({
+      where: { id: notice.id },
+      data: { reviewedAt: new Date() },
+    });
+
+    await recordAdminActionSafe({
+      actorId,
+      action: ADMIN_ACTIONS.REVIEW_NOTICE_RESPONSE,
+      targetType: 'Notice',
+      targetId: notice.id,
+    });
+
+    revalidatePath('/admin', 'layout');
+    return { success: true };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'markNoticeReviewedAction' }) };
   }
 }

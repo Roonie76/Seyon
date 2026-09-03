@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { KycStatus, KycTier } from '@prisma/client';
+import { KycStatus, KycTier, NoticeKind } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { isCurrentUserAdmin } from '../lib/is-admin';
 import { logger } from '../lib/logger';
@@ -11,6 +11,7 @@ import { toUserMessage } from '../lib/action-errors';
 import { signedKycDocumentUrl, deleteKycDocument } from '../lib/kyc-storage';
 import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
 import { recordAdminAction, recordAdminActionSafe, ADMIN_ACTIONS } from '../lib/admin-audit';
+import { issueNotice } from '../lib/notices';
 
 /**
  * Admin side of seller identity.
@@ -157,6 +158,31 @@ export async function getKycDocumentUrl(
   }
 }
 
+/**
+ * The two checks both decisions need before they touch anything.
+ *
+ * `status` — a decision belongs on a case that was actually submitted. Without
+ * this, any status except APPROVED was decidable, including one nobody had
+ * filled in.
+ *
+ * `self` — nothing stopped an admin who owns a storefront from granting their
+ * own shop the verified badge in one call. The audit row recorded it faithfully
+ * and no check prevented it. Admins holding shops is contemplated elsewhere in
+ * this codebase, so this is not hypothetical.
+ */
+function guardDecision(
+  kyc: { status: KycStatus; userId: string },
+  actorId: string | undefined
+): string | null {
+  if (kyc.status !== KycStatus.PENDING_REVIEW) {
+    return 'This case is not awaiting review. Only a submitted case can be decided.';
+  }
+  if (actorId && kyc.userId === actorId) {
+    return 'You cannot decide your own identity case. Ask another admin to review it.';
+  }
+  return null;
+}
+
 export async function approveKyc(
   raw: unknown
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
@@ -169,10 +195,25 @@ export async function approveKyc(
 
     const kyc = await db.sellerKyc.findUnique({
       where: { id: parsed.data.kycId },
-      include: { user: { select: { shop: { select: { id: true, slug: true } } } } },
+      include: { user: { select: { email: true, shop: { select: { id: true, slug: true } } } } },
     });
     if (!kyc) return { error: 'Case not found.' };
-    if (kyc.status === KycStatus.APPROVED) return { error: 'Already approved.' };
+
+    const blocked = guardDecision(kyc, session?.user?.id);
+    if (blocked) return { error: blocked };
+
+    /**
+     * A decision is about evidence, so there has to be evidence.
+     *
+     * The only previous guard was "not already approved", which left every
+     * other status approvable — including NOT_STARTED, a row `submitTier0`
+     * creates with no ID type, no hash and no document. Approving one of those
+     * put "a person looked at a document and agreed" in front of buyers when no
+     * document had ever existed.
+     */
+    if (!kyc.idHash) {
+      return { error: 'This case has no identity details on it, so there is nothing to approve.' };
+    }
 
     await db.$transaction(async (tx) => {
       await tx.sellerKyc.update({
@@ -195,6 +236,22 @@ export async function approveKyc(
           where: { id: kyc.user.shop.id },
           data: { isVerified: true },
         });
+
+        if (session?.user?.id) {
+          await issueNotice(
+            {
+              shopId: kyc.user.shop.id,
+              actorId: session.user.id,
+              kind: NoticeKind.IDENTITY_DECISION,
+              subject: 'Your identity has been verified',
+              body:
+                'We have reviewed your identity documents and verified your store. ' +
+                'The verified badge is now showing to buyers, and your store is listed ' +
+                'in the marketplace.',
+            },
+            tx
+          );
+        }
       }
 
       if (session?.user?.id) {
@@ -221,6 +278,10 @@ export async function approveKyc(
       revalidateMarketplace();
     }
     revalidatePath('/admin/kyc');
+    // The seller's own pages, which neither decision used to touch.
+    revalidatePath('/verification');
+    revalidatePath('/dashboard');
+    revalidatePath('/notices');
     return { success: true };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'approveKyc' }) };
@@ -237,8 +298,14 @@ export async function rejectKyc(
     const parsed = RejectSchema.safeParse(raw);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid request.' };
 
-    const kyc = await db.sellerKyc.findUnique({ where: { id: parsed.data.kycId } });
+    const kyc = await db.sellerKyc.findUnique({
+      where: { id: parsed.data.kycId },
+      include: { user: { select: { email: true, shop: { select: { id: true, slug: true } } } } },
+    });
     if (!kyc) return { error: 'Case not found.' };
+
+    const blocked = guardDecision(kyc, session?.user?.id);
+    if (blocked) return { error: blocked };
 
     await db.$transaction(async (tx) => {
       await tx.sellerKyc.update({
@@ -252,6 +319,41 @@ export async function rejectKyc(
         documentDeletedAt: kyc.documentPath ? new Date() : null,
       },
       });
+
+      /**
+       * Take the badge back.
+       *
+       * `approveKyc` sets `isVerified`; this never cleared it. So the sequence
+       * that matters most — approve, discover the document was forged, reject —
+       * left the emerald verified badge on the storefront and the shop in the
+       * verified homepage rail. The seller saw a rejection; every buyer saw a
+       * verified seller. The only cure was an unrelated toggle in another screen
+       * that a reviewer working this queue has no reason to know exists.
+       */
+      if (kyc.user.shop) {
+        await tx.shop.update({
+          where: { id: kyc.user.shop.id },
+          data: { isVerified: false },
+        });
+
+        if (session?.user?.id) {
+          await issueNotice(
+            {
+              shopId: kyc.user.shop.id,
+              actorId: session.user.id,
+              kind: NoticeKind.IDENTITY_DECISION,
+              subject: 'We could not verify your identity documents',
+              // The reason verbatim. A seller who cannot see what was wrong
+              // resubmits the same thing and we both waste the round trip.
+              body:
+                `${parsed.data.reason}\n\n` +
+                'You can submit again from your verification page once you have ' +
+                'addressed this.',
+            },
+            tx
+          );
+        }
+      }
       if (session?.user?.id) {
         await recordAdminAction(
           {
@@ -271,6 +373,10 @@ export async function rejectKyc(
 
     logger.info('KYC rejected', { kycId: kyc.id, reviewerId: session?.user?.id });
     revalidatePath('/admin/kyc');
+    // The seller's own pages, which neither decision used to touch.
+    revalidatePath('/verification');
+    revalidatePath('/dashboard');
+    revalidatePath('/notices');
     return { success: true };
   } catch (error) {
     return { error: toUserMessage(error, { action: 'rejectKyc' }) };

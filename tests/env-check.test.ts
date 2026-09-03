@@ -16,6 +16,11 @@ const complete = {
   NEXT_PUBLIC_GRIEVANCE_NAME: 'A. Sharma',
   NEXT_PUBLIC_GRIEVANCE_DESIGNATION: 'Grievance Officer',
   NEXT_PUBLIC_GRIEVANCE_EMAIL: 'grievance@seyon.in',
+  WHATSAPP_CLOUD_TOKEN: 'EAAG-a-real-looking-cloud-api-token',
+  WHATSAPP_PHONE_NUMBER_ID: '109876543210987',
+  WHATSAPP_VERIFY_TEMPLATE_NAME: 'seyon_verification_code',
+  RESEND_API_KEY: 're_a_real_looking_key',
+  NOTIFY_FROM_EMAIL: 'no-reply@seyon.in',
 } as NodeJS.ProcessEnv;
 
 describe('production configuration check', () => {
@@ -23,6 +28,26 @@ describe('production configuration check', () => {
     const { fatal, warnings } = checkEnvironment(complete);
     expect(fatal).toEqual([]);
     expect(warnings).toEqual([]);
+  });
+
+  it('refuses to start when no seller can be sent a verification code', () => {
+    // Without this the failure is silent at boot and reported to the seller as
+    // success: every store stays unlisted and nobody finds out why.
+    const { fatal } = checkEnvironment({ ...complete, WHATSAPP_CLOUD_TOKEN: undefined });
+    expect(fatal.join(' ')).toContain('WhatsApp Cloud API');
+  });
+
+  it('refuses to start on a half-configured WhatsApp integration', () => {
+    const { fatal } = checkEnvironment({ ...complete, WHATSAPP_VERIFY_TEMPLATE_NAME: undefined });
+    expect(fatal.join(' ')).toContain('WHATSAPP_VERIFY_TEMPLATE_NAME');
+  });
+
+  it('warns, but does not refuse, when email is unconfigured', () => {
+    // Email is the fallback channel and the carrier of notices; losing it is
+    // serious but not the same as nobody being able to list a store.
+    const { fatal, warnings } = checkEnvironment({ ...complete, RESEND_API_KEY: undefined });
+    expect(fatal).toEqual([]);
+    expect(warnings.join(' ')).toContain('Email is not configured');
   });
 
   it('refuses to start when image storage is unconfigured', () => {

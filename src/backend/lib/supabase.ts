@@ -96,7 +96,7 @@ export async function uploadFile(
     .from(bucket)
     .upload(filePath, buffer, {
       contentType: file.type,
-      cacheControl: '31536000',
+      cacheControl: '3600',
       upsert: false,
     });
 
@@ -134,8 +134,22 @@ export async function deleteFile(
   if (requiredPrefix) {
     const expected = `${requiredPrefix.replace(/[^a-zA-Z0-9_-]/g, '')}/`;
     if (!filePath.startsWith(expected)) {
-      // Legacy files predate the prefix scheme; the caller has already checked
-      // that no other shop references them. Anything else is refused.
+      /**
+       * A path outside the caller's namespace is refused. A path with no
+       * namespace at all is a legacy file.
+       *
+       * This test used to be the other way round — refuse only when the path
+       * contained a slash — which read as "legacy files are the ones without a
+       * prefix, let those through". It was correct as written and useless in
+       * practice: nothing ever passed a prefix to `uploadFile`, so *every*
+       * object was prefixless and the guard let all of them through. The
+       * control this file documents at length had never once engaged.
+       *
+       * Now that uploads are namespaced, a prefixless path really does mean an
+       * object predating the change, and those are still allowed through on the
+       * strength of the caller's own reference check. Everything else is
+       * refused, which is what the docblock above always claimed.
+       */
       if (filePath.includes('/')) {
         logger.warn('Refused to delete a file outside the caller namespace', {
           filePath,
@@ -143,6 +157,7 @@ export async function deleteFile(
         });
         return;
       }
+      logger.debug('Deleting a legacy file with no owner namespace', { filePath });
     }
   }
 
@@ -150,4 +165,29 @@ export async function deleteFile(
   if (error) {
     logger.error('Supabase deletion error', error, { fileUrl });
   }
+}
+
+/**
+ * Does this storage URL belong to the given owner?
+ *
+ * Used to stop a seller attaching another shop's uploaded image to their own
+ * listing. `ProductImageSchema` validates the URL against a host allowlist, so
+ * a `*.supabase.co` link from a competitor's product passed — the image
+ * displayed as theirs, and because `deleteOwnedFiles` refuses to delete
+ * anything another shop references, the victim could then never remove their
+ * own file.
+ *
+ * A URL that is not one of ours at all (Unsplash, say) is somebody else's
+ * problem and returns true; this is a check about *our* storage.
+ */
+export function isOwnedStorageUrl(
+  fileUrl: string,
+  bucket: StorageBucket,
+  requiredPrefix: string
+): boolean {
+  const filePath = storagePathFromUrl(fileUrl, bucket);
+  if (!filePath) return true;
+  // Legacy objects have no namespace and cannot be attributed either way.
+  if (!filePath.includes('/')) return true;
+  return filePath.startsWith(`${requiredPrefix.replace(/[^a-zA-Z0-9_-]/g, '')}/`);
 }

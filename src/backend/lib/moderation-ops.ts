@@ -4,6 +4,9 @@ import { recordAdminAction, ADMIN_ACTIONS } from './admin-audit';
 import { recomputeShopRating } from './shop-ratings';
 import { issueNotice } from './notices';
 
+/** How long a suspended seller has to appeal before the notice reads as overdue. */
+const SUSPENSION_APPEAL_DAYS = 14;
+
 /**
  * The transactional core of each moderation act, separated from the action that
  * wraps it.
@@ -141,6 +144,18 @@ export async function setShopSuspendedInTx(
         : `Your storefront "${updated.name}" is visible to buyers again.` +
           (reason ? `\n\nNote from the reviewer:\n${reason}` : ''),
       requiresResponse: isSuspended,
+      /**
+       * A suspension appeal gets a date, in both directions.
+       *
+       * `issueNotice` stores null when none is given, so a suspension could
+       * never be `overdue` — it sat in `awaiting` forever. Worse, the seller
+       * was handed a reply box with no stated turnaround from either side while
+       * their store was offline. Fourteen days is what we ask of them; the
+       * "replied, not reviewed" queue is what holds us to our half.
+       */
+      respondBy: isSuspended
+        ? new Date(Date.now() + SUSPENSION_APPEAL_DAYS * 86_400_000)
+        : null,
     },
     tx
   );

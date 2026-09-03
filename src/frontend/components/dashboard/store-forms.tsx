@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import type { SellerShopView } from '@/backend/lib/seller-shop-view';
 import { useRouter } from 'next/navigation';
 import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -294,7 +295,7 @@ export function StoreOnboardingForm() {
 
 import { Shop } from '@prisma/client';
 
-export function StoreSettingsForm({ shop }: { shop: Shop }) {
+export function StoreSettingsForm({ shop }: { shop: SellerShopView }) {
   const router = useRouter();
   const [formData, setFormData] = React.useState({
     name: shop.name,
@@ -332,6 +333,8 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
     }
   };
   const [whatsappVerifiedAt, setWhatsappVerifiedAt] = React.useState(shop.whatsappVerifiedAt);
+  /** A code is outstanding, so the entry box must be reachable even if verified. */
+  const [codeRequested, setCodeRequested] = React.useState(false);
   /** Concurrency token: the row version this form was rendered from. */
   const [expectedUpdatedAt, setExpectedUpdatedAt] = React.useState<string>(
     new Date(shop.updatedAt).toISOString()
@@ -386,6 +389,28 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
+
+    /**
+     * Renaming the handle is destructive, so say so before it happens.
+     *
+     * Deleting the store makes the seller type its name to confirm. Changing
+     * the address — which changes every link they have shared from this moment
+     * on — was a bare text input with no warning at all. The severity of those
+     * two interactions was inverted.
+     *
+     * The old address now redirects rather than dying, so this confirmation can
+     * tell the truth rather than just being frightening.
+     */
+    if (formData.slug !== shop.slug) {
+      const ok = window.confirm(
+        `Change your store address from /${shop.slug} to /${formData.slug}?\n\n` +
+          `Links you have already shared will keep working — we redirect the old address to the ` +
+          `new one. But /${shop.slug} is retired for good and cannot be used again, by you or ` +
+          `anyone else, and your store's address changes everywhere from now on.`
+      );
+      if (!ok) return;
+    }
+
     setIsLoading(true);
     setMessage(null);
 
@@ -403,6 +428,15 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
     // Track the new version so a second save from this tab is not treated as
     // a conflict with its own first save.
     if (res.shop?.updatedAt) setExpectedUpdatedAt(new Date(res.shop.updatedAt).toISOString());
+    // A notice means something consequential happened that the seller did not
+    // ask for — today, that their store left the marketplace because the
+    // WhatsApp number changed. It stays on screen; a three-second toast is not
+    // how you tell somebody their shop is hidden.
+    if (res.notice) {
+      setMessage({ type: 'error', text: res.notice });
+      return;
+    }
+
     setMessage({ type: 'success', text: 'Store configurations updated!' });
     setTimeout(() => {
       setMessage(null);
@@ -410,6 +444,23 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
   };
 
   const handleRequestVerification = async () => {
+    /**
+     * The code goes to the *saved* number, not the one in the input.
+     *
+     * A seller who typed a new number and hit Send Code received the code on
+     * their old handset, confirmed it, and was shown "Verified for <new
+     * number>" — naming a number nobody had contacted. Blocking the request
+     * until the change is saved keeps the message honest, and the save is what
+     * clears the old verification anyway.
+     */
+    if (formData.whatsapp !== shop.whatsapp) {
+      setMessage({
+        type: 'error',
+        text: 'Save your new number first — the code is sent to the number on file.',
+      });
+      return;
+    }
+
     setVerificationLoading('request');
     const res = await runAction(() => requestWhatsappVerification());
     setVerificationLoading(null);
@@ -418,6 +469,10 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
       setMessage({ type: 'error', text: res.error || 'Unable to send verification code' });
       return;
     }
+
+    // Without this the code box is hidden for an already-verified seller who
+    // clicked Reverify, leaving them a live code and nowhere to type it.
+    setCodeRequested(true);
 
     const target = res.delivery === 'whatsapp' ? 'WhatsApp' : res.delivery === 'email' ? 'email' : 'the dev response';
     setMessage({
@@ -439,6 +494,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
     track('whatsapp_verified');
     setWhatsappVerifiedAt(new Date());
     setVerificationCode('');
+    setCodeRequested(false);
     setMessage({ type: 'success', text: 'WhatsApp number verified.' });
   };
 
@@ -488,7 +544,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {whatsappVerifiedAt
-                      ? `Verified for ${formData.whatsapp}. Changing the number requires re-verification.`
+                      ? `Verified for ${shop.whatsapp}. Changing the number unlists your store until you verify the new one.`
                       : 'Send a one-time code to prove buyers can reliably reach this seller contact.'}
                   </p>
                 </div>
@@ -505,7 +561,7 @@ export function StoreSettingsForm({ shop }: { shop: Shop }) {
               </Button>
             </div>
 
-            {!whatsappVerifiedAt && (
+            {(!whatsappVerifiedAt || codeRequested) && (
               <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   type="text"

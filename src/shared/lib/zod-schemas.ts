@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ProductStatus, ReportCategory } from '@prisma/client';
 import { isAllowedImageUrl, IMAGE_URL_ERROR } from './image-hosts';
+import { normaliseWhatsapp } from './whatsapp-number';
 
 /**
  * The categories the seller form offers. Kept here rather than only in the
@@ -67,17 +68,10 @@ export const ShopSchema = z.object({
   logo: HostedImageUrl.or(z.string().length(0)).optional().nullable(),
   banner: HostedImageUrl.or(z.string().length(0)).optional().nullable(),
   whatsapp: z.preprocess(
-    (val) => {
-      if (typeof val !== 'string') return val;
-      const clean = val.replace(/[^0-9+]/g, '');
-      if (clean.length === 10 && /^[1-9]\d{9}$/.test(clean)) {
-        return `+91${clean}`;
-      }
-      if (clean.length > 0 && !clean.startsWith('+')) {
-        return `+${clean}`;
-      }
-      return clean;
-    },
+    // Shared with the change-detection in `updateShop`: if these two ever
+    // disagree, every profile save looks like a number change and unlists the
+    // store.
+    (val) => (typeof val === 'string' ? normaliseWhatsapp(val) : val),
     z.string()
       .min(8, 'WhatsApp number must be at least 8 digits')
       .regex(/^\+?[1-9]\d{1,14}$/, 'WhatsApp number must be a valid international phone number without spaces or symbols')

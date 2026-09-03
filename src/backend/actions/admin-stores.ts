@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { slugClashReason, retireSlug } from '../lib/shop-slug';
 import { db } from '@/lib/db';
 import { Prisma, KycStatus } from '@prisma/client';
 import { isCurrentUserAdmin } from '../lib/is-admin';
@@ -381,26 +382,18 @@ export async function repairStoreAction(raw: unknown) {
     const slugChanged = Boolean(slug && slug !== shop.slug);
 
     if (slugChanged) {
-      // Taken by a live store, or reserved by another store's history.
-      const [liveClash, historicClash] = await Promise.all([
-        db.shop.findUnique({ where: { slug: slug! }, select: { id: true } }),
-        db.shopSlugHistory.findUnique({ where: { slug: slug! }, select: { shopId: true } }),
-      ]);
-      if (liveClash && liveClash.id !== shop.id) return { error: 'Another store already uses that address.' };
-      if (historicClash && historicClash.shopId !== shop.id) {
-        return { error: 'That address used to belong to a different store, so it cannot be reused.' };
-      }
+      // Taken by a live store, or reserved by another store's history. The same
+      // helper the seller's own rename uses — the two disagreed for a long time,
+      // and the seller's half was the one that was wrong.
+      const clash = await slugClashReason(slug!, shop.id);
+      if (clash) return { error: clash };
     }
 
     await db.$transaction(async (tx) => {
       if (slugChanged) {
         // Record the old address before taking it, so a crash between the two
         // cannot leave the store unreachable at either.
-        await tx.shopSlugHistory.upsert({
-          where: { slug: shop.slug },
-          update: {},
-          create: { shopId: shop.id, slug: shop.slug, changedById: actorId },
-        });
+        await retireSlug(tx, shop.id, shop.slug, actorId);
       }
 
       await tx.shop.update({

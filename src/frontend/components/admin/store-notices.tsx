@@ -16,12 +16,29 @@ import { runAction } from '@/frontend/lib/run-action';
  * a moment longer than the other two.
  */
 
+/**
+ * The kinds a person may compose freely.
+ *
+ * SUSPENSION, REINSTATEMENT and IDENTITY_DECISION are not messages — they are
+ * receipts for a state change, produced as a side effect of the action that
+ * makes the change. Offering them in a free compose box meant an admin could
+ * send "your storefront has been suspended" to a seller whose store was live,
+ * or "reinstated" to one still down, because `sendNoticeAction` writes the
+ * notice and never touches `Shop.isSuspended`.
+ */
+export const COMPOSABLE_KINDS = [
+  'WARNING',
+  'POLICY_VIOLATION',
+  'INFORMATION_REQUEST',
+] as const satisfies readonly NoticeKind[];
+
 const KIND_LABELS: Record<NoticeKind, string> = {
   WARNING: 'Warning',
   POLICY_VIOLATION: 'Policy violation',
   INFORMATION_REQUEST: 'Request for information',
   SUSPENSION: 'Suspension',
   REINSTATEMENT: 'Reinstatement',
+  IDENTITY_DECISION: 'Identity review',
 };
 
 export function UnderReviewControl({
@@ -160,7 +177,7 @@ export function StoreNotices({ shopId, notices }: { shopId: string; notices: (Se
             onChange={(e) => setKind(e.target.value as NoticeKind)}
             className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-xs"
           >
-            {Object.values(NoticeKind).map((k) => (
+            {COMPOSABLE_KINDS.map((k) => (
               <option key={k} value={k}>{KIND_LABELS[k]}</option>
             ))}
           </select>

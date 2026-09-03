@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { currentSlugFor } from '@/backend/lib/slug-redirect';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
@@ -122,7 +123,9 @@ export default async function StorePage({ params }: StorePageProps) {
   }
 
   // Track shop view metric asynchronously
-  trackEventInternal(shop.id, 'SHOP_VIEW').catch((err) => {
+  const viewerId = (await auth())?.user?.id ?? null;
+  // The viewer's id, so a seller's own visits are not counted as traffic.
+  trackEventInternal(shop.id, 'SHOP_VIEW', undefined, viewerId).catch((err) => {
     logger.error('Analytics record error for shop view', err, { shopId: shop.id });
   });
 

@@ -22,6 +22,8 @@ import type { Prisma } from '@prisma/client';
  */
 
 export const ADMIN_ACTIONS = {
+  /** A seller's reply to a notice was read and acted on. */
+  REVIEW_NOTICE_RESPONSE: 'REVIEW_NOTICE_RESPONSE',
   VERIFY_SHOP: 'VERIFY_SHOP',
   UNVERIFY_SHOP: 'UNVERIFY_SHOP',
   SUSPEND_SHOP: 'SUSPEND_SHOP',

@@ -190,6 +190,8 @@ function Tier1Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
   const [error, setError] = React.useState<string | null>(null);
   const [submitted, setSubmitted] = React.useState(kyc.status === 'PENDING_REVIEW');
   const [uploadNote, setUploadNote] = React.useState<string | null>(null);
+  /** Seeded from the server so a reload does not forget an already-attached document. */
+  const [hasDocument, setHasDocument] = React.useState(kyc.hasDocument);
 
   // Immediate feedback while typing, so a wrong character is caught in place.
   const liveError = React.useMemo(() => {
@@ -214,7 +216,9 @@ function Tier1Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
     const fd = new FormData();
     fd.append('file', file);
     const res = await runAction(() => uploadIdentityDocument(fd));
-    setUploadNote(!('success' in res) ? (res.error ?? 'Upload failed.') : 'Document attached.');
+    const ok = 'success' in res;
+    if (ok) setHasDocument(true);
+    setUploadNote(!ok ? (res.error ?? 'Upload failed.') : 'Document attached.');
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -262,9 +266,35 @@ function Tier1Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
       ) : null}
 
       {submitted && kyc.status !== 'REJECTED' ? (
-        <p data-testid="kyc-pending" className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
-          Your documents are with our team. We will come back to you.
-        </p>
+        /*
+         * The upload stays reachable while a case is pending.
+         *
+         * This branch used to replace the whole form, file input included, with
+         * the notice alone — so a seller who submitted before uploading was
+         * told their documents were with the team and had no control anywhere
+         * that could attach one. The server refuses that submission now, but a
+         * case can still need a clearer photo, and `uploadIdentityDocument`
+         * always accepted one; there was simply no way to call it.
+         */
+        <div className="space-y-3">
+          <p data-testid="kyc-pending" className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+            Your documents are with our team. We will come back to you.
+          </p>
+          <div>
+            <label className={LABEL} htmlFor="kycDocPending">Replace the photo</label>
+            <input
+              id="kycDocPending"
+              data-testid="kyc-doc-pending"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={onUpload}
+              className="text-xs"
+            />
+            <p className="mt-1 text-[11px] text-zinc-600">
+              {uploadNote ?? 'If your photo was blurred or cut off, upload a clearer one — it replaces the old file.'}
+            </p>
+          </div>
+        </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -318,10 +348,16 @@ function Tier1Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
             <p role="alert" data-testid="tier1-error" className="text-xs font-semibold text-red-600">{error}</p>
           ) : null}
 
+          {!hasDocument ? (
+            <p className="text-[11px] text-amber-800">
+              Attach a photo of your document above — a reviewer cannot verify a case without one.
+            </p>
+          ) : null}
+
           <button
             type="submit"
             data-testid="tier1-submit"
-            disabled={busy || Boolean(liveError) || Boolean(gstinError)}
+            disabled={busy || !hasDocument || Boolean(liveError) || Boolean(gstinError)}
             className="rounded-lg border border-zinc-300 px-4 py-2 text-xs font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-40"
           >
             {busy ? 'Submitting…' : 'Submit for verification'}

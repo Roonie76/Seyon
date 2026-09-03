@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { PUBLIC_REVIEW } from '@/backend/lib/shop-visibility';
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
@@ -106,7 +107,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Track product view metric asynchronously
-  trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id).catch((err) => {
+  const viewerId = (await auth())?.user?.id ?? null;
+  // The viewer's id, so a seller's own visits are not counted as traffic.
+  trackEventInternal(product.shopId, 'PRODUCT_VIEW', product.id, viewerId).catch((err) => {
     logger.error('Analytics record error for product view', err, { shopId: product.shopId, productId: product.id });
   });
 

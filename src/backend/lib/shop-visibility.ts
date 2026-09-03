@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { WhatsappVerifiedVia } from '@prisma/client';
 
 /**
  * One definition of "a buyer may see this shop".
@@ -35,6 +36,22 @@ export const DISCOVERABLE_SHOP = {
   isPaused: false,
   isListed: true,
   isUnderReview: false,
+  /**
+   * Derived rather than trusted, because `isListed` and verification drifted.
+   *
+   * `isListed` is set once, when Tier 0 completes. Editing the WhatsApp number
+   * afterwards nulled `whatsappVerifiedAt` and left `isListed` alone — so a
+   * seller could stay in the marketplace with a contact nobody had confirmed,
+   * by doing nothing stranger than editing their profile. And a code confirmed
+   * over email proves the seller can read their own inbox, not that they hold
+   * the number: only a WhatsApp confirmation is evidence about the number.
+   *
+   * The action that sets `isListed` still does the right thing; this is the
+   * rule that cannot be walked past, in the one place every discovery query
+   * already goes through.
+   */
+  whatsappVerifiedAt: { not: null },
+  whatsappVerifiedVia: WhatsappVerifiedVia.WHATSAPP,
 } as const satisfies Prisma.ShopWhereInput;
 
 /**

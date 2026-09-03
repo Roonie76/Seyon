@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { MAX_PRODUCT_IMAGES } from '@/shared/lib/zod-schemas';
 import { SafeImage as NextImage } from '@/components/shared/safe-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ interface ProductManagerProps {
   shopId: string;
   shopSlug: string;
   products: ProductWithImages[];
-  clickStats?: Record<string, { total: number; week: number }>;
+  clickStats?: Record<string, { total: number; week: number; views: number }>;
 }
 
 export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: ProductManagerProps) {
@@ -156,12 +157,31 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    /**
+     * Check the cap before uploading, not after.
+     *
+     * Selecting twenty files uploaded all twenty — burning storage and the
+     * whole hourly upload quota — and only then failed the save wholesale with
+     * "Maximum 12 images per product", leaving twenty orphaned objects and
+     * nothing saved.
+     */
+    const room = MAX_PRODUCT_IMAGES - formData.images.length;
+    if (room <= 0) {
+      setMessage({
+        type: 'error',
+        text: `This product already has the maximum of ${MAX_PRODUCT_IMAGES} images. Remove one to add another.`,
+      });
+      e.target.value = '';
+      return;
+    }
+    const selected = Array.from(files).slice(0, room);
+    const skipped = files.length - selected.length;
+
     setImageUploading(true);
     setMessage(null);
 
     const uploads = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (const file of selected) {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('bucket', 'products');
@@ -179,8 +199,20 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
       );
     }
 
-    try {
-      const urls = await Promise.all(uploads);
+    /**
+     * `allSettled`, so one failure does not discard the successes.
+     *
+     * With `Promise.all`, a batch of six where the fourth failed threw away the
+     * URLs of the other five — files already sitting in storage, now orphaned,
+     * which the seller then re-uploaded.
+     */
+    const settled = await Promise.allSettled(uploads);
+    const urls = settled
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+      .map((r) => r.value);
+    const failures = settled.filter((r) => r.status === 'rejected').length;
+
+    if (urls.length > 0) {
       setFormData((prev) => {
         const currentCount = prev.images.length;
         const newImages = urls.map((url, idx) => ({
@@ -193,13 +225,22 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
           images: [...prev.images, ...newImages],
         };
       });
-    } catch (err) {
-      const errMessage = err instanceof Error ? err.message : 'Error uploading files';
-      setMessage({ type: 'error', text: errMessage });
-      track('upload_failed', { reason: errMessage.slice(0, 80) });
-    } finally {
-      setImageUploading(false);
     }
+
+    const notes: string[] = [];
+    if (failures > 0) notes.push(`${failures} image${failures === 1 ? '' : 's'} failed to upload`);
+    if (skipped > 0) {
+      notes.push(
+        `${skipped} skipped — a product can have ${MAX_PRODUCT_IMAGES} images at most`
+      );
+    }
+    if (notes.length > 0) {
+      setMessage({ type: 'error', text: `${notes.join('. ')}.` });
+      if (failures > 0) track('upload_failed', { reason: `${failures} of ${selected.length}` });
+    }
+
+    setImageUploading(false);
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -289,9 +330,10 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
   const handleStockToggle = async (prod: ProductWithImages) => {
     if (togglingStock) return;
     setTogglingStock(prod.id);
-    const res = await toggleProductStock(prod.id, !prod.inStock).catch(() => ({
-      error: "We couldn't reach Seyon. Check your connection and try again.",
-    }));
+    // Through `runAction` like every other mutation here — the ad-hoc catch it
+    // replaced skipped `broadcastDataChanged()`, so marking an item sold out
+    // was the one change that did not reach the seller's other open tabs.
+    const res = await runAction(() => toggleProductStock(prod.id, !prod.inStock));
     if (res.error) {
       setTogglingStock(null);
       alert(res.error);
@@ -422,14 +464,37 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                   <TableCell>
                     {(() => {
                       const stats = clickStats[prod.id];
-                      if (!stats || stats.total === 0) {
+                      if (!stats || (stats.total === 0 && stats.views === 0)) {
                         return <span className="text-xs text-muted-foreground/50">—</span>;
                       }
+                      /*
+                       * Views and taps together, plus the rate between them.
+                       *
+                       * A tap count alone cannot tell a seller whether a quiet
+                       * listing is unseen or unconvincing, and those call for
+                       * opposite fixes — better placement versus a better photo
+                       * and price. `PRODUCT_VIEW` rows were already being
+                       * written; nothing showed them.
+                       *
+                       * The rate is guarded rather than computed blindly: a
+                       * listing with no views yet shows an em-dash, not NaN.
+                       */
+                      const rate =
+                        stats.views > 0 ? Math.round((stats.total / stats.views) * 100) : null;
                       return (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-foreground" title={`${stats.total} total WhatsApp taps`}>
-                          <MessageCircle size={12} className="text-emerald-600" />
-                          {stats.week} <span className="text-muted-foreground font-normal">this week</span>
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-foreground"
+                            title={`${stats.total} WhatsApp taps all time`}
+                          >
+                            <MessageCircle size={12} className="text-emerald-600" />
+                            {stats.week} <span className="text-muted-foreground font-normal">this week</span>
+                          </span>
+                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                            {stats.views} view{stats.views === 1 ? '' : 's'}
+                            {rate !== null ? ` · ${rate}% tap` : ''}
+                          </span>
+                        </div>
                       );
                     })()}
                   </TableCell>

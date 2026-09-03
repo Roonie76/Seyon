@@ -13,7 +13,7 @@ export interface TrackResult {
   success?: boolean;
   error?: string;
   /** Set when the event was deliberately not written. */
-  skipped?: 'bot' | 'duplicate' | 'rate-limited';
+  skipped?: 'bot' | 'duplicate' | 'rate-limited' | 'owner';
   id?: string;
 }
 
@@ -87,6 +87,28 @@ export async function trackEventInternal(
     // Bots do not count as store traffic.
     if (signals?.isBot) {
       return { success: true, skipped: 'bot' as const };
+    }
+
+    /**
+     * A seller looking at their own shop is not a visit.
+     *
+     * Views carried no user id and there was no owner check, so a seller who
+     * opened their storefront — most likely through the dashboard's own "Visit
+     * Storefront" button — logged a view every thirty minutes. WhatsApp taps
+     * were worse: they set `skipDedupe`, so every test tap of their own contact
+     * button was recorded, up to sixty a minute.
+     *
+     * This is the difference between a number a seller believes and one they
+     * quietly learn to ignore.
+     */
+    if (cleanUserId) {
+      const shop = await db.shop.findUnique({
+        where: { id: parsedShopId.data },
+        select: { ownerId: true },
+      });
+      if (shop?.ownerId === cleanUserId) {
+        return { success: true, skipped: 'owner' as const };
+      }
     }
 
     // One view per viewer per target per window: a refresh is not a new visit.
