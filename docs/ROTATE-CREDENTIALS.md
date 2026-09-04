@@ -51,6 +51,29 @@ Both projects need the same values for `SUPABASE_SERVICE_ROLE_KEY` and
 
 ---
 
+## Inputs — three different credentials, easily confused
+
+Supabase issues two kinds of token that both start with `sb_`, and they are not
+interchangeable. Passing one where the other is expected returns
+`JWT could not be decoded`, which reads like a corrupted token rather than the
+wrong kind of token. Check the prefix before starting.
+
+| Variable | Prefix | What it opens | Where it comes from |
+| --- | --- | --- | --- |
+| `SUPABASE_PAT` | `sbp_` | The **Management API** — creating keys, resetting the database password. Account-wide, across every project you own. | supabase.com/dashboard/account/tokens → Generate new token |
+| *(the key being rotated)* | `sb_secret_` | **One project's data**, as an admin. Bypasses row-level security entirely. This is what lives in `SUPABASE_SERVICE_ROLE_KEY`. | Project → Settings → API Keys |
+| `VERCEL_TOKEN` | — | The Vercel account: environment variables and deployments. | vercel.com/account/tokens |
+
+Only `SUPABASE_PAT` authenticates against `api.supabase.com`. A `sb_secret_` key
+authenticates against `https://<ref>.supabase.co` and will always be rejected by
+the Management API.
+
+Set all three as environment variables in the shell that runs this procedure.
+Never paste them into a chat, a file inside the repository, or a command that
+gets echoed to a log.
+
+---
+
 ## Phase 0 — baseline
 
 Read-only. Establishes that the site is healthy *before* anything changes, so a
