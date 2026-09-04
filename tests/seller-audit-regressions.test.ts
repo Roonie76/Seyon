@@ -8,6 +8,8 @@
  * tests that already exist, and are not repeated here.
  */
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { normaliseProductImages } from '../src/shared/lib/product-images';
 import { istDayStart, istDayKey, istDayLabel, lastIstDays } from '../src/shared/lib/ist';
 import { appSecret, resetAppSecretCache } from '../src/backend/lib/app-secret';
@@ -200,5 +202,50 @@ describe('a profile save is not mistaken for a number change', () => {
 
   it('still sees a genuinely different number as different', () => {
     expect(normaliseWhatsapp('919700000001')).not.toBe(normaliseWhatsapp('919700000002'));
+  });
+});
+
+describe('the role escalation stays closed', () => {
+  /**
+   * A source scan, deliberately.
+   *
+   * This is the one finding with no behavioural test, because reproducing it
+   * needs a running server, a signed-in session and a POST to
+   * /api/auth/session — and the first version of that probe passed against the
+   * vulnerable code, which is worse than no test at all.
+   *
+   * What can be asserted cheaply is the shape of the callback. In Auth.js v5
+   * the `session` argument on an `update` trigger is the raw body the client
+   * posted, so any assignment from it into `token.role` hands the caller their
+   * own role. Nothing in this codebase calls `useSession().update()`, so there
+   * is no legitimate reason for that branch to exist.
+   *
+   * The reason this is worth a test rather than a comment: the next `next-auth`
+   * bump is a diff in a file nobody reads closely, and a merge that restores
+   * the branch would be silent. This file is the thing that shouts.
+   */
+  // `import.meta.url` is not a file: URL under this vitest transform, so the
+  // path is resolved from the project root instead.
+  const authSource = readFileSync(
+    resolve(process.cwd(), 'src/backend/lib/auth.ts'),
+    'utf8'
+  );
+
+  /** Comments explain the removal, so they must not count as the code returning. */
+  const code = authSource
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+
+  it('never writes the client-supplied session payload onto the token role', () => {
+    expect(code).not.toMatch(/token\.role\s*=\s*session[.?[]/);
+  });
+
+  it('does not reintroduce an update-trigger branch', () => {
+    expect(code).not.toMatch(/trigger\s*===\s*['"]update['"]/);
+  });
+
+  it('still sets the role from the database user at sign-in', () => {
+    // The guard above must not be satisfiable by deleting the callback wholesale.
+    expect(code).toMatch(/token\.role\s*=\s*\(user as/);
   });
 });
