@@ -474,7 +474,35 @@ export function StoreSettingsForm({ shop }: { shop: SellerShopView }) {
     // clicked Reverify, leaving them a live code and nowhere to type it.
     setCodeRequested(true);
 
-    const target = res.delivery === 'whatsapp' ? 'WhatsApp' : res.delivery === 'email' ? 'email' : 'the dev response';
+    /**
+     * An emailed code is not a failure, but it is not enough either.
+     *
+     * Confirming it marks the number verified over email, which does not list
+     * the store — so a seller told only "code sent" verifies, is refused at
+     * listing, is told to use WhatsApp, presses the same button, and loops.
+     * The consequence belongs here, in the same breath as the code.
+     *
+     * It is shown as an error rather than a success because it is one: the
+     * seller is about to spend effort on something that will not finish, and a
+     * green tick is the wrong shape for that.
+     */
+    if (res.delivery === 'email') {
+      setMessage({
+        type: 'error',
+        text:
+          res.whatsappOutcome === 'failed'
+            ? 'WhatsApp would not accept the message, so the code went to your email instead. ' +
+              'This is a problem on our side, not with your number. You can confirm the emailed ' +
+              'code, but your store will not be listed until WhatsApp delivery is working — ' +
+              'please contact support rather than retrying.'
+            : 'WhatsApp delivery is not switched on yet, so the code went to your email. ' +
+              'You can confirm it, but your store will not appear in the marketplace until the ' +
+              'number is confirmed on WhatsApp itself.',
+      });
+      return;
+    }
+
+    const target = res.delivery === 'whatsapp' ? 'WhatsApp' : 'the dev response';
     setMessage({
       type: 'success',
       text: `Verification code sent via ${target}. It expires in 10 minutes.${res.devCode ? ` Dev code: ${res.devCode}` : ''}`,

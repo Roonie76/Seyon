@@ -60,14 +60,27 @@ async function getOwnedShop() {
   return shop;
 }
 
-async function sendWhatsappTemplate(to: string, code: string) {
+/**
+ * Why a WhatsApp send did not happen, not merely that it did not.
+ *
+ * These two are the same to the code path and completely different to the
+ * person on the other end. `unconfigured` is a deployment that has not been
+ * finished. `failed` is an integration that is wired up and being rejected —
+ * an unapproved template, a number not registered to the app, an expired
+ * token — and it is the state where a seller sits in a loop being told to
+ * retry the thing that keeps failing. Telling them apart is what lets the UI
+ * say "this is us, not your number".
+ */
+type SendOutcome = 'sent' | 'unconfigured' | 'failed';
+
+async function sendWhatsappTemplate(to: string, code: string): Promise<SendOutcome> {
   const token = process.env.WHATSAPP_CLOUD_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const template = process.env.WHATSAPP_VERIFY_TEMPLATE_NAME;
   const language = process.env.WHATSAPP_VERIFY_TEMPLATE_LANGUAGE || 'en';
 
   if (!token || !phoneNumberId || !template) {
-    return false;
+    return 'unconfigured';
   }
 
   const parameters = template.startsWith('jaspers_market_order_confirmation')
@@ -103,11 +116,25 @@ async function sendWhatsappTemplate(to: string, code: string) {
 
   if (!res.ok) {
     const body = await res.text();
-    logger.warn('WhatsApp verification template send failed', { status: res.status, body });
-    return false;
+    /**
+     * Error, not warn.
+     *
+     * This is the integration that decides whether any seller can be listed.
+     * A warning is something to look at eventually; this is the line that
+     * explains why nobody can onboard, and it should be the first thing a
+     * search of the logs surfaces. The Graph body carries Meta's own reason —
+     * usually an unapproved template or a parameter-count mismatch — so it is
+     * logged verbatim rather than summarised.
+     */
+    logger.error('WHATSAPP_SEND_REJECTED: Meta refused the verification template', undefined, {
+      status: res.status,
+      body,
+      template,
+    });
+    return 'failed';
   }
 
-  return true;
+  return 'sent';
 }
 
 export async function requestWhatsappVerification() {
@@ -143,7 +170,8 @@ export async function requestWhatsappVerification() {
       }),
     ]);
 
-    const deliveredByWhatsapp = await sendWhatsappTemplate(normalizeWhatsapp(shop.whatsapp), code);
+    const outcome = await sendWhatsappTemplate(normalizeWhatsapp(shop.whatsapp), code);
+    const deliveredByWhatsapp = outcome === 'sent';
 
     /**
      * Whether the email actually left, not whether we tried.
@@ -202,6 +230,17 @@ export async function requestWhatsappVerification() {
     return {
       success: true,
       delivery: (deliveredByWhatsapp ? 'whatsapp' : 'email') as 'whatsapp' | 'email',
+      /**
+       * Why the code went to email, when it did.
+       *
+       * The seller needs this at the moment of the fallback, not two screens
+       * later. Confirming an emailed code sets the shop to EMAIL, which is not
+       * enough to be listed — so without this they verify "successfully", hit
+       * the listing refusal, are told to use WhatsApp, click the same button,
+       * and go round again. Naming the cause here ends the loop at the first
+       * turn and stops them suspecting their own number.
+       */
+      whatsappOutcome: outcome,
       expiresAt,
     };
   } catch (error) {

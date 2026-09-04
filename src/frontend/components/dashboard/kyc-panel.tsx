@@ -96,6 +96,15 @@ function Tier0Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
         buying from. No documents needed.
       </p>
 
+      {/*
+        Three states, not two.
+        
+        This used to be "verified or not". A seller who confirmed a code that
+        arrived by email is verified by that test, and still cannot be listed —
+        so they were shown no warning at all, submitted, and were refused with a
+        message they had no way to anticipate. Worse, the advice they were then
+        given was to verify on WhatsApp, which is exactly what had just failed.
+      */}
       {!kyc.whatsappVerified ? (
         <p
           data-testid="whatsapp-warning"
@@ -103,6 +112,16 @@ function Tier0Section({ kyc, onDone }: { kyc: KycView; onDone: () => void }) {
         >
           Verify your WhatsApp number first — buyers reach you there, so it has to work before
           your store can be listed.
+        </p>
+      ) : !kyc.whatsappVerifiedOnWhatsapp ? (
+        <p
+          data-testid="whatsapp-email-only-warning"
+          className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+        >
+          Your number was confirmed by email, not on WhatsApp — which proves you can read your
+          inbox, not that buyers can reach you on that number. Your store stays unlisted until a
+          code arrives on WhatsApp itself. If codes keep coming by email, that is a fault on our
+          side: contact support rather than retrying.
         </p>
       ) : null}
 
