@@ -22,6 +22,8 @@ import type { Prisma } from '@prisma/client';
  */
 
 export const ADMIN_ACTIONS = {
+  /** The nightly sweep reclaimed uploads nothing ever referenced. */
+  SWEEP_ORPHANED_UPLOADS: 'SWEEP_ORPHANED_UPLOADS',
   /** A seller's reply to a notice was read and acted on. */
   REVIEW_NOTICE_RESPONSE: 'REVIEW_NOTICE_RESPONSE',
   VERIFY_SHOP: 'VERIFY_SHOP',
@@ -83,7 +85,7 @@ export function actionRequiresReason(action: string): boolean {
 export interface AuditInput {
   actorId: string;
   action: AdminActionName;
-  targetType: 'Shop' | 'Product' | 'User' | 'Report' | 'SellerKyc' | 'Review' | 'Notice';
+  targetType: 'Shop' | 'Product' | 'User' | 'Report' | 'SellerKyc' | 'Review' | 'Notice' | 'Upload';
   targetId: string;
   reason?: string | null;
   metadata?: Prisma.InputJsonValue;

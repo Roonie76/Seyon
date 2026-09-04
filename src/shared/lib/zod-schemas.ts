@@ -94,6 +94,40 @@ export const ProductImageSchema = z.object({
   isPrimary: z.boolean().default(false),
 });
 
+/**
+ * A priced, stockable choice within a product.
+ *
+ * `priceDelta` is bounded in both directions: a variant may cost less than the
+ * base (a smaller size) but never so much less that it makes the product free,
+ * which is checked against the actual price at write time rather than here —
+ * this schema does not know the base price.
+ */
+export const ProductVariantSchema = z.object({
+  name: TrimmedText(1, 60, 'Variant name'),
+  priceDelta: z.preprocess(
+    (v) => (typeof v === 'string' ? Number(v) : v),
+    z
+      .number({ message: 'Price difference must be a number' })
+      .finite('Price difference must be a number')
+      .min(-1_000_000, 'Price difference is too large')
+      .max(1_000_000, 'Price difference is too large')
+  ),
+  inStock: z.boolean(),
+  /**
+   * Optional because the server renumbers by position anyway — the form sends
+   * an ordered array, and an index the client had to maintain would only be a
+   * second source of truth to get wrong.
+   */
+  sortOrder: z.number().int().min(0).max(100).optional().default(0),
+});
+
+/**
+ * Enough for sizes or weights, few enough that the chips stay a row rather
+ * than a wall. A seller needing more than this is describing a catalogue, not
+ * a product.
+ */
+export const MAX_PRODUCT_VARIANTS = 20;
+
 export const MAX_PRODUCT_IMAGES = 12;
 
 export const ProductSchema = z
@@ -115,6 +149,20 @@ export const ProductSchema = z
       .array(ProductImageSchema)
       .min(1, 'At least one product image is required')
       .max(MAX_PRODUCT_IMAGES, `Maximum ${MAX_PRODUCT_IMAGES} images per product`),
+    /**
+     * Optional, and absent means "this product has one price" — which is most
+     * products. A seller who never opens the variants section must not be
+     * pushed into modelling one.
+     */
+    variants: z
+      .array(ProductVariantSchema)
+      .max(MAX_PRODUCT_VARIANTS, `Maximum ${MAX_PRODUCT_VARIANTS} options per product`)
+      .optional()
+      .default([])
+      .refine(
+        (list) => new Set(list.map((v) => v.name.trim().toLowerCase())).size === list.length,
+        'Two options cannot have the same name'
+      ),
     /**
      * Optimistic-concurrency token: the updatedAt the client last read. When
      * present, the write only lands if the row has not changed since — so two
@@ -153,10 +201,10 @@ export const ReportSchema = z.object({
   reviewId: z.string().cuid('Invalid review reference').optional(),
 });
 
-export const ReorderImageItemSchema = z.object({
-  id: z.string().min(1, 'Image ID is required'),
-  displayOrder: z.number().int(),
-  isPrimary: z.boolean(),
-});
-
-export const ReorderImagesSchema = z.array(ReorderImageItemSchema);
+/*
+ * `ReorderImageItemSchema` / `ReorderImagesSchema` were removed here along with
+ * the `reorderProductImages` action they validated. That action had no callers,
+ * no revalidation, and checked only that each id belonged to the product — so
+ * one call could leave a listing with zero primaries or several. Image ordering
+ * is normalised on write now, in `normaliseProductImages`.
+ */

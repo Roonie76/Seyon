@@ -82,6 +82,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     },
     include: {
       images: { orderBy: { displayOrder: 'asc' } },
+      variants: { orderBy: { sortOrder: 'asc' } },
       shop: {
         include: {
           owner: { select: { emailVerified: true, phone: true, createdAt: true } },
@@ -274,6 +275,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 price={product.price}
                 productUrl={`${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || ''}/store/${shop.slug}/${product.slug}`}
                 options={product.options}
+                variants={product.variants.map((v) => ({
+                  id: v.id,
+                  name: v.name,
+                  priceDelta: v.priceDelta,
+                  inStock: v.inStock,
+                }))}
                 inStock={product.inStock}
                 shopPaused={shop.isPaused}
                 imageUrl={product.images?.[0]?.url}

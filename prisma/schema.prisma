@@ -114,6 +114,7 @@ model User {
   kycReviewed  SellerKyc[]       @relation("KycReviewer")
   adminActions AdminAction[]     @relation("AdminActor")
   slugChanges  ShopSlugHistory[] @relation("SlugChanger")
+  uploads      Upload[]          @relation("Uploader")
 
   // Moderation trails. All SetNull or Restrict rather than Cascade: deleting an
   // admin account must never quietly erase the record of what they decided.
@@ -213,6 +214,7 @@ model Shop {
   updatedAt           DateTime             @updatedAt
 
   owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  uploads               Upload[]
   underReviewBy         User?                  @relation("ShopUnderReviewBy", fields: [underReviewById], references: [id], onDelete: SetNull)
   products              Product[]
   reviews               Review[]
@@ -301,8 +303,9 @@ model Product {
   /// freeze was actually reaching for.
   firstActivatedAt  DateTime?
 
-  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop         Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
   images       ProductImage[]
+  variants     ProductVariant[]
   analytics    Analytics[]
   wishlistedBy Wishlist[]
 
@@ -313,6 +316,77 @@ model Product {
   @@index([price])
   @@index([status, discountPercent])
   @@index([status, createdAt])
+}
+
+/// A file accepted by the upload endpoint, and whether anything ever used it.
+///
+/// Uploads were fire-and-forget: the route wrote the file, returned a URL and
+/// recorded nothing. Closing the product dialog cleared React state, so five
+/// photos and a change of mind left five objects in the bucket with no row
+/// pointing at them, no owner recorded, and no way to attribute them later.
+/// Any signed-in account could do that twenty times an hour, indefinitely.
+///
+/// A row here is written at upload time and marked `attachedAt` when the file
+/// lands on something. Anything still unattached after a day is swept.
+model Upload {
+  id     String  @id @default(cuid())
+  /// Who uploaded it. Kept even after the file is deleted, so a pattern of
+  /// abuse is attributable.
+  userId String
+  /// The shop it was uploaded for, when the bucket belongs to a store.
+  shopId String?
+  bucket String
+  /// The public URL, which is what the product form round-trips.
+  url    String  @unique
+  /// The in-bucket path, so a sweep can delete without re-parsing the URL.
+  path   String
+
+  createdAt  DateTime  @default(now())
+  /// Set when the file is referenced by something durable. Null means nothing
+  /// points at it yet, which is normal for a few minutes and a leak after a day.
+  attachedAt DateTime?
+  /// Set when the sweep removed the object, so a second run skips it.
+  deletedAt  DateTime?
+
+  user User  @relation("Uploader", fields: [userId], references: [id], onDelete: Cascade)
+  shop Shop? @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  /// The sweep's query shape: unattached, undeleted, older than the cutoff.
+  @@index([attachedAt, deletedAt, createdAt])
+  @@index([userId, createdAt])
+}
+
+/// One priced, stockable choice within a product — "M", "500g", "Gift-wrapped".
+///
+/// `Product.options` remains a free-text field, and still handles the choices
+/// that do not change what a buyer pays: colour, wrapping, a message on a card.
+/// This model handles the ones that do. Keeping them separate is a deliberate
+/// narrowing: a full size-by-colour matrix, each cell with its own price and
+/// stock, is catalogue modelling for a warehouse. What an independent seller
+/// on this marketplace actually needs is "L costs two hundred more, and XL is
+/// gone" — one axis, priced and stockable, and free text for the rest.
+///
+/// Price is stored as a delta rather than an absolute so that a seller raising
+/// their base price does not have to retype every variant, which is exactly the
+/// chore that leaves a catalogue half-updated and a buyer quoted a stale number.
+model ProductVariant {
+  id         String  @id @default(cuid())
+  productId  String
+  /// What the buyer picks, e.g. "Medium". Shown on the chip and named in the
+  /// WhatsApp message, so it has to read as a choice, not as a SKU.
+  name       String
+  /// Added to the product's base price. Negative is allowed — a smaller size
+  /// costing less is as ordinary as a larger one costing more.
+  priceDelta Float   @default(0)
+  inStock    Boolean @default(true)
+  sortOrder  Int     @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// One name per product: two variants both called "Medium" would be
+  /// indistinguishable on the chip and ambiguous in the order message.
+  @@unique([productId, name])
+  @@index([productId, sortOrder])
 }
 
 model ProductImage {

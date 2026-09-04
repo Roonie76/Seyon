@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { uploadFile, storagePrefixForShop, storagePrefixForUser } from '@/lib/supabase';
+import {
+  uploadFile,
+  storagePrefixForShop,
+  storagePrefixForUser,
+  storagePathFromUrl,
+} from '@/lib/supabase';
 import { db } from '@/lib/db';
 import { rateLimit, RATE_LIMITS } from '@/backend/lib/rate-limit';
 import { logger } from '@/backend/lib/logger';
@@ -71,6 +76,7 @@ export async function POST(req: NextRequest) {
      * belong to a person who may have no shop.
      */
     let prefix: string | undefined;
+    let shopId: string | null = null;
     if (bucket === 'avatars') {
       prefix = storagePrefixForUser(session.user.id as string);
     } else {
@@ -88,9 +94,55 @@ export async function POST(req: NextRequest) {
         );
       }
       prefix = storagePrefixForShop(shop.id);
+      shopId = shop.id;
     }
 
     const publicUrl = await uploadFile(file, bucket, prefix);
+
+    /**
+     * Record it, so an abandoned upload can be found again.
+     *
+     * Without a row there is nothing to look for: the object has no owner in
+     * its path history, nothing references it, and no sweep can tell it from a
+     * file that is simply not in use yet. Written after the upload succeeds —
+     * a row for a file that does not exist would have the sweep chasing
+     * nothing.
+     *
+     * Best-effort: an upload that succeeded must not be reported as failed
+     * because bookkeeping did. The cost of losing a row is one orphan.
+     */
+    try {
+      const path = storagePathFromUrl(publicUrl, bucket);
+      /**
+       * No path means the URL is not ours.
+       *
+       * In development without Supabase credentials, `uploadFile` returns a
+       * placeholder stock photo instead of storing anything — there is no
+       * object, so there is nothing to track and nothing for the sweep to
+       * reclaim. Recording it would create a row pointing at somebody else's
+       * CDN that the nightly job would then try to delete.
+       *
+       * In production this branch is unreachable: `assertStorageUsable` makes
+       * an unconfigured bucket fatal before we get here.
+       */
+      if (path) {
+        await db.upload.create({
+          data: {
+            userId: session.user.id as string,
+            shopId: shopId ?? null,
+            bucket,
+            url: publicUrl,
+            path,
+          },
+        });
+      }
+    } catch (err) {
+      logger.warn('Upload succeeded but was not recorded', {
+        bucket,
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
     // The real error is logged, never returned. Echoing error.message handed

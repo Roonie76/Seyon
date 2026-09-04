@@ -3,16 +3,18 @@
 import { auth } from '@/lib/auth';
 import { normaliseProductImages } from '@/shared/lib/product-images';
 import { SUSPENDED_MESSAGE } from '@/shared/lib/suspension';
+import { markUploadsAttached } from './uploads';
 import { isOwnedStorageUrl } from '@/lib/supabase';
 import { db } from '@/lib/db';
 import { isCurrentUserAdmin } from '../lib/is-admin';
-import { ProductSchema, ReorderImagesSchema } from '@/lib/zod-schemas';
+import { ProductSchema } from '@/lib/zod-schemas';
+import { ProductStatus } from '@prisma/client';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { revalidatePath } from 'next/cache';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { z } from 'zod';
 import { logger } from '../lib/logger';
-import { revalidateShopSurface } from '@/shared/lib/cache';
+import { revalidateShopSurface, revalidateMarketplace } from '@/shared/lib/cache';
 import { extractDominantColor } from '../lib/color/extractDominant';
 import { generateTheme } from '../lib/color/generateTheme';
 import { slugify } from '@/shared/lib/slugify';
@@ -92,18 +94,39 @@ async function withSlugRetry<T>(
  *   - no product outside this shop may still reference the URL (legacy files
  *     uploaded before the prefix existed).
  */
-async function deleteOwnedFiles(urls: string[], shopId: string): Promise<void> {
+async function deleteOwnedFiles(
+  urls: string[],
+  shopId: string,
+  /**
+   * Rows about to disappear, or already gone, that must not count as a
+   * reference. Without this a delete would see the product's own images and
+   * conclude they were still in use.
+   */
+  excludeProductIds: string[] = []
+): Promise<void> {
   if (urls.length === 0) return;
 
+  /**
+   * Still referenced by *any* other product, not merely by another shop.
+   *
+   * The cross-shop check was right for the world where every product owned its
+   * images outright. Duplicating a listing breaks that: the copy points at the
+   * original's photos, both live in the same shop, and deleting either one
+   * would have taken the other's images with it — leaving a live product with
+   * dead image URLs and no way to tell what happened.
+   */
   const referencedElsewhere = await db.productImage.findMany({
-    where: { url: { in: urls }, product: { shopId: { not: shopId } } },
+    where: {
+      url: { in: urls },
+      productId: excludeProductIds.length > 0 ? { notIn: excludeProductIds } : undefined,
+    },
     select: { url: true },
   });
   const blocked = new Set(referencedElsewhere.map((r) => r.url));
 
   for (const url of urls) {
     if (blocked.has(url)) {
-      logger.warn('Skipped deleting an image referenced by another shop', { url, shopId });
+      logger.warn('Skipped deleting an image still used by another product', { url, shopId });
       continue;
     }
     try {
@@ -211,6 +234,29 @@ function foreignImageError(images: { url: string }[], shopId: string): string | 
     : null;
 }
 
+/**
+ * A variant may not price a product at or below zero.
+ *
+ * `priceDelta` is bounded on its own in the schema, but the schema cannot see
+ * the base price — a delta of -700 is perfectly reasonable on a ₹2,000 kurta
+ * and nonsense on a ₹500 one. Checked here, where both numbers are known.
+ */
+function variantPriceError(
+  list: { name: string; priceDelta: number }[],
+  basePrice: number
+): string | null {
+  const bad = list.find((v) => basePrice + v.priceDelta <= 0);
+  return bad
+    ? `"${bad.name}" would make this product cost ₹${(basePrice + bad.priceDelta).toFixed(2)}. ` +
+        'A price difference cannot bring the total to zero or below.'
+    : null;
+}
+
+/** Renumbered in the order the seller arranged them, so the chips are stable. */
+function normaliseVariants<T extends { sortOrder: number }>(list: T[]): T[] {
+  return list.map((v, idx) => ({ ...v, sortOrder: idx }));
+}
+
 export async function createProduct(shopId: string, rawData: unknown) {
   try {
     const parsedShopId = IdParamSchema.safeParse(shopId);
@@ -230,10 +276,13 @@ export async function createProduct(shopId: string, rawData: unknown) {
       return { error: validated.error.issues[0].message };
     }
 
-    const { title, description, price, compareAtPrice, category, options, inStock, status, images } = validated.data;
+    const { title, description, price, compareAtPrice, category, options, inStock, status, images, variants } = validated.data;
 
     const foreign = foreignImageError(images ?? [], parsedShopId.data);
     if (foreign) return { error: foreign };
+
+    const badVariant = variantPriceError(variants ?? [], price);
+    if (badVariant) return { error: badVariant };
 
     const normalisedImages = normaliseProductImages(images ?? []);
     // The theme is sampled from the cover, so a seller who picks a different
@@ -267,6 +316,7 @@ export async function createProduct(shopId: string, rawData: unknown) {
           // displayOrder 0, which is what every public card query reads.
           create: normalisedImages,
         },
+        variants: { create: normaliseVariants(variants ?? []) },
         themeBg: theme?.bg || null,
         themeSurface: theme?.surface || null,
         themeAccent: theme?.accent || null,
@@ -280,6 +330,10 @@ export async function createProduct(shopId: string, rawData: unknown) {
       },
       })
     , parsedShopId.data, title);
+
+    // These files are now referenced by a durable row, so the nightly sweep
+    // must leave them alone.
+    await markUploadsAttached(normalisedImages.map((img) => img.url));
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
@@ -313,7 +367,8 @@ export async function updateProduct(productId: string, rawData: unknown) {
       return { error: validated.error.issues[0].message };
     }
 
-    const { title, description, price, compareAtPrice, category, options, inStock, status, images, expectedUpdatedAt } = validated.data;
+    const { title, description, price, compareAtPrice, category, options, inStock, status, images, variants, expectedUpdatedAt } =
+      validated.data;
 
     // Optimistic concurrency. When the client tells us which version it was
     // editing, refuse the write if the row moved underneath it — otherwise two
@@ -328,6 +383,9 @@ export async function updateProduct(productId: string, rawData: unknown) {
 
     const foreign = foreignImageError(images ?? [], product.shopId);
     if (foreign) return { error: foreign };
+
+    const badVariant = variantPriceError(variants ?? [], price);
+    if (badVariant) return { error: badVariant };
 
     // Determine if we need to re-extract theme
     let themeUpdate: {
@@ -478,6 +536,28 @@ export async function updateProduct(productId: string, rawData: unknown) {
             }
           }
 
+          /**
+           * Variants are replaced wholesale, unlike images.
+           *
+           * Images are reconciled by URL because their ids travel to the
+           * client and back. A variant carries no such reference — the seller
+           * edits a list of names and numbers — and replacing the set is the
+           * only way to honour a rename, which reconciling by name could not
+           * tell apart from a delete plus an add.
+           *
+           * Nothing points at a variant row (an order is a WhatsApp message,
+           * not a record), so there is no history to lose.
+           */
+          await tx.productVariant.deleteMany({ where: { productId: parsedProductId.data } });
+          if (variants && variants.length > 0) {
+            await tx.productVariant.createMany({
+              data: normaliseVariants(variants).map((v) => ({
+                ...v,
+                productId: parsedProductId.data,
+              })),
+            });
+          }
+
           const fresh = await tx.product.findUnique({
             where: { id: parsedProductId.data },
             include: { images: true },
@@ -489,7 +569,10 @@ export async function updateProduct(productId: string, rawData: unknown) {
     // Storage cleanup, post-commit and scoped to files this shop owns.
     const keptUrls = new Set(images.map((img) => img.url));
     const removed = product.images.filter((img) => !keptUrls.has(img.url)).map((img) => img.url);
-    await deleteOwnedFiles(removed, product.shopId);
+    // This product's own rows are already gone for the removed URLs, but pass
+    // the id anyway so a same-shop duplicate is the only thing that can block.
+    await deleteOwnedFiles(removed, product.shopId, [product.id]);
+    await markUploadsAttached(images.map((img) => img.url));
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidateShopSurface(shop.slug, updatedProduct.slug, updatedProduct.category);
@@ -613,6 +696,8 @@ export async function quickAddProducts(shopId: string, rawImageUrls: unknown) {
       return { error: 'None of those images could be added. Please try again.' };
     }
 
+    await markUploadsAttached(validated.data);
+
     revalidatePath('/dashboard/products');
     return { success: true, count: created.length, failed: failed.length };
   } catch (error) {
@@ -675,7 +760,9 @@ export async function deleteProduct(productId: string) {
       where: { id: parsedProductId.data },
     });
 
-    await deleteOwnedFiles(product.images.map((img) => img.url), product.shopId);
+    // The product is deleted, so its own image rows are gone; anything still
+    // referencing these URLs is a different product and must keep them.
+    await deleteOwnedFiles(product.images.map((img) => img.url), product.shopId, [product.id]);
 
     revalidateShopSurface(shop.slug, product.slug, product.category);
     revalidatePath('/dashboard/products');
@@ -700,3 +787,236 @@ export async function deleteProduct(productId: string) {
  * Ordering is now normalised on write in `normaliseProductImages`. If reorder
  * comes back as a feature, it should go through that function too.
  */
+
+/**
+ * How many products one bulk call may touch.
+ *
+ * High enough to clear a season in one go, low enough that a mistyped request
+ * cannot walk the whole catalogue, and low enough that the transaction stays
+ * short. A seller with more than this selects twice.
+ */
+const BULK_LIMIT = 100;
+
+const BulkIdsSchema = z
+  .array(z.string().cuid('Invalid product identifier'))
+  .min(1, 'Select at least one product')
+  .max(BULK_LIMIT, `You can change ${BULK_LIMIT} products at a time`)
+  .transform((ids) => Array.from(new Set(ids)));
+
+const BulkStatusSchema = z.object({
+  productIds: BulkIdsSchema,
+  status: z.nativeEnum(ProductStatus),
+});
+
+/**
+ * Change the status of many products at once.
+ *
+ * Archiving last season's forty saris was forty confirm dialogs, each followed
+ * by a full page reload. That is not a missing convenience — it is the reason
+ * a catalogue goes stale, because tidying it costs more than leaving it wrong.
+ *
+ * Every id is checked against the caller's own shop in the same query that
+ * loads them, so a mixed list cannot be used to reach into somebody else's
+ * catalogue: ids that do not belong are simply not found, and the action says
+ * how many it actually changed rather than claiming the whole selection.
+ */
+export async function bulkSetProductStatus(shopId: string, raw: unknown) {
+  try {
+    const parsedShopId = IdParamSchema.safeParse(shopId);
+    if (!parsedShopId.success) return { error: 'Invalid shop ID format' };
+
+    const parsed = BulkStatusSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+    const { shop } = await verifyShopWritable(parsedShopId.data);
+
+    const owned = await db.product.findMany({
+      where: { id: { in: parsed.data.productIds }, shopId: shop.id },
+      select: { id: true, slug: true, category: true, status: true, firstActivatedAt: true },
+    });
+    if (owned.length === 0) return { error: 'None of those products are in your store.' };
+
+    /**
+     * Publishing for the first time stamps `firstActivatedAt`, which is what
+     * freezes the slug. Doing it here as well as in `updateProduct` matters:
+     * bulk-publishing a batch of quick-added drafts is the most likely way a
+     * product ever goes live, and a listing published this way must be as
+     * link-stable as one published through the editor.
+     */
+    const now = new Date();
+    const needStamp = parsed.data.status === ProductStatus.ACTIVE
+      ? owned.filter((p) => p.firstActivatedAt === null).map((p) => p.id)
+      : [];
+
+    await db.$transaction(async (tx) => {
+      await tx.product.updateMany({
+        where: { id: { in: owned.map((p) => p.id) }, shopId: shop.id },
+        data: { status: parsed.data.status },
+      });
+      if (needStamp.length > 0) {
+        await tx.product.updateMany({
+          where: { id: { in: needStamp } },
+          data: { firstActivatedAt: now },
+        });
+      }
+    });
+
+    // Every affected address, because a status change moves a product into or
+    // out of the storefront, its category page and the sitemap.
+    for (const p of owned) revalidateShopSurface(shop.slug, p.slug, p.category);
+    revalidatePath('/dashboard/products');
+    revalidateMarketplace();
+
+    return { success: true, count: owned.length, requested: parsed.data.productIds.length };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'bulkSetProductStatus', shopId }) };
+  }
+}
+
+/**
+ * Delete many products at once.
+ *
+ * Kept separate from the status change rather than folded in as a fourth
+ * "status", because deleting is the one bulk operation with no undo — the
+ * caller has to reach for a different function to do it, and the UI asks for a
+ * typed confirmation before it does.
+ */
+export async function bulkDeleteProducts(shopId: string, raw: unknown) {
+  try {
+    const parsedShopId = IdParamSchema.safeParse(shopId);
+    if (!parsedShopId.success) return { error: 'Invalid shop ID format' };
+
+    const parsed = BulkIdsSchema.safeParse(raw);
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+    // Deleting is allowed while suspended — a seller taking their own listing
+    // down is a good outcome, and ownership is still required.
+    const { shop } = await verifyShopOwnership(parsedShopId.data);
+
+    const owned = await db.product.findMany({
+      where: { id: { in: parsed.data }, shopId: shop.id },
+      include: { images: { select: { url: true } } },
+    });
+    if (owned.length === 0) return { error: 'None of those products are in your store.' };
+
+    const ids = owned.map((p) => p.id);
+    await db.product.deleteMany({ where: { id: { in: ids }, shopId: shop.id } });
+
+    /**
+     * One cleanup pass over the whole batch, excluding every id in it.
+     *
+     * Deleting products one at a time here would be wrong as well as slow: two
+     * of them may share an image (a duplicate and its original), and a
+     * per-product cleanup would see the sibling as a live reference right up
+     * until its own turn.
+     */
+    const urls = Array.from(new Set(owned.flatMap((p) => p.images.map((img) => img.url))));
+    await deleteOwnedFiles(urls, shop.id, ids);
+
+    for (const p of owned) revalidateShopSurface(shop.slug, p.slug, p.category);
+    revalidatePath('/dashboard/products');
+    revalidateMarketplace();
+
+    return { success: true, count: owned.length, requested: parsed.data.length };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'bulkDeleteProducts', shopId }) };
+  }
+}
+
+/**
+ * Copy a listing as a new draft.
+ *
+ * The same kurta in six colours meant six full re-uploads and six retypings of
+ * the same description. The copy starts as a DRAFT so it cannot go live
+ * half-edited, and it shares the original's image rows rather than duplicating
+ * the files — which is only safe because `deleteOwnedFiles` now refuses to
+ * remove a file any other product still references, same shop included.
+ *
+ * The title gets a "(copy)" suffix so the two are distinguishable in a list
+ * before the seller has renamed anything, and the slug is allocated fresh from
+ * that title. Nothing about the copy is public until the seller publishes it,
+ * so the slug is still free to change when they rename it.
+ */
+export async function duplicateProduct(productId: string) {
+  try {
+    const parsedProductId = IdParamSchema.safeParse(productId);
+    if (!parsedProductId.success) return { error: 'Invalid product ID format' };
+
+    const source = await db.product.findUnique({
+      where: { id: parsedProductId.data },
+      include: {
+        images: { orderBy: { displayOrder: 'asc' } },
+        variants: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+    if (!source) return { error: 'Product not found' };
+
+    const { shop } = await verifyShopWritable(source.shopId);
+
+    const rl = await rateLimit(
+      `product-create:${shop.ownerId}`,
+      RATE_LIMITS.PRODUCT_CREATE.limit,
+      RATE_LIMITS.PRODUCT_CREATE.windowMs
+    );
+    if (!rl.success) {
+      return { error: 'Too many products created today. Please try again later.' };
+    }
+
+    const title = `${source.title} (copy)`.slice(0, 200);
+
+    const copy = await withSlugRetry(
+      (slug) =>
+        db.product.create({
+          data: {
+            shopId: shop.id,
+            title,
+            slug,
+            description: source.description,
+            price: source.price,
+            compareAtPrice: source.compareAtPrice,
+            discountPercent: source.discountPercent,
+            category: source.category,
+            options: source.options,
+            inStock: source.inStock,
+            // A copy is never born public, whatever the original's status.
+            status: ProductStatus.DRAFT,
+            firstActivatedAt: null,
+            themeBg: source.themeBg,
+            themeSurface: source.themeSurface,
+            themeAccent: source.themeAccent,
+            themeAccentStrong: source.themeAccentStrong,
+            themeText: source.themeText,
+            themeMuted: source.themeMuted,
+            themeExtractedAt: source.themeExtractedAt,
+            images: {
+              create: normaliseProductImages(
+                source.images.map((img) => ({
+                  url: img.url,
+                  displayOrder: img.displayOrder,
+                  isPrimary: img.isPrimary,
+                }))
+              ),
+            },
+            // Sizes and their prices are the most tedious thing to retype, so
+            // they are the most valuable thing for a copy to bring along.
+            variants: {
+              create: source.variants.map((v) => ({
+                name: v.name,
+                priceDelta: v.priceDelta,
+                inStock: v.inStock,
+                sortOrder: v.sortOrder,
+              })),
+            },
+          },
+          select: { id: true },
+        }),
+      shop.id,
+      title
+    );
+
+    revalidatePath('/dashboard/products');
+    return { success: true, productId: copy.id };
+  } catch (error) {
+    return { error: toUserMessage(error, { action: 'duplicateProduct', productId }) };
+  }
+}

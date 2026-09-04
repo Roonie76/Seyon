@@ -34,21 +34,33 @@ export function parseOptions(raw: string): OptionGroup[] {
 export function buildOrderMessage(args: {
   productName: string;
   shopName: string;
+  /** The price of the option chosen, not necessarily the product's base price. */
   price: number;
   productUrl: string;
   selections: Record<string, string>;
+  /**
+   * The priced option the buyer picked, when the product has any.
+   *
+   * Named first in the message and separately from the free-text selections,
+   * because it is the one choice that changed the number being quoted — a
+   * seller reading "Medium" next to ₹899 can confirm the order without opening
+   * the listing to check which size costs what.
+   */
+  variantName?: string | null;
   inStock: boolean;
 }): string {
-  const { productName, shopName, price, productUrl, selections, inStock } = args;
+  const { productName, shopName, price, productUrl, selections, variantName, inStock } = args;
   const picked = Object.entries(selections)
     .map(([label, value]) => (label === '_' ? value : `${label}: ${value}`))
     .join(', ');
 
   if (!inStock) {
-    return `Hi! I'm interested in "${productName}" from your shop "${shopName}" on Seyon. It shows as sold out — could you let me know when it's back in stock? ${productUrl}`;
+    const which = variantName ? ` (${variantName})` : '';
+    return `Hi! I'm interested in "${productName}"${which} from your shop "${shopName}" on Seyon. It shows as sold out — could you let me know when it's back in stock? ${productUrl}`;
   }
 
-  const optionsPart = picked ? ` (${picked})` : '';
+  const parts = [variantName, picked].filter(Boolean).join(', ');
+  const optionsPart = parts ? ` (${parts})` : '';
   return `Hi! I want to order: ${productName}${optionsPart} — ₹${price.toFixed(2)} from "${shopName}" on Seyon. ${productUrl}`;
 }
 

@@ -12,6 +12,7 @@ import { logger } from '../lib/logger';
 import { revalidateMarketplace, revalidateShopSurface } from '@/shared/lib/cache';
 import { toUserMessage, CONFLICT_ERROR } from '../lib/action-errors';
 import { SUSPENDED_MESSAGE } from '@/shared/lib/suspension';
+import { markUploadsAttached } from './uploads';
 import { normaliseWhatsapp } from '@/shared/lib/whatsapp-number';
 import { slugClashReason, slugClashReasonForNewShop, retireSlug } from '../lib/shop-slug';
 import { roleAfterShopRemoval } from '@/shared/lib/shop-removal';
@@ -94,6 +95,10 @@ export async function createShop(rawData: unknown) {
 
       return newShop;
     });
+
+    // A logo or banner saved onto a shop is in use, so the sweep must not
+    // reclaim it.
+    await markUploadsAttached([shop.logo, shop.banner].filter((u): u is string => Boolean(u)));
 
     revalidatePath('/');
     revalidateMarketplace();
@@ -274,6 +279,10 @@ export async function updateShop(shopId: string, rawData: unknown) {
         }
       }
     }
+
+    await markUploadsAttached(
+      [updatedShop.logo, updatedShop.banner].filter((u): u is string => Boolean(u))
+    );
 
     revalidateShopSurface(existingShop.slug);
     revalidateShopSurface(updatedShop.slug);

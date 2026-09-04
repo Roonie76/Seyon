@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { logger } from './logger';
 import { notify } from './notify';
 import { deleteKycDocument } from './kyc-storage';
+import { deleteFile, storagePrefixForShop, storagePrefixForUser } from './supabase';
 import { emailNotice } from './notices';
 import { recordAdminActionSafe, ADMIN_ACTIONS } from './admin-audit';
 import { systemActorId } from './system-actor';
@@ -254,8 +255,92 @@ export async function sendSlaDigest(now = new Date()): Promise<JobResult> {
  * A failing job must not stop the ones after it: a storage outage should not
  * also cost the marketplace its complaint digest.
  */
+/** How long an upload may sit unused before it is reclaimed. */
+const ORPHAN_UPLOAD_MAX_AGE_HOURS = 24;
+
+/**
+ * Delete uploads nothing ever used.
+ *
+ * A seller uploads five photos, changes their mind and closes the dialog. The
+ * "remove" button now deletes on the spot, but that only covers the paths
+ * somebody clicks: a closed tab, a lost connection or a crash between the
+ * upload and the save leaves the file with nothing pointing at it.
+ *
+ * A day is deliberately generous. The window has to be longer than a slow
+ * seller filling in a long form on a bad connection, because the cost of
+ * sweeping too early is deleting an image out from under a listing being
+ * written — far worse than paying for a stray file for another few hours.
+ *
+ * `attachedAt` is the whole safety of this: every write path that saves an
+ * image marks its uploads attached, so anything still null here was never
+ * referenced by anything.
+ */
+export async function sweepOrphanedUploads(now = new Date()): Promise<JobResult> {
+  const cutoff = new Date(now.getTime() - ORPHAN_UPLOAD_MAX_AGE_HOURS * 3_600_000);
+
+  const stale = await db.upload.findMany({
+    where: { attachedAt: null, deletedAt: null, createdAt: { lt: cutoff } },
+    select: { id: true, url: true, bucket: true, shopId: true, userId: true },
+    // Bounded so one bad night cannot turn into an unbounded job.
+    take: 500,
+  });
+
+  let deleted = 0;
+  for (const row of stale) {
+    /**
+     * Check the database again before deleting.
+     *
+     * `attachedAt` is set by application code, and application code can fail
+     * — a save that committed while `markUploadsAttached` threw would leave a
+     * live image looking like an orphan. This second look asks the only
+     * question that actually matters: does anything reference this file?
+     */
+    const [asProductImage, asShopImage] = await Promise.all([
+      db.productImage.findFirst({ where: { url: row.url }, select: { id: true } }),
+      db.shop.findFirst({
+        where: { OR: [{ logo: row.url }, { banner: row.url }] },
+        select: { id: true },
+      }),
+    ]);
+
+    if (asProductImage || asShopImage) {
+      // In use after all. Mark it so the sweep stops reconsidering it.
+      await db.upload.update({ where: { id: row.id }, data: { attachedAt: new Date() } });
+      continue;
+    }
+
+    const prefix = row.shopId
+      ? storagePrefixForShop(row.shopId)
+      : storagePrefixForUser(row.userId);
+
+    try {
+      await deleteFile(row.url, row.bucket as 'logos' | 'banners' | 'products' | 'avatars', prefix);
+    } catch (err) {
+      logger.warn('Orphan sweep could not delete a file', {
+        uploadId: row.id,
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    await db.upload.update({ where: { id: row.id }, data: { deletedAt: new Date() } });
+    deleted += 1;
+  }
+
+  if (deleted > 0) {
+    await recordAdminActionSafe({
+      actorId: await systemActorId(),
+      action: ADMIN_ACTIONS.SWEEP_ORPHANED_UPLOADS,
+      targetType: 'Upload',
+      targetId: 'sweep',
+      metadata: { deleted, olderThanHours: ORPHAN_UPLOAD_MAX_AGE_HOURS },
+    });
+  }
+
+  return { name: 'orphan-uploads', did: deleted };
+}
+
 export async function runDailyJobs(now = new Date()): Promise<JobResult[]> {
-  const jobs = [sweepAbandonedKycDocuments, chaseOverdueNotices, sendSlaDigest];
+  const jobs = [sweepAbandonedKycDocuments, sweepOrphanedUploads, chaseOverdueNotices, sendSlaDigest];
   const results: JobResult[] = [];
 
   for (const job of jobs) {

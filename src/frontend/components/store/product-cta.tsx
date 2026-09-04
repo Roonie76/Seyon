@@ -19,6 +19,11 @@ interface ProductCTAProps {
   productUrl: string;
   /** Free-text option groups, e.g. "Sizes: S, M, L · Colors: Red, Black" */
   options?: string | null;
+  /**
+   * Priced, stockable choices. Unlike `options`, picking one changes the number
+   * the buyer is quoted and can be sold out on its own.
+   */
+  variants?: { id: string; name: string; priceDelta: number; inStock: boolean }[];
   inStock: boolean;
   /** Shop vacation mode: disables ordering entirely. */
   shopPaused?: boolean;
@@ -34,6 +39,7 @@ export function ProductCTA({
   price,
   productUrl,
   options,
+  variants = [],
   inStock,
   shopPaused = false,
   imageUrl,
@@ -51,6 +57,30 @@ export function ProductCTA({
     }
     return initial;
   });
+  /**
+   * Which priced option is chosen.
+   *
+   * Defaults to the first one that is actually available — defaulting to
+   * index 0 would open the page on a sold-out size, with the order button
+   * disabled and nothing saying why.
+   */
+  const [variantId, setVariantId] = React.useState<string | null>(() => {
+    if (variants.length === 0) return null;
+    return (variants.find((v) => v.inStock) ?? variants[0]).id;
+  });
+  const activeVariant = React.useMemo(
+    () => variants.find((v) => v.id === variantId) ?? null,
+    [variants, variantId]
+  );
+  /** What this buyer would actually pay, with the chosen option applied. */
+  const effectivePrice = price + (activeVariant?.priceDelta ?? 0);
+  /**
+   * A product with priced options is orderable only if the chosen one is in
+   * stock — the product-level flag still wins, since a paused or sold-out
+   * product is unavailable whichever size you pick.
+   */
+  const effectiveInStock = inStock && (variants.length === 0 || Boolean(activeVariant?.inStock));
+
   const [added, setAdded] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showGuidelines, setShowGuidelines] = React.useState(false);
@@ -193,7 +223,17 @@ export function ProductCTA({
       console.error('Analytics tracking failed:', error);
     }
 
-    const text = buildOrderMessage({ productName, shopName, price, productUrl, selections, inStock });
+    const text = buildOrderMessage({
+      productName,
+      shopName,
+      // The price of the option they picked, not the base price — quoting the
+      // base for an upgraded size starts every conversation with a correction.
+      price: effectivePrice,
+      productUrl,
+      selections,
+      variantName: activeVariant?.name ?? null,
+      inStock: effectiveInStock,
+    });
     let cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
     if (cleanNumber.length === 10) {
       cleanNumber = `91${cleanNumber}`;
@@ -216,6 +256,69 @@ export function ProductCTA({
 
   return (
     <div className="flex flex-col gap-4 w-full">
+      {/*
+        Priced options come first, above the free-text ones.
+
+        They are the choice that changes the number on the page, so they read
+        before the choices that do not — and a sold-out size is shown rather
+        than hidden, because "L is gone" is information a buyer wants before
+        they message, not after.
+      */}
+      {inStock && variants.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] uppercase font-bold text-muted-foreground tracking-wider">
+            Choose an option
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {variants.map((variant) => {
+              const selected = variant.id === variantId;
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  disabled={!variant.inStock}
+                  onClick={() => setVariantId(variant.id)}
+                  data-testid={`variant-chip-${variant.name}`}
+                  aria-pressed={selected}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
+                    !variant.inStock
+                      ? 'cursor-not-allowed border-border text-muted-foreground/50 line-through'
+                      : selected
+                        ? 'border-amber-500 bg-amber-500 text-black'
+                        : 'border-border text-foreground hover:border-amber-400'
+                  }`}
+                >
+                  {variant.name}
+                  {variant.priceDelta !== 0 ? (
+                    <span className="ml-1.5 font-semibold opacity-80">
+                      {variant.priceDelta > 0 ? '+' : '−'}₹{Math.abs(variant.priceDelta).toFixed(0)}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {/*
+            The total, restated after a choice that changed it. The price at the
+            top of the page is the base, and a buyer who picked the ₹200 size
+            should not have to add it up themselves.
+          */}
+          {activeVariant && activeVariant.priceDelta !== 0 ? (
+            <span className="text-sm font-black text-foreground tabular-nums" data-testid="variant-price">
+              ₹{effectivePrice.toFixed(2)}
+              <span className="ml-1.5 text-[11px] font-semibold text-muted-foreground">
+                with {activeVariant.name}
+              </span>
+            </span>
+          ) : null}
+          {activeVariant && !activeVariant.inStock ? (
+            <span className="text-[11px] font-bold text-red-500">
+              {activeVariant.name} is sold out — pick another option, or ask the seller when it is back.
+            </span>
+          ) : null}
+        </div>
+      )}
+
       {inStock && groups.length > 0 && (
         <div className="flex flex-col gap-3">
           {groups.map((group) => (
@@ -268,7 +371,7 @@ export function ProductCTA({
         </span>
       )}
 
-      {inStock ? (
+      {effectiveInStock ? (
         <div className="flex flex-col gap-3 w-full">
           {currentQuantity > 0 ? (
             <div className="w-full h-12 rounded-lg bg-amber-500 border border-amber-600 shadow-sm flex items-center justify-between px-2 text-black transition-all duration-300">

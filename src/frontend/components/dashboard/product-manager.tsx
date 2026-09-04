@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { MAX_PRODUCT_IMAGES } from '@/shared/lib/zod-schemas';
+import { MAX_PRODUCT_IMAGES, MAX_PRODUCT_VARIANTS } from '@/shared/lib/zod-schemas';
 import { SafeImage as NextImage } from '@/components/shared/safe-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { createProduct, updateProduct, deleteProduct, toggleProductStock, quickAddProducts } from '@/actions/products';
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  toggleProductStock,
+  quickAddProducts,
+  bulkSetProductStatus,
+  bulkDeleteProducts,
+  duplicateProduct,
+} from '@/actions/products';
+import { discardUpload } from '@/actions/uploads';
 import { runAction } from '@/frontend/lib/run-action';
 import { track } from '@/frontend/lib/events';
-import { Product, ProductImage, ProductStatus } from '@prisma/client';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap, Share2, Check } from 'lucide-react';
+import { Product, ProductImage, ProductVariant, ProductStatus } from '@prisma/client';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Star, Upload, Loader2, PackageCheck, PackageX, MessageCircle, Zap, Share2, Check, Copy, X } from 'lucide-react';
 
 interface ProductImageInput {
   url: string;
@@ -23,6 +33,14 @@ interface ProductImageInput {
 
 interface ProductWithImages extends Product {
   images: ProductImage[];
+  variants: ProductVariant[];
+}
+
+/** A variant as the form holds it — prices are strings while being typed. */
+interface VariantInput {
+  name: string;
+  priceDelta: string;
+  inStock: boolean;
 }
 
 interface ProductManagerProps {
@@ -34,6 +52,90 @@ interface ProductManagerProps {
 
 export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: ProductManagerProps) {
   const [quickAdding, setQuickAdding] = React.useState(false);
+
+  /**
+   * Which rows the seller has picked.
+   *
+   * A Set of ids rather than a flag on each product, so the selection survives
+   * the list being re-fetched — after a bulk change the rows come back as new
+   * objects, and a flag stored on them would be silently lost.
+   */
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = React.useState<string | null>(null);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = React.useState(false);
+  const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
+
+  const visibleIds = React.useMemo(() => products.map((p) => p.id), [products]);
+  const selectedVisible = React.useMemo(
+    () => visibleIds.filter((id) => selected.has(id)),
+    [visibleIds, selected]
+  );
+  const allVisibleSelected = visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+      else visibleIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  async function runBulkStatus(status: ProductStatus) {
+    if (selectedVisible.length === 0 || bulkBusy) return;
+    setBulkBusy(status);
+    const res = await runAction(() =>
+      bulkSetProductStatus(shopId, { productIds: selectedVisible, status })
+    );
+    setBulkBusy(null);
+    if (res.error) {
+      setMessage({ type: 'error', text: res.error });
+      return;
+    }
+    // The server reports what it actually changed, which can be fewer than the
+    // selection if a row was deleted in another tab meanwhile.
+    setMessage({
+      type: 'success',
+      text: `${res.count} product${res.count === 1 ? '' : 's'} moved to ${status.toLowerCase()}.`,
+    });
+    setSelected(new Set());
+    window.location.reload();
+  }
+
+  async function runBulkDelete() {
+    if (selectedVisible.length === 0 || bulkBusy) return;
+    setBulkBusy('delete');
+    const res = await runAction(() => bulkDeleteProducts(shopId, selectedVisible));
+    setBulkBusy(null);
+    setConfirmingBulkDelete(false);
+    if (res.error) {
+      setMessage({ type: 'error', text: res.error });
+      return;
+    }
+    setSelected(new Set());
+    window.location.reload();
+  }
+
+  async function handleDuplicate(prod: ProductWithImages) {
+    if (duplicatingId) return;
+    setDuplicatingId(prod.id);
+    const res = await runAction(() => duplicateProduct(prod.id));
+    setDuplicatingId(null);
+    if (res.error) {
+      setMessage({ type: 'error', text: res.error });
+      return;
+    }
+    window.location.reload();
+  }
 
   const handleQuickAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -91,6 +193,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     inStock: boolean;
     status: ProductStatus;
     images: ProductImageInput[];
+    variants: VariantInput[];
     /** updatedAt of the row this dialog was opened on — the concurrency token. */
     expectedUpdatedAt: string | null;
   }>({
@@ -103,6 +206,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     inStock: true,
     status: ProductStatus.ACTIVE,
     images: [],
+    variants: [],
     expectedUpdatedAt: null,
   });
 
@@ -117,6 +221,7 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
       inStock: true,
       status: ProductStatus.ACTIVE,
       images: [],
+      variants: [],
       expectedUpdatedAt: null,
     });
     setMessage(null);
@@ -145,6 +250,13 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
         url: img.url,
         isPrimary: img.isPrimary,
         displayOrder: img.displayOrder,
+      })),
+      variants: (product.variants ?? []).map((v) => ({
+        name: v.name,
+        // Blank rather than "0" for no difference, so the common case reads as
+        // empty instead of as a number the seller has to think about.
+        priceDelta: v.priceDelta === 0 ? '' : String(v.priceDelta),
+        inStock: v.inStock,
       })),
       expectedUpdatedAt: new Date(product.updatedAt).toISOString(),
     });
@@ -244,6 +356,8 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
   };
 
   const removeImage = (index: number) => {
+    const removed = formData.images[index];
+
     setFormData((prev) => {
       const filtered = prev.images.filter((_, idx) => idx !== index);
       // Re-assign display order and ensure one is primary if available
@@ -254,6 +368,24 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
       }));
       return { ...prev, images: mapped };
     });
+
+    /**
+     * Delete the file too, not just the row in this form.
+     *
+     * Removing an image used to clear React state and nothing else, so the
+     * object stayed in the bucket for good. The action refuses if any product
+     * still references the URL — a duplicate listing sharing this photo, most
+     * likely — so this is safe to fire without checking first.
+     *
+     * Deliberately not awaited and never surfaced: the seller asked to remove
+     * an image from a form, and a storage failure is our problem, not a reason
+     * to interrupt them mid-edit.
+     */
+    if (removed?.url) {
+      void discardUpload(removed.url).catch(() => {
+        /* best-effort; the nightly sweep is the backstop */
+      });
+    }
   };
 
   const setPrimaryImage = (index: number) => {
@@ -273,11 +405,29 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
     setIsLoading(true);
     setMessage(null);
 
+    /**
+     * Blank rows never reach the server.
+     *
+     * The variant editor always shows one empty row so there is somewhere to
+     * type, and a seller who ignores it should not be told their product has an
+     * invalid option. An empty name means "I did not use this row".
+     */
+    const payload = {
+      ...formData,
+      variants: formData.variants
+        .filter((v) => v.name.trim().length > 0)
+        .map((v) => ({
+          name: v.name.trim(),
+          priceDelta: v.priceDelta.trim() === '' ? 0 : Number(v.priceDelta),
+          inStock: v.inStock,
+        })),
+    };
+
     const res = await runAction(() =>
       dialogMode === 'add'
-        ? createProduct(shopId, formData)
+        ? createProduct(shopId, payload)
         : activeProduct
-        ? updateProduct(activeProduct.id, formData)
+        ? updateProduct(activeProduct.id, payload)
         : Promise.resolve({ error: 'No active product selected' })
     );
 
@@ -314,7 +464,23 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
 
   const handleDelete = async (productId: string) => {
     if (deletingId) return;
-    if (!confirm('Are you sure you want to delete this product? This action is permanent.')) return;
+    /**
+     * Offer the softer option, and say what deleting costs.
+     *
+     * `Analytics.productId` is `onDelete: SetNull` and the dashboard filters
+     * those rows out, so deleting a listing silently destroys the buy taps and
+     * views it earned. Archiving keeps them. Nothing said so, which made the
+     * destructive choice the easy one.
+     */
+    if (
+      !confirm(
+        'Delete this product permanently?\n\n' +
+          'Its views and WhatsApp taps go with it, and they cannot be recovered. ' +
+          'Archiving instead takes it off your storefront and keeps the history — ' +
+          'select it and choose Archive if that is what you want.'
+      )
+    )
+      return;
     setDeletingId(productId);
     const res = await runAction(() => deleteProduct(productId));
     if (res.error) {
@@ -395,6 +561,99 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
         </div>
       </div>
 
+      {/*
+        The bulk bar, shown only when something is selected.
+
+        Anchored above the table rather than floating, because it has to say
+        how many rows it will act on and a floating bar that covers rows makes
+        that number impossible to check.
+      */}
+      {selectedVisible.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <span className="text-xs font-bold text-amber-900">
+            {selectedVisible.length} selected
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 underline underline-offset-2"
+          >
+            <X size={11} /> Clear
+          </button>
+
+          <span className="mx-1 h-4 w-px bg-amber-300" aria-hidden="true" />
+
+          {confirmingBulkDelete ? (
+            <>
+              <span className="text-xs font-bold text-red-800">
+                Delete {selectedVisible.length} product{selectedVisible.length === 1 ? '' : 's'} for good?
+              </span>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={bulkBusy !== null}
+                onClick={runBulkDelete}
+                data-testid="bulk-delete-confirm"
+              >
+                {bulkBusy === 'delete' ? <Loader2 size={13} className="mr-1 animate-spin" /> : <Trash2 size={13} className="mr-1" />}
+                Yes, delete
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmingBulkDelete(false)}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              {/*
+                Archive first and delete last, with the reversible options in
+                between — the order the seller reads them in is the order of
+                increasing consequence.
+              */}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy !== null}
+                onClick={() => runBulkStatus(ProductStatus.ACTIVE)}
+                data-testid="bulk-publish"
+              >
+                {bulkBusy === ProductStatus.ACTIVE ? <Loader2 size={13} className="mr-1 animate-spin" /> : null}
+                Publish
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy !== null}
+                onClick={() => runBulkStatus(ProductStatus.DRAFT)}
+                data-testid="bulk-draft"
+              >
+                {bulkBusy === ProductStatus.DRAFT ? <Loader2 size={13} className="mr-1 animate-spin" /> : null}
+                Move to draft
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy !== null}
+                onClick={() => runBulkStatus(ProductStatus.ARCHIVED)}
+                data-testid="bulk-archive"
+              >
+                {bulkBusy === ProductStatus.ARCHIVED ? <Loader2 size={13} className="mr-1 animate-spin" /> : null}
+                Archive
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                disabled={bulkBusy !== null}
+                onClick={() => setConfirmingBulkDelete(true)}
+                data-testid="bulk-delete"
+              >
+                <Trash2 size={13} className="mr-1" /> Delete
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Product List Table */}
       {products.length === 0 ? (
         <div className="p-16 border border-dashed border-zinc-200 rounded-xl text-center bg-card shadow-sm">
@@ -406,6 +665,16 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8">
+                <input
+                  type="checkbox"
+                  aria-label="Select every product on this page"
+                  data-testid="select-all"
+                  checked={allVisibleSelected}
+                  onChange={toggleAllVisible}
+                  className="h-4 w-4 cursor-pointer"
+                />
+              </TableHead>
               <TableHead>Listing</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Price</TableHead>
@@ -419,7 +688,16 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
             {products.map((prod) => {
               const primaryImage = prod.images.find((i) => i.isPrimary) || prod.images[0];
               return (
-                <TableRow key={prod.id}>
+                <TableRow key={prod.id} data-state={selected.has(prod.id) ? 'selected' : undefined}>
+                  <TableCell className="w-8">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${prod.title}`}
+                      checked={selected.has(prod.id)}
+                      onChange={() => toggleRow(prod.id)}
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 bg-zinc-100 border border-zinc-200 rounded overflow-hidden shrink-0 flex items-center justify-center relative">
@@ -515,6 +793,21 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-amber-600" onClick={() => openEdit(prod)}>
                         <Edit2 size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:text-sky-600"
+                        title="Duplicate as a new draft"
+                        aria-label={`Duplicate ${prod.title}`}
+                        disabled={duplicatingId !== null}
+                        onClick={() => handleDuplicate(prod)}
+                      >
+                        {duplicatingId === prod.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Copy size={14} />
+                        )}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(prod.id)}>
                         <Trash2 size={14} />
@@ -630,8 +923,137 @@ export function ProductManager({ shopId, shopSlug, products, clickStats = {} }: 
                   value={formData.options}
                   onChange={(e) => setFormData((prev) => ({ ...prev, options: e.target.value }))}
                 />
-                <span className="text-[11px] text-muted-foreground">Buyers pick these and they are included in their WhatsApp message.</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Choices that do not change the price — colour, wrapping. Buyers pick these and
+                  they are included in their WhatsApp message.
+                </span>
               </div>
+            </div>
+
+            {/*
+              Priced options, separate from the free-text ones above.
+
+              A size that costs more, or one that has sold out, is not the same
+              kind of thing as a colour — it changes what the buyer is quoted
+              and whether they can order at all. The free-text field could not
+              express either, so a seller with a ₹200 difference between M and L
+              had to either lose the difference or list two products.
+            */}
+            <div className="flex flex-col gap-2 rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Sizes &amp; priced options</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Leave empty if this product has one price. A difference of +200 means that
+                    option costs ₹200 more than the price above.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={formData.variants.length >= MAX_PRODUCT_VARIANTS}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      variants: [...prev.variants, { name: '', priceDelta: '', inStock: true }],
+                    }))
+                  }
+                  data-testid="variant-add"
+                >
+                  <Plus size={13} className="mr-1" /> Add option
+                </Button>
+              </div>
+
+              {formData.variants.length === 0 ? (
+                <p className="py-2 text-[11px] text-muted-foreground">
+                  No priced options — buyers see one price for this product.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {formData.variants.map((variant, idx) => {
+                    const base = Number(formData.price) || 0;
+                    const delta = variant.priceDelta.trim() === '' ? 0 : Number(variant.priceDelta);
+                    const total = base + delta;
+                    return (
+                      <div key={idx} className="flex flex-wrap items-center gap-2">
+                        <Input
+                          value={variant.name}
+                          maxLength={60}
+                          placeholder="Medium"
+                          aria-label={`Option ${idx + 1} name`}
+                          data-testid={`variant-name-${idx}`}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              variants: prev.variants.map((v, i) =>
+                                i === idx ? { ...v, name: e.target.value } : v
+                              ),
+                            }))
+                          }
+                          className="h-9 w-40"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="+0"
+                          aria-label={`Option ${idx + 1} price difference`}
+                          data-testid={`variant-delta-${idx}`}
+                          value={variant.priceDelta}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              variants: prev.variants.map((v, i) =>
+                                i === idx ? { ...v, priceDelta: e.target.value } : v
+                              ),
+                            }))
+                          }
+                          className="h-9 w-28"
+                        />
+                        {/* The number the buyer will actually be quoted, so the
+                            seller never has to do the arithmetic themselves. */}
+                        <span
+                          className={`text-xs tabular-nums ${total <= 0 ? 'font-bold text-red-600' : 'text-muted-foreground'}`}
+                        >
+                          = ₹{total.toFixed(2)}
+                        </span>
+                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-[11px] font-semibold text-foreground/90">
+                          <input
+                            type="checkbox"
+                            checked={variant.inStock}
+                            data-testid={`variant-stock-${idx}`}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                variants: prev.variants.map((v, i) =>
+                                  i === idx ? { ...v, inStock: e.target.checked } : v
+                                ),
+                              }))
+                            }
+                            className="h-3.5 w-3.5 accent-amber-500"
+                          />
+                          In stock
+                        </label>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="ml-auto h-8 w-8 text-red-600 hover:bg-red-50"
+                          aria-label={`Remove option ${idx + 1}`}
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              variants: prev.variants.filter((_, i) => i !== idx),
+                            }))
+                          }
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <label className="flex items-center gap-2 text-xs font-semibold text-foreground/90 cursor-pointer select-none">
