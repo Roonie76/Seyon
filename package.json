@@ -20,7 +20,8 @@
     "blog:doctor": "tsx scripts/blog-doctor.ts",
     "db:backfill-activated": "tsx scripts/backfill-first-activated.ts",
     "db:backfill-channel": "tsx scripts/backfill-whatsapp-channel.ts",
-    "db:rls": "tsx scripts/apply-rls.ts"
+    "db:rls": "tsx scripts/apply-rls.ts",
+    "storage:doctor": "tsx scripts/storage-doctor.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
