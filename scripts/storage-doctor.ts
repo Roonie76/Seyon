@@ -23,6 +23,15 @@
  * `doctor_<timestamp>` prefix and are removed before the script exits. If it
  * dies halfway, those are the only leftovers and they are named for it.
  */
+import dotenv from 'dotenv';
+import fs from 'node:fs';
+
+for (const envFile of ['.env.production.local', '.env.local', '.env']) {
+  if (fs.existsSync(envFile)) {
+    dotenv.config({ path: envFile });
+  }
+}
+
 import { createClient } from '@supabase/supabase-js';
 
 /** Buckets the application writes to, and whether a stranger may read them. */
