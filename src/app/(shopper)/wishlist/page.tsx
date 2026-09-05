@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { SafeImage as Image } from '@/components/shared/safe-image';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { getWishlistProducts } from '@/actions/wishlist';
 import { WishlistButton } from '@/components/shared/wishlist-button';
 import { Card } from '@/components/ui/card';
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function WishlistPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     redirect('/login?callbackUrl=/wishlist');
   }

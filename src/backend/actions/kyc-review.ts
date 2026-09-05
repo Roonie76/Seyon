@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { KycStatus, KycTier, NoticeKind } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { isCurrentUserAdmin } from '../lib/is-admin';
@@ -124,7 +124,7 @@ export async function getKycDocumentUrl(
   kycId: string
 ): Promise<{ url: string; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!(await isCurrentUserAdmin())) return { error: 'Not authorised.' };
 
     const parsed = z.string().cuid().safeParse(kycId);
@@ -187,7 +187,7 @@ export async function approveKyc(
   raw: unknown
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!(await isCurrentUserAdmin())) return { error: 'Not authorised.' };
 
     const parsed = DecisionSchema.safeParse(raw);
@@ -292,7 +292,7 @@ export async function rejectKyc(
   raw: unknown
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!(await isCurrentUserAdmin())) return { error: 'Not authorised.' };
 
     const parsed = RejectSchema.safeParse(raw);

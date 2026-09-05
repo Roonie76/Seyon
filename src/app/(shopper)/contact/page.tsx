@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { Metadata } from 'next';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { ContactClient } from '@/components/help/ContactClient';
 
 export const metadata: Metadata = {
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ContactPage() {
-  const session = await auth();
+  const session = await getSession();
   const isLoggedIn = !!session?.user;
 
   return <ContactClient isLoggedIn={isLoggedIn} />;

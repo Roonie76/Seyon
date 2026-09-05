@@ -2,7 +2,7 @@
 
 import crypto from 'crypto';
 import { WhatsappVerifiedVia } from '@prisma/client';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
 import { logger } from '../lib/logger';
@@ -40,7 +40,7 @@ function generateCode() {
 }
 
 async function getOwnedShop() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     throw new Error('Unauthorized');
   }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { getMyNotices } from '@/backend/actions/notices';
 import { NoticeInbox } from '@/frontend/components/dashboard/notice-inbox';
 
@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 export default async function NoticesPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) redirect('/login');
 
   const res = await getMyNotices();

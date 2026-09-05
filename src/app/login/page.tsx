@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { auth, signIn } from '@/lib/auth';
+import { signIn } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const session = await auth();
+  const session = await getSession();
   const params = await searchParams;
   
   const host = (await headers()).get('host') || '';

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ShoppingBag } from 'lucide-react';
@@ -139,7 +139,7 @@ export default async function CategoryPage({
   const itemsPerPage = 8;
 
   // Fetch session + wishlist
-  const session = await auth();
+  const session = await getSession();
   const user = session?.user;
   let wishlistedProductIds = new Set<string>();
 

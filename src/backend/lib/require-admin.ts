@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { Role } from '@prisma/client';
 import { rateLimit, RATE_LIMITS } from './rate-limit';
@@ -17,7 +17,7 @@ import { rateLimit, RATE_LIMITS } from './rate-limit';
  * quietly lose the database read.
  */
 export async function requireAdmin(): Promise<{ actorId: string }> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     throw new Error('Forbidden: Admin authorization required');
   }

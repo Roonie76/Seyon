@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { ShopSchema } from '@/lib/zod-schemas';
@@ -22,7 +22,7 @@ const IdParamSchema = z.string().cuid('Invalid identifier format');
 
 export async function createShop(rawData: unknown) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user || !session.user.id) {
       return { error: 'You must be logged in to create a shop' };
     }
@@ -116,7 +116,7 @@ export async function updateShop(shopId: string, rawData: unknown) {
       return { error: 'Invalid shop ID format' };
     }
 
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user || !session.user.id) {
       return { error: 'Unauthorized' };
     }
@@ -311,7 +311,7 @@ export async function updateShop(shopId: string, rawData: unknown) {
 
 export async function deleteShop() {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user || !session.user.id) {
       return { error: 'Unauthorized' };
     }
@@ -385,7 +385,7 @@ export async function deleteShop() {
 
 export async function toggleShopPause(isPaused: boolean) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user || !session.user.id) {
       return { error: 'Unauthorized' };
     }

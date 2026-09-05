@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { DISCOVERABLE_SHOP, PUBLIC_REVIEW } from '@/backend/lib/shop-visibility';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { SafeImage as NextImage } from '@/components/shared/safe-image';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ interface FallbackProduct {
 export default async function HomePage() {
   // Sellers with a live store skip the marketing page entirely and land in
   // their dashboard. They only see this page again after deleting the store.
-  const session = await auth();
+  const session = await getSession();
   if (session?.user?.id) {
     try {
       const ownedShop = await db.shop.findUnique({

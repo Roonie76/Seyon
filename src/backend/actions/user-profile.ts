@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
@@ -24,7 +24,7 @@ export interface UserProfile {
  * Fetch the authenticated user's profile from the database.
  */
 export async function getUserProfile(type: 'shopper' | 'seller' = 'shopper'): Promise<UserProfile | null> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) return null;
 
   const user = await db.user.findUnique({
@@ -92,7 +92,7 @@ export async function updateUserProfile(
     image?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return { success: false, error: 'Not authenticated' };
   }
@@ -149,7 +149,7 @@ export async function updateUserAddress(data: {
   postalCode?: string;
   country?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return { success: false, error: 'Not authenticated' };
   }

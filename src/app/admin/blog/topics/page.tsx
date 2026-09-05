@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { getAllBlogTopics } from '@/backend/lib/blog-topics';
 import { blogTopicPostCounts } from '@/backend/actions/blog-topics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
  * shape of thin content search engines drop first.
  */
 export default async function AdminBlogTopicsPage() {
-  const session = await auth();
+  const session = await getSession();
   // The role is re-read from the database. The JWT claim it used to test was
   // writable by the client through the session-update endpoint, and is stale for
   // a revoked admin regardless.

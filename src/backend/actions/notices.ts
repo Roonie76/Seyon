@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { NoticeKind } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { requireAdmin } from '../lib/require-admin';
 import { recordAdminAction, recordAdminActionSafe, ADMIN_ACTIONS } from '../lib/admin-audit';
 import { issueNotice, emailNotice } from '../lib/notices';
@@ -106,7 +106,7 @@ export interface SellerNotice {
 /** The signed-in seller's own notices. Never takes a shop id from the caller. */
 export async function getMyNotices(): Promise<{ data: SellerNotice[] } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
 
     const shop = await db.shop.findUnique({
@@ -139,7 +139,7 @@ export async function markNoticeReadAction(noticeId: string): Promise<Result> {
     const id = IdSchema.safeParse(noticeId);
     if (!id.success) return { error: 'Invalid notice id.' };
 
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
 
     const shop = await db.shop.findUnique({ where: { ownerId: session.user.id }, select: { id: true } });
@@ -171,7 +171,7 @@ export async function respondToNoticeAction(noticeId: string, response: string):
     const parsed = ResponseSchema.safeParse(response);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
 
     const shop = await db.shop.findUnique({ where: { ownerId: session.user.id }, select: { id: true } });

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { getShopAnalytics } from '@/actions/analytics';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ interface AnalyticsChartItem {
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user) {
     redirect('/api/auth/signin?callbackUrl=/dashboard');
   }

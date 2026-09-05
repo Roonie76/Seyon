@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
 import { isCurrentUserAdmin } from '@/backend/lib/is-admin';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { BlogTopicForm } from '@/components/admin/blog-topic-form';
 import { getBlogTopicById } from '@/backend/lib/blog-topics';
 import { blogTopicPostCounts } from '@/backend/actions/blog-topics';
@@ -14,7 +14,7 @@ interface EditTopicPageProps {
 }
 
 export default async function EditBlogTopicPage({ params }: EditTopicPageProps) {
-  const session = await auth();
+  const session = await getSession();
   // The role is re-read from the database. The JWT claim it used to test was
   // writable by the client through the session-update endpoint, and is stale for
   // a revoked admin regardless.

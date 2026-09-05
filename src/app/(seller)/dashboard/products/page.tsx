@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { SELLER_SHOP_SELECT, type SellerShopView } from '@/backend/lib/seller-shop-view';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { ProductManager } from '@/components/dashboard/product-manager';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ interface PageProps {
 }
 
 export default async function DashboardProductsPage({ searchParams }: PageProps) {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user) {
     redirect('/api/auth/signin?callbackUrl=/dashboard/products');
   }

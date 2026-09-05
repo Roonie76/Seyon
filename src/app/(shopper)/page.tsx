@@ -12,7 +12,7 @@ import { getCreatorPresentation, getProductBadges, getHeroReelStats } from '@/li
 import { WhySeyonTabs } from '@/components/shared/why-seyon-tabs';
 import SocialPlatformsIcon from '@/components/icons/SocialPlatformsIcon';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { MarketplaceClient } from './marketplace/marketplace-client';
 import { generateItemListJSONLD, safeJsonLdStringify } from '@/lib/seo';
 import { RecentlyViewedStrip } from '@/components/shared/recently-viewed';
@@ -251,7 +251,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   // --- CASE A: Search Results/Catalog view if parameters are present ---
   if (hasFilters) {
-    const session = await auth();
+    const session = await getSession();
     const user = session?.user;
 
     const query = params.q || '';

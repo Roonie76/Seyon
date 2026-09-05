@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { WhatsappVerifiedVia } from '@prisma/client';
 import { appSecret } from '../lib/app-secret';
 import { z } from 'zod';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { KycStatus, KycTier, KycIdType } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
@@ -101,7 +101,7 @@ export interface KycView {
 /** Current identity state for the signed-in seller. */
 export async function getMyKyc(): Promise<{ data: KycView } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
 
     const user = await db.user.findUnique({
@@ -157,7 +157,7 @@ export async function submitTier0(
   rawData: unknown
 ): Promise<{ success: true; listed: boolean; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
     const userId = session.user.id;
 
@@ -250,7 +250,7 @@ export async function submitTier1(
   rawData: unknown
 ): Promise<{ success: true; status: KycStatus; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
     const userId = session.user.id;
 
@@ -389,7 +389,7 @@ export async function uploadIdentityDocument(
   formData: FormData
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
     const userId = session.user.id;
 
@@ -453,7 +453,7 @@ const TurnoverSchema = z.object({
  */
 export async function declareTurnoverAction(raw: unknown): Promise<{ success: true } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     const userId = session?.user?.id;
     if (!userId) return { error: 'You must be signed in.' };
 

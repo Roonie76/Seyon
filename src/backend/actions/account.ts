@@ -1,6 +1,7 @@
 'use server';
 
-import { auth, signOut } from '@/lib/auth';
+import { signOut } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { deleteFile, storagePrefixForShop } from '@/lib/supabase';
 import { logger } from '../lib/logger';
@@ -44,7 +45,7 @@ export async function exportMyData(): Promise<
   { success: true; data: AccountExport; error?: undefined } | { error: string }
 > {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
     const userId = session.user.id;
 
@@ -147,7 +148,7 @@ export async function deleteMyAccount(
   confirmation: string
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
     const userId = session.user.id;
 

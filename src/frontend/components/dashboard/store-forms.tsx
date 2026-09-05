@@ -48,11 +48,19 @@ export function StoreOnboardingForm() {
   const slugTouched = React.useRef(false);
 
   /**
-   * False until React has mounted. Never set anywhere else — the whole point
-   * is that only a client-side effect can flip it.
+   * False on the server, true once React has mounted.
+   *
+   * `useSyncExternalStore` rather than an effect that calls setState: the two
+   * snapshots ARE the server/client distinction, so there is no render in
+   * which the flag is wrong, and no effect for the lint rule about cascading
+   * renders to object to. The store never emits, because nothing external
+   * changes — mounting is the only event.
    */
-  const [ready, setReady] = React.useState(false);
-  React.useEffect(() => setReady(true), []);
+  const ready = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const [images, setImages] = React.useState({ logo: '', banner: '' });
   const [deliveryPreview, setDeliveryPreview] = React.useState('');

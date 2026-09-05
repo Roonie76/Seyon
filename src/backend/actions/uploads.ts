@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { deleteFile, storagePrefixForShop, storagePrefixForUser } from '@/lib/supabase';
 import { logger } from '../lib/logger';
@@ -27,7 +27,7 @@ export async function discardUpload(
   rawUrl: unknown
 ): Promise<{ success: true; error?: undefined } | { error: string }> {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session?.user?.id) return { error: 'You must be signed in.' };
 
     const parsed = UrlSchema.safeParse(rawUrl);

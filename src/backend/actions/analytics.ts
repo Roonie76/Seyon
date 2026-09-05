@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { isCurrentUserAdmin } from '../lib/is-admin';
 import { Role, AnalyticsEventType } from '@prisma/client';
@@ -34,7 +34,7 @@ export async function trackEvent(
   // review gating: only buyers who actually contacted a seller may review them.
   let userId: string | null = null;
   try {
-    const session = await auth();
+    const session = await getSession();
     userId = session?.user?.id ?? null;
   } catch {
     // Anonymous tracking is fine
@@ -53,7 +53,7 @@ export async function getShopAnalytics(shopId: string) {
       return { error: 'Invalid shop ID format' };
     }
 
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user || !session.user.id) {
       return { error: 'Unauthorized' };
     }

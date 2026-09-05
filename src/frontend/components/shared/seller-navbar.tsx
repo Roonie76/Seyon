@@ -1,11 +1,12 @@
-import { auth, signOut } from '@/lib/auth';
+import { signOut } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { getWishlistCount } from '@/actions/wishlist';
 import { SellerNavbarClient } from './seller-navbar-client';
 import { db } from '@/lib/db';
 
 export async function SellerNavbar() {
   const buyerMarketUrl = process.env.BUYER_MARKET_URL || 'https://seyon-pied.vercel.app';
-  const session = await auth();
+  const session = await getSession();
   const user = session?.user;
   const wishlistCount = user ? await getWishlistCount() : 0;
 

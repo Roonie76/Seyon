@@ -1,12 +1,12 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { logger } from '../lib/logger';
 
 export async function toggleWishlistItem(productId: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     return { success: false, error: 'Unauthorized. Please log in first.' };
   }
@@ -53,7 +53,7 @@ export async function toggleWishlistItem(productId: string) {
 }
 
 export async function getWishlistProducts() {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     return { success: false, error: 'Unauthorized.' };
   }
@@ -85,7 +85,7 @@ export async function getWishlistProducts() {
 }
 
 export async function getWishlistCount() {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     return 0;
   }
@@ -104,7 +104,7 @@ export async function getWishlistCount() {
 }
 
 export async function isProductWishlisted(productId: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     return false;
   }

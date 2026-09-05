@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { normaliseProductImages } from '@/shared/lib/product-images';
 import { SUSPENDED_MESSAGE } from '@/shared/lib/suspension';
 import { markUploadsAttached } from './uploads';
@@ -171,7 +171,7 @@ async function verifyShopOwnership(shopId: string) {
     throw new Error('Invalid shop ID format');
   }
 
-  const session = await auth();
+  const session = await getSession();
   if (!session || !session.user || !session.user.id) {
     throw new Error('Unauthenticated');
   }

@@ -1,6 +1,6 @@
 import { LEGAL_CONTACTS } from '@/shared/data/legal-entity';
 import Link from 'next/link';
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -25,7 +25,7 @@ const LinkedInIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export async function SellerFooter() {
-  const session = await auth();
+  const session = await getSession();
   const isLoggedIn = !!session?.user;
 
   return (

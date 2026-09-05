@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@/lib/auth';
+import { getSession } from '@/backend/lib/session';
 import { db } from '@/lib/db';
 import { ReviewSchema } from '@/lib/zod-schemas';
 import { rateLimit, RATE_LIMITS } from '../lib/rate-limit';
@@ -12,7 +12,7 @@ import { SITE_URL } from '@/shared/lib/site';
 
 export async function createReview(shopId: string, rawData: unknown) {
   try {
-    const session = await auth();
+    const session = await getSession();
     if (!session || !session.user) {
       return { error: 'You must be logged in to leave a review' };
     }
