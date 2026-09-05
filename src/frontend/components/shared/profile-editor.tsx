@@ -181,6 +181,8 @@ export function ProfileEditor({ user, type }: ProfileEditorProps) {
           </span>
           <div className="flex items-center gap-2 mt-1.5">
             <span
+              data-testid="account-role"
+              data-role={user.role}
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${roleBadgeColor[user.role] || roleBadgeColor.USER}`}
             >
               <Shield className="h-3 w-3" />

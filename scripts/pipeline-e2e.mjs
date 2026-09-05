@@ -60,6 +60,13 @@ try {
   const userId = signIn?.user?.id;
   if (!userId) throw new Error('no session — cannot continue');
 
+  // The seller with no store is told to make one. That button has to reach the
+  // form, not the marketing page that then points at the form.
+  const vHtml = await page.evaluate(async () => (await fetch('/verification', { credentials: 'include' })).text());
+  const cta = vHtml.match(/<a[^>]*data-testid="create-store-cta"[^>]*>/)?.[0] ?? '';
+  step('the "create your store" button reaches the form in one hop', cta.includes('href="/dashboard"'),
+    cta ? `href: ${(cta.match(/href="([^"]*)"/) || [])[1]}` : 'CTA not found');
+
   // ---------- 2. create the store ----------
   await page.goto(`${SELLER}/dashboard`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-testid="shop-name"]', { timeout: 45000 });
@@ -132,6 +139,24 @@ try {
   step('the buyer is promoted to SELLER in the database', role === 'SELLER', `role ${role}`);
   step('the store starts unlisted, as it must', shop.isListed === false, `isListed ${shop.isListed}`);
   step('the WhatsApp number is normalised on the way in', shop.whatsapp === WHATSAPP, shop.whatsapp);
+
+  /**
+   * The role the seller is shown comes from the database, not the token.
+   *
+   * `createShop` promotes the row, but the JWT keeps whatever role it was
+   * given at sign-in and there is deliberately no update branch to refresh it
+   * — that branch was the privilege-escalation hole. So this is worth an
+   * assertion rather than an assumption: both navbars read the fresh role from
+   * the database and fall back to the token only if that read returns nothing,
+   * which means the seller is never told they are still a buyer.
+   */
+  const acct = await page.evaluate(async () => (await fetch('/seller-account', { credentials: 'include' })).text());
+  // Read the badge itself. Searching the whole page for "SELLER" passes on the
+  // portal's own branding, which made the first version of this check vacuous.
+  const badgeRole = (acct.match(/data-testid="account-role"[^>]*data-role="([^"]*)"/) ||
+                     acct.match(/data-role="([^"]*)"[^>]*data-testid="account-role"/) || [])[1];
+  step('the account page calls them a SELLER without a re-login', badgeRole === 'SELLER',
+    badgeRole ? `badge says ${badgeRole}` : 'role badge not found');
 
   // ---------- 3. request a verification code ----------
   await page.goto(`${SELLER}/dashboard`, { waitUntil: 'domcontentloaded' });

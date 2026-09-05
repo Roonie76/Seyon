@@ -28,8 +28,15 @@ export default async function VerificationPage() {
           <p className="mb-6 text-sm text-zinc-600">
             Verification applies to a storefront, so there needs to be one. It takes a minute.
           </p>
+          {/*
+            Straight to the form. This used to point at /sell, which is the
+            marketing page, whose own button then points at /dashboard — so a
+            seller told "create your store first" was sent to be sold the idea
+            of a store a second time before being allowed to make one.
+          */}
           <Link
-            href="/sell"
+            href="/dashboard"
+            data-testid="create-store-cta"
             className="inline-block rounded-lg bg-zinc-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-zinc-800"
           >
             Create my store
