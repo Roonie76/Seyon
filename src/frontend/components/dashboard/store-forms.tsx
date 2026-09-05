@@ -16,21 +16,46 @@ import { confirmWhatsappVerification, requestWhatsappVerification } from '@/back
 import { Upload, HelpCircle, Loader2, PauseCircle, PlayCircle, MapPin, ShieldCheck, KeyRound, Trash2 } from 'lucide-react';
 import { DeliveryOffersRow } from '@/components/shared/delivery-offers';
 
+/**
+ * The form is delivered disabled, and enables itself once React owns it.
+ *
+ * The dashboard streams, so these inputs exist in the HTML well before the
+ * client component mounts. A seller who started typing in that window lost
+ * everything: React resets an input's value on hydration, the form then
+ * submitted blank, and the browser's own required-field warning swallowed it.
+ * The seller saw a form that did nothing — no store, no error, nothing to
+ * report to support.
+ *
+ * Making the fields uncontrolled does not fix it. That was the first attempt
+ * and it passed once on a warm cache, which is worse than failing: React
+ * resets an uncontrolled input to its `defaultValue` on hydration just the
+ * same, so the data is lost either way.
+ *
+ * What does fix it is refusing the input rather than dropping it. The fieldset
+ * is disabled in the server-rendered HTML and enabled by an effect that can
+ * only run after mount, so there is no window in which a keystroke can be
+ * accepted and then discarded. The cost is a moment where the form is visibly
+ * not ready, which is honest, and the button says so.
+ *
+ * The fields stay uncontrolled regardless, because the payload is then read
+ * from the form element at submit time and there is no second copy of the
+ * seller's answers to fall out of step with what they can see.
+ */
 export function StoreOnboardingForm() {
-  const [formData, setFormData] = React.useState({
-    name: '',
-    slug: '',
-    description: '',
-    logo: '',
-    banner: '',
-    whatsapp: '+91',
-    instagram: '',
-    telegram: '',
-    city: '',
-    region: '',
-    deliveryNote: '',
-  });
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const slugRef = React.useRef<HTMLInputElement>(null);
+  /** Set once the seller edits the handle, so we stop overwriting their choice. */
+  const slugTouched = React.useRef(false);
 
+  /**
+   * False until React has mounted. Never set anywhere else — the whole point
+   * is that only a client-side effect can flip it.
+   */
+  const [ready, setReady] = React.useState(false);
+  React.useEffect(() => setReady(true), []);
+
+  const [images, setImages] = React.useState({ logo: '', banner: '' });
+  const [deliveryPreview, setDeliveryPreview] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [uploading, setUploading] = React.useState<'logo' | 'banner' | null>(null);
   const [message, setMessage] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -51,7 +76,7 @@ export function StoreOnboardingForm() {
       });
       const data = await res.json();
       if (data.url) {
-        setFormData((prev) => ({ ...prev, [field]: data.url }));
+        setImages((prev) => ({ ...prev, [field]: data.url }));
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to upload image' });
       }
@@ -62,13 +87,32 @@ export function StoreOnboardingForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isLoading) return;
     setIsLoading(true);
     setMessage(null);
 
-    const res = await runAction(() => createShop(formData));
+    // Read from the form itself. This is the whole point: the DOM holds what
+    // the seller typed, whether or not React was mounted when they typed it.
+    const fd = new FormData(e.currentTarget);
+    const text = (key: string) => String(fd.get(key) ?? '').trim();
+
+    const payload = {
+      name: text('name'),
+      slug: text('slug'),
+      description: text('description'),
+      logo: images.logo,
+      banner: images.banner,
+      whatsapp: text('whatsapp'),
+      instagram: text('instagram'),
+      telegram: text('telegram'),
+      city: text('city'),
+      region: text('region'),
+      deliveryNote: text('deliveryNote'),
+    };
+
+    const res = await runAction(() => createShop(payload));
 
     if (res.error) {
       setIsLoading(false);
@@ -76,7 +120,7 @@ export function StoreOnboardingForm() {
       return;
     }
 
-    track('shop_created', { hasLogo: Boolean(formData.logo), city: formData.city || null });
+    track('shop_created', { hasLogo: Boolean(payload.logo), city: payload.city || null });
 
     // Stays disabled through the redirect so the form cannot be submitted twice.
     setMessage({ type: 'success', text: 'Store successfully created! Redirecting...' });
@@ -86,11 +130,11 @@ export function StoreOnboardingForm() {
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
+    if (slugTouched.current || !slugRef.current) return;
     // Store handles are ASCII-only (ShopSchema). A name written in another
     // script yields an empty suggestion; the seller then picks their own
     // handle rather than being handed "" or "-".
-    setFormData((prev) => ({ ...prev, name, slug: asciiSlug(name) }));
+    slugRef.current.value = asciiSlug(e.target.value);
   };
 
   return (
@@ -104,9 +148,17 @@ export function StoreOnboardingForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form ref={formRef} onSubmit={handleSubmit} data-testid="store-onboarding-form">
+         <fieldset
+           disabled={!ready}
+           data-testid="store-form-fields"
+           className="space-y-6 m-0 min-w-0 border-0 p-0 disabled:opacity-60"
+         >
           {message && (
-            <div className={`p-4 rounded-md text-sm font-semibold border ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+            <div
+              data-testid="store-form-message"
+              className={`p-4 rounded-md text-sm font-semibold border ${message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+            >
               {message.text}
             </div>
           )}
@@ -114,71 +166,75 @@ export function StoreOnboardingForm() {
           {/* Core Info */}
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Shop Name</label>
+              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopName">Shop Name</label>
               <Input
+                id="shopName"
+                name="name"
+                data-testid="shop-name"
                 required
                 type="text"
                 placeholder="e.g. Gadget Central"
-                value={formData.name}
                 onChange={handleNameChange}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1">
+              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1" htmlFor="shopSlug">
                 Store URL Handle <span className="text-muted-foreground cursor-help" title="Custom slug: /store/your-slug"><HelpCircle size={12} /></span>
               </label>
               <Input
+                id="shopSlug"
+                name="slug"
+                data-testid="shop-slug"
+                ref={slugRef}
                 required
                 type="text"
                 placeholder="e.g. gadget-central"
-                value={formData.slug}
-                onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, '') }))}
+                onChange={(e) => {
+                  slugTouched.current = true;
+                  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+                }}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Description</label>
+            <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopDescription">Description</label>
             <Textarea
+              id="shopDescription"
+              name="description"
+              data-testid="shop-description"
               rows={3}
               placeholder="Tell buyers what you sell, what your delivery speeds are, and store rules..."
-              value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             />
           </div>
 
           {/* Socials & Contacts */}
           <div className="border-t border-zinc-200 pt-6 space-y-4">
             <h3 className="text-lg font-bold text-foreground">Contacts & Channels</h3>
-            
+
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">WhatsApp Number</label>
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopWhatsapp">WhatsApp Number</label>
                 <Input
+                  id="shopWhatsapp"
+                  name="whatsapp"
+                  data-testid="shop-whatsapp"
                   required
                   type="tel"
+                  defaultValue="+91"
                   placeholder="e.g. +15551234567 (with country code)"
-                  value={formData.whatsapp}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, whatsapp: e.target.value.replace(/[^0-9+]/g, '') }))}
+                  onChange={(e) => {
+                    e.target.value = e.target.value.replace(/[^0-9+]/g, '');
+                  }}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Instagram (Optional)</label>
-                <Input
-                  type="text"
-                  placeholder="e.g. gadgetcentral_ig"
-                  value={formData.instagram}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, instagram: e.target.value }))}
-                />
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopInstagram">Instagram (Optional)</label>
+                <Input id="shopInstagram" name="instagram" type="text" placeholder="e.g. gadgetcentral_ig" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Telegram (Optional)</label>
-                <Input
-                  type="text"
-                  placeholder="e.g. gadgetcentral_tg"
-                  value={formData.telegram}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, telegram: e.target.value }))}
-                />
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopTelegram">Telegram (Optional)</label>
+                <Input id="shopTelegram" name="telegram" type="text" placeholder="e.g. gadgetcentral_tg" />
               </div>
             </div>
           </div>
@@ -188,40 +244,31 @@ export function StoreOnboardingForm() {
             <h3 className="text-lg font-bold text-foreground flex items-center gap-1.5"><MapPin size={16} className="text-amber-600" /> Location & Delivery</h3>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">City (Optional)</label>
-                <Input
-                  type="text"
-                  placeholder="e.g. Chennai"
-                  value={formData.city}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
-                />
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopCity">City (Optional)</label>
+                <Input id="shopCity" name="city" data-testid="shop-city" type="text" placeholder="e.g. Chennai" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">State / Region (Optional)</label>
-                <Input
-                  type="text"
-                  placeholder="e.g. Tamil Nadu"
-                  value={formData.region}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, region: e.target.value }))}
-                />
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopRegion">State / Region (Optional)</label>
+                <Input id="shopRegion" name="region" data-testid="shop-region" type="text" placeholder="e.g. Tamil Nadu" />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Delivery Note (Optional)</label>
+              <label className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase" htmlFor="shopDeliveryNote">Delivery Note (Optional)</label>
               <Input
+                id="shopDeliveryNote"
+                name="deliveryNote"
                 type="text"
                 maxLength={200}
                 placeholder="e.g. Free shipping > ₹499; Ships in 24h; COD Available"
-                value={formData.deliveryNote}
-                onChange={(e) => setFormData((prev) => ({ ...prev, deliveryNote: e.target.value }))}
+                onChange={(e) => setDeliveryPreview(e.target.value)}
               />
               <span className="text-[11px] text-muted-foreground font-normal normal-case">
                 {"Separate multiple offers with a semicolon (e.g. 'Free shipping; Ships in 24h; 10% Off'). These will render as beautiful colored badges on your products."}
               </span>
-              {formData.deliveryNote && (
+              {deliveryPreview && (
                 <div className="mt-2 p-2.5 border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
                   <span className="text-[11px] font-bold text-muted-foreground/80 tracking-wider uppercase block mb-1">Live Offers Preview:</span>
-                  <DeliveryOffersRow deliveryNote={formData.deliveryNote} isPreview />
+                  <DeliveryOffersRow deliveryNote={deliveryPreview} isPreview />
                 </div>
               )}
             </div>
@@ -234,8 +281,8 @@ export function StoreOnboardingForm() {
               <span className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Shop Logo</span>
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center relative shrink-0">
-                  {formData.logo ? (
-                    <NextImage src={formData.logo} alt="Logo" width={64} height={64} className="h-full w-full object-cover" />
+                  {images.logo ? (
+                    <NextImage src={images.logo} alt="Logo" width={64} height={64} className="h-full w-full object-cover" />
                   ) : (
                     <Upload size={20} className="text-muted-foreground/35" />
                   )}
@@ -261,8 +308,8 @@ export function StoreOnboardingForm() {
               <span className="text-[11px] font-bold text-zinc-500 tracking-wider uppercase">Shop Banner (Optional)</span>
               <div className="flex items-center gap-4">
                 <div className="h-16 w-32 rounded-lg bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center relative shrink-0">
-                  {formData.banner ? (
-                    <NextImage src={formData.banner} alt="Banner" width={128} height={64} className="h-full w-full object-cover" />
+                  {images.banner ? (
+                    <NextImage src={images.banner} alt="Banner" width={128} height={64} className="h-full w-full object-cover" />
                   ) : (
                     <Upload size={20} className="text-muted-foreground/35" />
                   )}
@@ -284,9 +331,10 @@ export function StoreOnboardingForm() {
             </div>
           </div>
 
-          <Button type="submit" disabled={isLoading} className="w-full mt-4">
-            {isLoading ? 'Creating Storefront...' : 'Deploy Shop Catalog'}
+          <Button type="submit" disabled={isLoading || !ready} className="w-full mt-4" data-testid="store-submit">
+            {!ready ? 'Preparing form…' : isLoading ? 'Creating Storefront...' : 'Deploy Shop Catalog'}
           </Button>
+         </fieldset>
         </form>
       </CardContent>
     </Card>

@@ -62,50 +62,47 @@ try {
 
   // ---------- 2. create the store ----------
   await page.goto(`${SELLER}/dashboard`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('input[placeholder="e.g. Gadget Central"]', { timeout: 45000 });
+  await page.waitForSelector('[data-testid="shop-name"]', { timeout: 45000 });
 
   /**
-   * Fill after hydration, and prove it stuck.
+   * The regression test for the defect this probe found.
    *
-   * The dashboard streams, so the inputs exist in the HTML before React has
-   * taken them over. Typing into them in that window looks like it worked and
-   * is then wiped when the client component mounts with its own empty state —
-   * the form submitted with a blank name and the browser's own "please fill
-   * out this field" swallowed it, which is why no row appeared and no error
-   * did either.
+   * The dashboard streams, so the form reaches the browser before React owns
+   * it. Typing in that window used to be accepted and then silently discarded
+   * on hydration — blank submit, no store, no error. The fix refuses input
+   * instead of dropping it, and the check that matters is on the *server's*
+   * HTML: the fieldset has to arrive disabled. Asserting it in the live page
+   * would be a race, because by the time the browser settles it is enabled
+   * again — which is the correct end state and proves nothing.
    */
-  async function fillStable(selector, value) {
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      await page.fill(selector, value);
-      await page.waitForTimeout(400);
-      if ((await page.inputValue(selector)) === value) return;
-    }
-    throw new Error(`could not get ${selector} to hold a value — the field keeps resetting`);
-  }
+  const serverHtml = await page.evaluate(async () => (await fetch('/dashboard', { credentials: 'include' })).text());
+  const fieldset = serverHtml.match(/<fieldset[^>]*data-testid="store-form-fields"[^>]*>/)?.[0] ?? '';
+  // Match the attribute, not the substring: the class list carries
+  // `disabled:opacity-60`, which made the first version of this check pass
+  // against a fieldset that was never disabled at all.
+  const arrivesDisabled = /\sdisabled(=""|\s|>)/.test(fieldset);
+  step('the form arrives disabled, so nothing typed can be lost',
+    arrivesDisabled,
+    fieldset ? `fieldset: ${fieldset.slice(0, 90)}` : 'no fieldset found in the server HTML');
 
-  /**
-   * Wait for React to actually own the form before filling it.
-   *
-   * Verifying that a value stuck is not enough: hydration can land *after* the
-   * check and reset every controlled input to its empty initial state, which
-   * is what made this probe intermittently submit a blank name. The reliable
-   * signal is behaviour only the client component provides — typing a name
-   * derives the URL handle — so the probe types, watches for the handle to
-   * appear, and only then fills the real values.
-   */
-  for (let attempt = 0; ; attempt += 1) {
-    if (attempt > 30) throw new Error('the store form never hydrated');
-    await page.fill('input[placeholder="e.g. Gadget Central"]', 'hydration probe');
-    await page.waitForTimeout(500);
-    if ((await page.inputValue('input[placeholder="e.g. gadget-central"]')) === 'hydration-probe') break;
-  }
+  // And it must not stay that way, or the seller can never fill it in.
+  await page.waitForSelector('[data-testid="shop-name"]:not([disabled])', { timeout: 45000 });
+  step('and enables itself once React has mounted', true);
 
-  await fillStable('input[placeholder="e.g. Gadget Central"]', NAME);
-  await fillStable('input[placeholder="e.g. gadget-central"]', SLUG);
-  await fillStable('textarea[placeholder^="Tell buyers"]', 'Hand-block printed cotton, made in Jaipur.');
-  await fillStable('input[placeholder^="e.g. +15551234567"]', WHATSAPP);
-  await fillStable('input[placeholder="e.g. Chennai"]', 'Chennai');
-  await fillStable('input[placeholder="e.g. Tamil Nadu"]', 'Tamil Nadu');
+  await page.fill('[data-testid="shop-name"]', NAME);
+  await page.fill('[data-testid="shop-slug"]', SLUG);
+  await page.fill('[data-testid="shop-description"]', 'Hand-block printed cotton, made in Jaipur.');
+  await page.fill('[data-testid="shop-whatsapp"]', WHATSAPP);
+  await page.fill('[data-testid="shop-city"]', 'Chennai');
+  await page.fill('[data-testid="shop-region"]', 'Tamil Nadu');
+
+  await page.waitForTimeout(3000);
+  const survived =
+    (await page.inputValue('[data-testid="shop-name"]')) === NAME &&
+    (await page.inputValue('[data-testid="shop-slug"]')) === SLUG;
+  step('what the seller types then stays put', survived,
+    survived ? '' : `name is now "${await page.inputValue('[data-testid="shop-name"]')}"`);
+
   const deploy = page.locator('button', { hasText: /Deploy Shop Catalog/ }).first();
   await deploy.waitFor({ state: 'visible', timeout: 30000 });
   await deploy.click();

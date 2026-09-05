@@ -23,7 +23,8 @@
     "db:rls": "tsx scripts/apply-rls.ts",
     "storage:doctor": "tsx scripts/storage-doctor.ts",
     "health": "tsx scripts/health-check.ts",
-    "pipeline:e2e": "node scripts/pipeline-e2e.mjs"
+    "pipeline:e2e": "node scripts/pipeline-e2e.mjs",
+    "predev": "node scripts/clean-prod-build.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
